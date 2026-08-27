@@ -62,6 +62,9 @@ function submitHoldTime(room, playerToken, elapsedMs, io, broadcastRoom) {
   if (room.status !== 'HOLD_PRESSING') return;
   if (room.playerHolds[playerToken]) return;
 
+  // 校验时间数值合理：必须是大于 0 的有限数字且不超过 60 秒，防止 NaN/伪造值污染成绩
+  if (typeof elapsedMs !== 'number' || !Number.isFinite(elapsedMs) || elapsedMs <= 0 || elapsedMs > 60000) return;
+
   const seconds = elapsedMs / 1000;
   const diff = Math.abs(seconds - room.targetSeconds);
   const baseScore = Math.max(0, Math.round(100 - diff * 35));

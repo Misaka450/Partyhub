@@ -82,6 +82,70 @@ function getRandom24Puzzle() {
   return PRESET_24_PUZZLES[Math.floor(Math.random() * PRESET_24_PUZZLES.length)];
 }
 
+// 用 Shunting-yard（调度场）算法安全求值四则运算表达式，不依赖 eval/Function，
+// 从根本上避免任意代码执行风险。仅支持数字、+ - * / 与括号，按标准运算优先级。
+function safeEvaluate(expr) {
+  const tokens = expr.match(/(\d+\.?\d*|\+|-|\*|\/|\(|\))/g) || [];
+  const precedence = { '+': 1, '-': 1, '*': 2, '/': 2 };
+  const opStack = [];
+  const output = [];
+
+  for (const tk of tokens) {
+    if (/^\d/.test(tk)) {
+      output.push(parseFloat(tk)); // 数字直接进输出队列
+    } else if (tk === '(') {
+      opStack.push(tk);
+    } else if (tk === ')') {
+      let matched = false;
+      while (opStack.length > 0) {
+        const top = opStack.pop();
+        if (top === '(') { matched = true; break; }
+        output.push(top);
+      }
+      if (!matched) throw new Error('括号不匹配');
+    } else if (precedence[tk] !== undefined) {
+      // 弹出栈顶优先级 >= 当前运算符的运算符
+      while (opStack.length > 0 && opStack[opStack.length - 1] !== '('
+             && precedence[opStack[opStack.length - 1]] >= precedence[tk]) {
+        output.push(opStack.pop());
+      }
+      opStack.push(tk);
+    } else {
+      throw new Error('非法字符');
+    }
+  }
+
+  while (opStack.length > 0) {
+    const top = opStack.pop();
+    if (top === '(') throw new Error('括号不匹配');
+    output.push(top);
+  }
+
+  // 后缀（逆波兰）表达式求值
+  const valueStack = [];
+  for (const tk of output) {
+    if (typeof tk === 'number') {
+      valueStack.push(tk);
+    } else {
+      const b = valueStack.pop();
+      const a = valueStack.pop();
+      if (a === undefined || b === undefined) throw new Error('表达式无效');
+      let r;
+      if (tk === '+') r = a + b;
+      else if (tk === '-') r = a - b;
+      else if (tk === '*') r = a * b;
+      else if (tk === '/') {
+        if (b === 0) throw new Error('不能除以 0');
+        r = a / b;
+      }
+      valueStack.push(r);
+    }
+  }
+
+  if (valueStack.length !== 1) throw new Error('表达式无效');
+  return valueStack[0];
+}
+
 function validateExpression(exprStr, targetCards) {
   // 检查字符白名单，只允许数字、+、-、*、/、(、)、空格、×、÷
   const sanitized = exprStr.replace(/×/g, '*').replace(/÷/g, '/');
@@ -104,8 +168,8 @@ function validateExpression(exprStr, targetCards) {
   }
 
   try {
-    // 安全求值
-    const result = Function(`'use strict'; return (${sanitized})`)();
+    // 用安全求值器替代 eval/Function，避免任意代码执行风险
+    const result = safeEvaluate(sanitized);
     if (Math.abs(result - 24) < 1e-5) {
       return { valid: true, result };
     } else {
@@ -179,6 +243,9 @@ function submitSolution(room, playerToken, exprStr, io, broadcastRoom) {
   if (room.status !== 'M24_PLAYING') return;
   const player = room.players.find(p => p.token === playerToken);
   if (!player) return;
+
+  // 防御：客户端可能发送缺字段/非字符串数据，直接忽略防止崩溃
+  if (typeof exprStr !== 'string' || !exprStr.trim()) return;
 
   const now = Date.now();
   if (player.lastM24SubmitTime && now - player.lastM24SubmitTime < 2500) {

@@ -91,6 +91,9 @@ function submitWord(room, playerToken, wordInput, io, broadcastRoom) {
   const current = room.players[room.currentTurnIndex];
   if (!current || current.token !== playerToken) return;
 
+  // 防御：客户端可能发送缺字段/非字符串数据，直接忽略防止崩溃
+  if (typeof wordInput !== 'string') return;
+
   const word = wordInput.trim();
   if (word.length < 2) {
     io.to(current.id).emit('system_message', '⚠️ 词语长度至少为 2 个字！');
@@ -144,6 +147,7 @@ function submitWord(room, playerToken, wordInput, io, broadcastRoom) {
 
 function advanceAliveTurn(room) {
   const count = room.players.length;
+  if (count === 0) return; // 防御：玩家全部退出时避免取模得到 NaN
   for (let i = 1; i <= count; i++) {
     const nextIdx = (room.currentTurnIndex + i) % count;
     const p = room.players[nextIdx];

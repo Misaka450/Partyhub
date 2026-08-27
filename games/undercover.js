@@ -195,7 +195,8 @@ function nextSpeaker(room, io, broadcastRoom) {
 
 function finishCurrentSpeech(room, speakerToken, io, broadcastRoom) {
   const currentSpeakerToken = room.speechOrder[room.currentSpeakerIndex];
-  if (speakerToken !== currentSpeakerToken && room.status !== 'UC_SPEAKING') return;
+  // 只有当前发言者本人才可结束发言（&& 是笔误，应为 ||，否则任一玩家可推进流程）
+  if (speakerToken !== currentSpeakerToken || room.status !== 'UC_SPEAKING') return;
 
   const speaker = room.players.find(p => p.token === speakerToken);
   if (speaker) speaker.hasSpoken = true;
@@ -233,6 +234,12 @@ function castVote(room, voterToken, targetToken, io, broadcastRoom) {
   if (room.status !== 'UC_VOTING') return;
   const voter = room.players.find(p => p.token === voterToken);
   if (!voter || !voter.alive) return;
+
+  // 只能投给仍存活的候选玩家（或投弃权 ABSTAIN），防止废票/无效票被静默吞掉污染计票
+  if (targetToken !== 'ABSTAIN') {
+    const target = room.players.find(p => p.token === targetToken);
+    if (!target || !target.alive) return;
+  }
 
   room.votes[voterToken] = targetToken; // targetToken 可以是玩家token 或 'ABSTAIN'
   voter.voteTarget = targetToken;

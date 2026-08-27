@@ -18,11 +18,34 @@ const holdFiveEngine = require('./games/holdFive');
 
 const app = express();
 const server = http.createServer(app);
+// CORS：默认允许所有来源（聚会场景常通过分享链接/局域网 IP 直接访问）。
+// 若部署到固定域名，可用环境变量 CORS_ORIGIN 收紧为逗号分隔的域名白名单。
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()).filter(Boolean)
+  : '*';
 const io = new Server(server, {
-  cors: { origin: '*' }
+  cors: { origin: allowedOrigins }
 });
 
 const PORT = process.env.PORT || 8080;
+
+// ===== 全局异常兜底：任何回调或游戏引擎抛出的未捕获异常只记录日志，不让整个 Node 进程崩溃 =====
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ [未捕获异常] 已拦截，服务继续运行:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️ [未捕获的Promise拒绝] 已拦截:', reason);
+});
+
+// 安全调用游戏引擎：把引擎可能抛出的异常包住，避免单个异常直接压垮服务器进程
+function safeEngineCall(engineFn, ...args) {
+  try {
+    return engineFn(...args);
+  } catch (err) {
+    console.error('⚠️ [游戏引擎调用异常]', err);
+    return null;
+  }
+}
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -53,7 +76,7 @@ function createRoom(roomId) {
     roundTimeout: null,
     lastActivity: Date.now()
   };
-  drawGuessEngine.initRoomState(room);
+  safeEngineCall(drawGuessEngine.initRoomState, room);
   return room;
 }
 
@@ -84,7 +107,7 @@ function broadcastRoom(room) {
   }));
 
   const engine = GAME_ENGINES[room.gameType] || drawGuessEngine;
-  const publicState = engine.getPublicState(room);
+  const publicState = safeEngineCall(engine.getPublicState, room) || {};
 
   io.to(room.id).emit('room_state', {
     roomId: room.id,
@@ -106,7 +129,7 @@ function resetToLobby(room) {
     p.alive = true;
   });
   const engine = GAME_ENGINES[room.gameType] || drawGuessEngine;
-  engine.initRoomState(room);
+  safeEngineCall(engine.initRoomState, room);
   broadcastRoom(room);
   io.to(room.id).emit('system_message', '🏠 已返回等待大厅！');
 }
@@ -132,8 +155,17 @@ io.on('connection', (socket) => {
     let isReconnecting = false;
 
     // 智能玩家席位认领与去重机制 (Smart Reconnect & Deduplication)
-    // 1. 优先按客户端持久化 Token 匹配
+    // 1. 优先按客户端持久化 Token 匹配（用于断线重连认领自己的席位）
     let player = room.players.find(p => p.token === currentPlayerToken);
+    // 安全防护：若该 token 对应的席位仍被一个在线活跃的 socket 占用（例如玩家开了
+    // 多标签页，或有人盗用了 token 想顶替他人），禁止接管，改为按新玩家处理，
+    // 防止会话劫持 / 身份冒充。
+    if (player && player.id !== socket.id) {
+      const occupiedSocket = io.sockets.sockets.get(player.id);
+      if (occupiedSocket && occupiedSocket.connected && !player.offlineTimer) {
+        player = null;
+      }
+    }
 
     // 2. 若 Token 未匹配（例如隐私模式、清除缓存或换了浏览器），检查房间内是否有同名玩家
     if (!player) {
@@ -235,7 +267,7 @@ io.on('connection', (socket) => {
 
     room.gameType = gameType;
     const engine = GAME_ENGINES[gameType];
-    engine.initRoomState(room);
+    safeEngineCall(engine.initRoomState, room);
     room.status = 'LOBBY';
     room.players.forEach(p => {
       p.isReady = false;
@@ -261,14 +293,40 @@ io.on('connection', (socket) => {
     broadcastRoom(room);
   });
 
-  // 房主更新房间配置参数
+  // 允许房主修改的房间配置白名单（只允许游戏参数，防止注入游戏类型/状态/玩家等危险属性）
+  const ALLOWED_SETTINGS = {
+    maxRounds: 'number', roundTime: 'number', enableHints: 'boolean',
+    spyCount: 'number', hasBlank: 'boolean', speakTime: 'number',
+    usePercivalMorgana: 'boolean', useMordred: 'boolean', useOberon: 'boolean',
+    speechMode: 'string', speechDuration: 'number',
+    unoHandSize: 'number', unoStackRules: 'boolean',
+    flashSpeed: 'string', bombWires: 'number', bombTime: 'number',
+    bcRounds: 'number', bcTime: 'number', m24Time: 'number',
+    cubeDiff: 'string', wbLives: 'number', wbTime: 'number',
+    sliceTolerance: 'number', fixedTargetSeconds: 'number'
+  };
+
+  // 房主更新房间配置参数（白名单过滤 + 类型校验）
   socket.on('update_room_settings', (settings) => {
     const room = rooms.get(currentRoomId);
     if (!room) return;
     const player = room.players.find(p => p.token === currentPlayerToken);
     if (!player || !player.isHost || room.status !== 'LOBBY') return;
+    if (!settings || typeof settings !== 'object') return;
 
-    Object.assign(room, settings);
+    // 只合并白名单字段，并对数值/类型做校验，防止客户端任意覆写 room 属性
+    for (const [key, expectedType] of Object.entries(ALLOWED_SETTINGS)) {
+      if (settings[key] === undefined) continue;
+      if (expectedType === 'number') {
+        const num = Number(settings[key]);
+        if (!Number.isFinite(num)) continue;
+        room[key] = num;
+      } else if (expectedType === 'boolean') {
+        room[key] = !!settings[key];
+      } else if (expectedType === 'string' && typeof settings[key] === 'string') {
+        room[key] = settings[key].slice(0, 50);
+      }
+    }
     broadcastRoom(room);
   });
 
@@ -293,9 +351,9 @@ io.on('connection', (socket) => {
     if (room.gameType === 'draw-guess') {
       room.currentDrawerIndex = 0;
       room.round = 1;
-      drawGuessEngine.startTurn(room, io, broadcastRoom);
+      safeEngineCall(drawGuessEngine.startTurn, room, io, broadcastRoom);
     } else if (GAME_ENGINES[room.gameType]) {
-      GAME_ENGINES[room.gameType].startGame(room, io, broadcastRoom);
+      safeEngineCall(GAME_ENGINES[room.gameType].startGame, room, io, broadcastRoom);
     }
   });
 
@@ -320,6 +378,11 @@ io.on('connection', (socket) => {
     if (!player) return;
 
     const trimmed = text.trim();
+    // 服务端消息长度与发送频率限制，防刷屏与带宽滥用
+    if (trimmed.length > 200) return;
+    const nowChatAt = Date.now();
+    if (player.lastChatAt && nowChatAt - player.lastChatAt < 500) return;
+    player.lastChatAt = nowChatAt;
 
     if (room.gameType === 'draw-guess' && room.status === 'DRAWING') {
       if (player.isDrawing) {
@@ -328,10 +391,10 @@ io.on('connection', (socket) => {
           return;
         }
       }
-      const guessed = drawGuessEngine.handleGuess(room, player, trimmed, io, broadcastRoom);
+      const guessed = safeEngineCall(drawGuessEngine.handleGuess, room, player, trimmed, io, broadcastRoom);
       if (guessed) return;
     } else if (room.gameType === 'word-bomb' && room.status === 'BOMB_TICKING') {
-      wordBombEngine.submitWord(room, player.token, trimmed, io, broadcastRoom);
+      safeEngineCall(wordBombEngine.submitWord, room, player.token, trimmed, io, broadcastRoom);
       return;
     }
 
@@ -397,6 +460,10 @@ io.on('connection', (socket) => {
 
     if (!room.drawHistory) room.drawHistory = [];
     room.drawHistory.push(data);
+    // 限定画布历史条数，防止恶意画师无限绘制撑爆服务端内存
+    if (room.drawHistory.length > 3000) {
+      room.drawHistory.splice(0, room.drawHistory.length - 3000);
+    }
     socket.to(room.id).emit('draw_stroke', data);
   });
 
@@ -430,88 +497,88 @@ io.on('connection', (socket) => {
   socket.on('select_word', ({ word }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'draw-guess' || room.status !== 'SELECTING') return;
-    drawGuessEngine.selectWord(room, socket.id, word, io, broadcastRoom);
+    safeEngineCall(drawGuessEngine.selectWord, room, socket.id, word, io, broadcastRoom);
   });
 
   // =====================【谁是卧底】=====================
   socket.on('uc_finish_speech', () => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'undercover') return;
-    undercoverEngine.finishCurrentSpeech(room, currentPlayerToken, io, broadcastRoom);
+    safeEngineCall(undercoverEngine.finishCurrentSpeech, room, currentPlayerToken, io, broadcastRoom);
   });
 
   socket.on('uc_cast_vote', ({ targetToken }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'undercover') return;
-    undercoverEngine.castVote(room, currentPlayerToken, targetToken, io, broadcastRoom);
+    safeEngineCall(undercoverEngine.castVote, room, currentPlayerToken, targetToken, io, broadcastRoom);
   });
 
   // =====================【阿瓦隆】=====================
   socket.on('avalon_select_member', ({ memberToken }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'avalon') return;
-    avalonEngine.selectTeamMember(room, currentPlayerToken, memberToken, io, broadcastRoom);
+    safeEngineCall(avalonEngine.selectTeamMember, room, currentPlayerToken, memberToken, io, broadcastRoom);
   });
 
   socket.on('avalon_submit_team', ({ teamTokens }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'avalon') return;
-    avalonEngine.submitTeam(room, currentPlayerToken, teamTokens, io, broadcastRoom);
+    safeEngineCall(avalonEngine.submitTeam, room, currentPlayerToken, teamTokens, io, broadcastRoom);
   });
 
   socket.on('avalon_finish_speech', () => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'avalon') return;
-    avalonEngine.finishCurrentSpeech(room, currentPlayerToken, io, broadcastRoom);
+    safeEngineCall(avalonEngine.finishCurrentSpeech, room, currentPlayerToken, io, broadcastRoom);
   });
 
   socket.on('avalon_team_vote', ({ approve }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'avalon') return;
-    avalonEngine.castTeamVote(room, currentPlayerToken, approve, io, broadcastRoom);
+    safeEngineCall(avalonEngine.castTeamVote, room, currentPlayerToken, approve, io, broadcastRoom);
   });
 
   socket.on('avalon_quest_vote', ({ isSuccess }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'avalon') return;
-    avalonEngine.castQuestVote(room, currentPlayerToken, isSuccess, io, broadcastRoom);
+    safeEngineCall(avalonEngine.castQuestVote, room, currentPlayerToken, isSuccess, io, broadcastRoom);
   });
 
   socket.on('avalon_assassinate', ({ targetToken }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'avalon') return;
-    avalonEngine.assassinatePlayer(room, currentPlayerToken, targetToken, io, broadcastRoom);
+    safeEngineCall(avalonEngine.assassinatePlayer, room, currentPlayerToken, targetToken, io, broadcastRoom);
   });
 
   // =====================【UNO】=====================
   socket.on('uno_play_card', ({ cardId, chosenColor }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'uno') return;
-    unoEngine.playCard(room, currentPlayerToken, cardId, chosenColor, io, broadcastRoom);
+    safeEngineCall(unoEngine.playCard, room, currentPlayerToken, cardId, chosenColor, io, broadcastRoom);
   });
 
   socket.on('uno_draw_card', () => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'uno') return;
-    unoEngine.drawCardAction(room, currentPlayerToken, io, broadcastRoom);
+    safeEngineCall(unoEngine.drawCardAction, room, currentPlayerToken, io, broadcastRoom);
   });
 
   socket.on('uno_pass_turn', () => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'uno') return;
-    unoEngine.passTurnAction(room, currentPlayerToken, io, broadcastRoom);
+    safeEngineCall(unoEngine.passTurnAction, room, currentPlayerToken, io, broadcastRoom);
   });
 
   socket.on('uno_call_uno', () => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'uno') return;
-    unoEngine.callUno(room, currentPlayerToken, io);
+    safeEngineCall(unoEngine.callUno, room, currentPlayerToken, io);
   });
 
   socket.on('uno_catch_uno', ({ targetToken }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'uno') return;
-    unoEngine.catchUno(room, currentPlayerToken, targetToken, io, broadcastRoom);
+    safeEngineCall(unoEngine.catchUno, room, currentPlayerToken, targetToken, io, broadcastRoom);
   });
 
   // =====================【新游戏事件调度】=====================
@@ -519,35 +586,35 @@ io.on('connection', (socket) => {
   socket.on('flash_submit_answer', ({ option }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'flash-counter') return;
-    flashCounterEngine.submitAnswer(room, currentPlayerToken, option, io, broadcastRoom);
+    safeEngineCall(flashCounterEngine.submitAnswer, room, currentPlayerToken, option, io, broadcastRoom);
   });
 
   // 拆弹轮盘赌
   socket.on('bomb_cut_wire', ({ wireId }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'bomb-roulette') return;
-    bombRouletteEngine.cutWire(room, currentPlayerToken, wireId, io, broadcastRoom);
+    safeEngineCall(bombRouletteEngine.cutWire, room, currentPlayerToken, wireId, io, broadcastRoom);
   });
 
   // 密码破解大师 (几A几B)
   socket.on('bc_submit_guess', ({ guess }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'bulls-and-cows') return;
-    bullsAndCowsEngine.submitGuess(room, currentPlayerToken, guess, io, broadcastRoom);
+    safeEngineCall(bullsAndCowsEngine.submitGuess, room, currentPlayerToken, guess, io, broadcastRoom);
   });
 
   // 决战 24 点
   socket.on('m24_submit_solution', ({ expression }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'math-24') return;
-    math24Engine.submitSolution(room, currentPlayerToken, expression, io, broadcastRoom);
+    safeEngineCall(math24Engine.submitSolution, room, currentPlayerToken, expression, io, broadcastRoom);
   });
 
   socket.on('m24_skip_puzzle', () => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'math-24') return;
     if (math24Engine.skipPuzzleAction) {
-      math24Engine.skipPuzzleAction(room, currentPlayerToken, io, broadcastRoom);
+      safeEngineCall(math24Engine.skipPuzzleAction, room, currentPlayerToken, io, broadcastRoom);
     }
   });
 
@@ -555,28 +622,28 @@ io.on('connection', (socket) => {
   socket.on('cube_submit_answer', ({ option }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'cube-count') return;
-    cubeCountEngine.submitAnswer(room, currentPlayerToken, option, io, broadcastRoom);
+    safeEngineCall(cubeCountEngine.submitAnswer, room, currentPlayerToken, option, io, broadcastRoom);
   });
 
   // 成语/词汇炸弹
   socket.on('word_bomb_submit', ({ word }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'word-bomb') return;
-    wordBombEngine.submitWord(room, currentPlayerToken, word, io, broadcastRoom);
+    safeEngineCall(wordBombEngine.submitWord, room, currentPlayerToken, word, io, broadcastRoom);
   });
 
   // 切披萨 50:50
   socket.on('slice_cut_submit', ({ p1, p2 }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'perfect-slice') return;
-    perfectSliceEngine.submitSlice(room, currentPlayerToken, p1, p2, io, broadcastRoom);
+    safeEngineCall(perfectSliceEngine.submitSlice, room, currentPlayerToken, p1, p2, io, broadcastRoom);
   });
 
   // 盲压 5 秒
   socket.on('hold_submit_time', ({ elapsedMs }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'hold-five') return;
-    holdFiveEngine.submitHoldTime(room, currentPlayerToken, elapsedMs, io, broadcastRoom);
+    safeEngineCall(holdFiveEngine.submitHoldTime, room, currentPlayerToken, elapsedMs, io, broadcastRoom);
   });
 
   // 玩家主动退出房间

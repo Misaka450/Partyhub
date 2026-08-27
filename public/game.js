@@ -387,7 +387,11 @@ function hideConfirmDialog() {
 }
 
 if (btnConfirmCancel) {
-  btnConfirmCancel.addEventListener('click', hideConfirmDialog);
+  // 取消按钮同样给出音效反馈，避免用户以为"点了没反应"
+  btnConfirmCancel.addEventListener('click', () => {
+    playSound('tick');
+    hideConfirmDialog();
+  });
 }
 
 if (btnConfirmOk) {
@@ -876,6 +880,12 @@ socket.on('joined_successfully', (data) => {
   myPlayerId = data.playerId;
   isHost = !!data.isHost;
 
+  // 以服务端下发的 token 为准并持久化，保证断线重连 / 认领席位一致
+  if (data.playerToken) {
+    myPlayerToken = data.playerToken;
+    try { localStorage.setItem('dg_player_token', myPlayerToken); } catch (e) {}
+  }
+
   loginScreen.classList.remove('active');
   gameScreen.classList.add('active');
   displayRoomId.textContent = currentRoomId;
@@ -905,6 +915,18 @@ socket.on('joined_successfully', (data) => {
 
   initCanvas();
   updateGameStageView(currentGameType);
+});
+
+// 被房主请出房间：清理本地身份缓存（换新 token），回到登录界面，防止凭旧 token 反复闯房
+socket.on('kicked', () => {
+  currentRoomId = '';
+  try { localStorage.removeItem('dg_player_token'); } catch (e) {}
+  try { localStorage.removeItem('dg_player_name'); } catch (e) {}
+  myPlayerToken = `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  try { localStorage.setItem('dg_player_token', myPlayerToken); } catch (e) {}
+  gameScreen.classList.remove('active');
+  loginScreen.classList.add('active');
+  showToast('你已被房主请出房间', '🚫');
 });
 
 // 跨应用切换/网络唤醒自动无感极速重连与防假死机制 (Mobile Wakeup Watchdog)

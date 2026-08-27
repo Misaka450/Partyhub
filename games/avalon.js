@@ -210,7 +210,13 @@ function submitTeam(room, leaderToken, teamTokens, io, broadcastRoom) {
   const count = room.players.length;
   const requiredCount = QUEST_CONFIGS[count].quests[room.currentQuestIndex];
 
-  if (teamTokens.length !== requiredCount) return;
+  if (!Array.isArray(teamTokens) || teamTokens.length !== requiredCount) return;
+  // 校验队员 token 都真实存在且不重复，防止伪造/重复成员操纵任务结果
+  const uniqueTokens = new Set(teamTokens);
+  if (uniqueTokens.size !== requiredCount) return;
+  for (const t of uniqueTokens) {
+    if (!room.players.some(p => p.token === t)) return;
+  }
 
   room.selectedTeam = teamTokens;
   const teamNames = room.players.filter(p => room.selectedTeam.includes(p.token)).map(p => p.name).join('、');
@@ -324,6 +330,7 @@ function tallyTeamVotes(room, io, broadcastRoom) {
   let rejects = 0;
 
   const voteDetails = room.players.map(p => {
+    // 说明：未在限时内投票的玩家默认视为“反对”（超时按反对处理），符合阿瓦隆桌游常见节奏
     const v = room.teamVotes[p.token] !== undefined ? room.teamVotes[p.token] : false;
     if (v) approves++; else rejects++;
     return { token: p.token, name: p.name, avatar: p.avatar, approve: v };
@@ -516,10 +523,17 @@ function startAssassinPhase(room, io, broadcastRoom) {
   room.timer = setInterval(() => {
     room.timeLeft -= 1;
     if (room.timeLeft <= 0) {
-      // 刺客超时，随机刺杀一个非邪恶玩家
+      clearInterval(room.timer);
+      // 刺客超时，随机刺杀一个好人玩家；好人阵营无人或刺客缺席则直接判好人胜
       const goodPlayers = room.players.filter(p => p.avalonSide === 'good');
+      if (goodPlayers.length === 0 || !assassin) {
+        room.winner = 'good';
+        room.winReason = '🕊️ 刺客缺席，正义阵营获得最终胜利！';
+        endGame(room, io, broadcastRoom);
+        return;
+      }
       const target = goodPlayers[Math.floor(Math.random() * goodPlayers.length)];
-      assassinatePlayer(room, assassin ? assassin.token : '', target.token, io, broadcastRoom);
+      assassinatePlayer(room, assassin.token, target.token, io, broadcastRoom);
     } else {
       io.to(room.id).emit('timer_tick', { timeLeft: room.timeLeft });
     }
@@ -529,8 +543,13 @@ function startAssassinPhase(room, io, broadcastRoom) {
 function assassinatePlayer(room, assassinToken, targetToken, io, broadcastRoom) {
   if (room.status !== 'AVALON_ASSASSIN') return;
 
+  // 只有刺客本人才能发起刺杀，防止任意客户端篡改结局
+  const assassinPlayer = room.players.find(p => p.avalonRole === 'assassin')
+    || room.players.find(p => p.avalonSide === 'evil');
+  if (!assassinPlayer || assassinPlayer.token !== assassinToken) return;
+
   const target = room.players.find(p => p.token === targetToken);
-  if (!target) return;
+  if (!target || target.avalonSide !== 'good') return;
 
   room.assassinTarget = targetToken;
   clearInterval(room.timer);

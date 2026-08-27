@@ -250,8 +250,8 @@ function endRound(room, reason, io, broadcastRoom) {
 }
 
 function startGame(room, io, broadcastRoom) {
-  if (room.players.length < 1) {
-    io.to(room.id).emit('system_message', '至少需要 1 名玩家开始游戏！');
+  if (room.players.length < 2) {
+    io.to(room.id).emit('system_message', '你画我猜至少需要 2 名玩家开始游戏！');
     return;
   }
   room.currentDrawerIndex = 0;

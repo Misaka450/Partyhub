@@ -235,7 +235,8 @@ function submitAnswer(room, playerToken, chosenOption, io, broadcastRoom) {
   if (room.playerAnswers[playerToken]) return; // 已作答
 
   const timeTaken = Date.now() - (room.guessStartTime || Date.now());
-  const isCorrect = (chosenOption === room.targetCount);
+  // 将答案归一为数字再比对，与 cubeCount 行为保持一致，避免字符串答案被误判
+  const isCorrect = (parseInt(chosenOption, 10) === room.targetCount);
 
   room.playerAnswers[playerToken] = {
     option: chosenOption,

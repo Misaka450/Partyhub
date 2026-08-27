@@ -67,6 +67,9 @@ function submitGuess(room, playerToken, guessStr, io, broadcastRoom) {
   const player = room.players.find(p => p.token === playerToken);
   if (!player) return;
 
+  // 防御：客户端可能发送缺字段/非字符串数据，直接忽略防止崩溃
+  if (typeof guessStr !== 'string') return;
+
   const guess = guessStr.trim();
   if (guess.length !== 4 || !/^\d{4}$/.test(guess)) {
     return;

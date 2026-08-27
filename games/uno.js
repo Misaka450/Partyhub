@@ -170,9 +170,14 @@ function playCard(room, playerToken, cardId, chosenColor, io, broadcastRoom) {
   current.hand.splice(cardIdx, 1);
   room.discardPile.push(card);
 
+  // 出牌后清空 UNO 喊话标记，下一轮剩 2 张时需重新喊 UNO
+  current.hasCalledUno = false;
+
   // 处理颜色
   if (card.color === 'wild') {
-    room.currentColor = chosenColor || 'red';
+    // 万能牌变色只接受四种标准颜色，防止客户端注入非法颜色破坏状态
+    const validColors = ['red', 'yellow', 'green', 'blue'];
+    room.currentColor = validColors.includes(chosenColor) ? chosenColor : 'red';
   } else {
     room.currentColor = card.color;
   }
@@ -311,14 +316,15 @@ function callUno(room, playerToken, io) {
   const player = room.players.find(p => p.token === playerToken);
   if (!player) return;
 
-  if (player.hand.length <= 2) {
+  // 仅当手牌恰好剩 2 张时喊 UNO 才有效（出掉 1 张即剩最后 1 张）
+  if (player.hand.length === 2) {
     player.hasCalledUno = true;
     io.to(room.id).emit('uno_called', {
       playerToken: player.token,
       playerName: player.name,
       avatar: player.avatar
     });
-    io.to(room.id).emit('system_message', `🔥 【${player.name}】大喊了一局【UNO！】只剩最后 1 张手牌！`);
+    io.to(room.id).emit('system_message', `🔥 【${player.name}】大喊了【UNO！】手牌即将打完！`);
   }
 }
 

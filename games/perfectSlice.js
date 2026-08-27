@@ -170,7 +170,16 @@ function submitSlice(room, playerToken, p1, p2, io, broadcastRoom) {
   if (room.status !== 'SLICE_CUTTING') return;
   if (room.playerSlices[playerToken]) return; // 已下刀
 
-  const dist = Math.hypot((p2.x || 0) - (p1.x || 0), (p2.y || 0) - (p1.y || 0));
+  // 校验切点坐标完整且是有限数字，防止缺字段崩溃或非数字绕过判定拿满分
+  if (!p1 || !p2 ||
+      typeof p1.x !== 'number' || !Number.isFinite(p1.x) ||
+      typeof p1.y !== 'number' || !Number.isFinite(p1.y) ||
+      typeof p2.x !== 'number' || !Number.isFinite(p2.x) ||
+      typeof p2.y !== 'number' || !Number.isFinite(p2.y)) {
+    return;
+  }
+
+  const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
   if (dist < 0.06) {
     const player = room.players.find(p => p.token === playerToken);
     if (player) io.to(player.id).emit('system_message', '⚠️ 下刀距离过短，请滑动划出一条完整切线！');
