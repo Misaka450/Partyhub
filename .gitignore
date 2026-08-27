@@ -7,3 +7,9 @@ yarn-error.log*
 .env
 .vscode/
 .idea/
+
+# ---- UI 自动化测试：浏览器临时用户目录 + 产出截图（二进制大文件，避免仓库膨胀）----
+.tmp_edge_profile_verify/
+.tmp_edge_profile/
+tests/ui_audit_screens/
+tests/ui_audit_run.log
