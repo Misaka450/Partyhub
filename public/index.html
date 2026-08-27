@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Party Hub · 聚会游戏</title>
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('party_theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', t);
+      } catch(e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <!-- 动效层 -->
+  <canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+  <div id="reaction-container" class="reaction-container"></div>
+
+  <!-- 1. 登录进入界面 (Arcade Player Passport) -->
+  <div id="login-screen" class="screen active">
+    <div class="login-wrapper">
+      <div class="login-card">
+        <!-- 顶部主题切换小胶囊 -->
+        <div class="card-corner-theme">
+          <button id="btn-login-theme" class="theme-switch-btn" title="切换深色/浅色模式">
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <span class="theme-label">深色</span>
+          </button>
+        </div>
+
+        <!-- 顶部身份铭牌 -->
+        <div class="pass-header">
+          <div class="pass-chip-row">
+            <span class="pass-chip-meta">ARCADE // PASS</span>
+            <span class="pass-chip-id">ONLINE</span>
+          </div>
+          <h1 class="pass-main-title">聚会游戏大厅</h1>
+          <p class="pass-sub-desc">12 款主机级联机小游戏 · 即开即玩</p>
+        </div>
+
+        <!-- 玩家形象与昵称卡槽 (水平双栏并排) -->
+        <div class="pass-player-dock">
+          <div class="avatar-interactive-slot" id="avatar-trigger" title="点击更换头像">
+            <div id="selected-avatar" class="avatar-display">🐱</div>
+            <span class="avatar-badge-edit" title="更换头像">✏️</span>
+          </div>
+          <div class="player-name-dock">
+            <label class="dock-label" for="player-name">玩家昵称</label>
+            <div class="name-input-wrapper">
+              <input type="text" id="player-name" placeholder="请输入你的昵称" maxlength="10" autocomplete="off">
+              <button type="button" id="btn-random-name" class="btn-dice-random" title="随机换名">
+                <span>🎲</span>
+                <span>换名</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 房间号接入卡槽 -->
+        <div class="pass-room-dock">
+          <label class="dock-label" for="room-id">目标房间号</label>
+          <div class="room-input-wrapper">
+            <span class="room-hash-prefix">#</span>
+            <input type="text" id="room-id" placeholder="输入或创建房间号" maxlength="12" autocomplete="off">
+            <button type="button" id="btn-random-room" class="btn-dice-room" title="随机房间号">🎲</button>
+          </div>
+          <div class="quick-room-chips">
+            <span class="chip-label">快捷直达:</span>
+            <button type="button" class="quick-room-btn" data-room="888">888</button>
+            <button type="button" class="quick-room-btn" data-room="666">666</button>
+            <button type="button" class="quick-room-btn" data-room="123">123</button>
+          </div>
+        </div>
+
+        <!-- 开始/进入大厅按键 -->
+        <button id="btn-join" class="btn-arcade-enter" type="button">
+          <span>进入游戏房间</span>
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 游戏主界面 -->
+  <div id="game-screen" class="screen">
+    <!-- 顶部状态栏 -->
+    <header class="game-header">
+      <div class="header-left">
+        <div class="room-pill">
+          <span class="room-dot"></span>
+          <span class="room-num" id="display-room-id">--</span>
+        </div>
+        <div class="game-tag" id="display-game-tag">你画我猜</div>
+        <div class="round-counter hidden" id="display-round-tag">轮次 <b id="display-round">1/3</b></div>
+        <button id="btn-toggle-players" class="pill-btn">
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span id="display-player-count">1</span>
+        </button>
+      </div>
+
+      <div class="header-right">
+        <button id="btn-header-lobby" class="btn btn-sm btn-secondary hidden" style="font-size:0.78rem;padding:3px 8px;">返回大厅</button>
+        <button id="btn-leave-room" class="btn btn-sm btn-subtle" title="退出房间" style="font-size:0.78rem;padding:3px 8px;color:var(--danger);border-color:rgba(239,68,68,0.3);">
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span>退出</span>
+        </button>
+        <div id="timer-box" class="timer-badge hidden">
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span id="display-time">60</span>s
+        </div>
+        <button id="btn-toggle-sound" class="icon-btn" title="声音开关">
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+        <button id="btn-toggle-theme" class="icon-btn" title="切换深浅主题">
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button id="btn-share" class="btn btn-sm btn-subtle">邀请</button>
+      </div>
+    </header>
+
+    <!-- 次级状态提示条 -->
+    <div class="sub-status-bar">
+      <div class="hint-container">
+        <span id="category-badge" class="category-indicator hidden">分类</span>
+        <div id="word-hint-box" class="hint-text">等待房主开始...</div>
+      </div>
+    </div>
+
+    <!-- 游戏主容器 -->
+    <div class="game-body">
+      <!-- 玩家侧边栏 -->
+      <aside id="player-sidebar" class="player-drawer">
+        <div class="drawer-header">
+          <div class="drawer-title-group">
+            <h3>房间成员</h3>
+            <span class="count-pill" id="player-count">1</span>
+          </div>
+          <button id="btn-close-drawer" class="btn-close">
+            <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <ul id="player-list" class="player-list"></ul>
+      </aside>
+      <div id="drawer-backdrop" class="drawer-backdrop"></div>
+
+      <!-- 主舞台区 -->
+      <section class="stage-section">
+        <!-- 1. 等待大厅控制台 -->
+        <div id="lobby-card" class="lobby-card">
+                    <div class="lobby-console">
+            <!-- 派对大厅：房间英雄与席位岛 (Party Lobby Stage) -->
+            <div class="lobby-room-hero">
+              <div class="hero-top-bar">
+                <div class="hero-room-pill">
+                  <span class="live-dot"></span>
+                  <span class="hero-lbl">ROOM</span>
+                  <b class="hero-room-id" id="hero-room-id">--</b>
+                </div>
+                <div class="hero-right-actions">
+                  <span class="hero-player-badge" id="hero-player-badge">1 人已就绪</span>
+                  <button id="btn-hero-share" class="btn btn-sm btn-subtle hero-invite-btn" title="复制邀请链接">
+                    <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                    <span>邀请好友</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 席位卡片浮岛 -->
+              <div class="player-seats-grid" id="lobby-seats-grid">
+                <!-- 由 renderPlayerList 动态填充 -->
+              </div>
+            </div>
+
+            <!-- 房主选择游戏区 -->
+            <div id="host-game-select-box" class="host-game-select-box">
+              <div class="console-section-header">
+                <div class="section-title">
+                  <span>🎮 挑选游戏 (12款聚会游戏)</span>
+                  <span class="count-hint" id="lobby-count">1人就绪</span>
+                </div>
+                <div class="category-nav">
+                  <button type="button" class="cat-pill active" data-category="all">全部</button>
+                  <button type="button" class="cat-pill" data-category="party">经典</button>
+                  <button type="button" class="cat-pill" data-category="action">手速</button>
+                  <button type="button" class="cat-pill" data-category="puzzle">益智</button>
+                </div>
+              </div>
+
+              <!-- 12款游戏磁贴 -->
+              <div class="game-tiles-grid">
+                <div class="game-tile game-mode-card active" data-game="draw-guess" data-cat="party">
+                  <div class="tile-icon-box bg-indigo">🎨</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">你画我猜</span>
+                      <span class="tile-badge badge-party">经典</span>
+                    </div>
+                    <div class="tile-meta">2-12人 · 绘图抢答</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="undercover" data-cat="party">
+                  <div class="tile-icon-box bg-cyan">🕵️</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">谁是卧底</span>
+                      <span class="tile-badge badge-party">经典</span>
+                    </div>
+                    <div class="tile-meta">3-12人 · 语言推理</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="avalon" data-cat="party">
+                  <div class="tile-icon-box bg-amber">👑</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">阿瓦隆</span>
+                      <span class="tile-badge badge-party">经典</span>
+                    </div>
+                    <div class="tile-meta">5-10人 · 阵营博弈</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="uno" data-cat="party">
+                  <div class="tile-icon-box bg-rose">🃏</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">UNO 优诺</span>
+                      <span class="tile-badge badge-party">经典</span>
+                    </div>
+                    <div class="tile-meta">2-8人 · 经典卡牌</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="flash-counter" data-cat="action">
+                  <div class="tile-icon-box bg-emerald">🐑</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">瞬间数羊</span>
+                      <span class="tile-badge badge-action">手速</span>
+                    </div>
+                    <div class="tile-meta">2-12人 · 动态视力</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="bomb-roulette" data-cat="action">
+                  <div class="tile-icon-box bg-orange">💣</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">拆弹轮盘</span>
+                      <span class="tile-badge badge-action">手速</span>
+                    </div>
+                    <div class="tile-meta">2-8人 · 心跳博弈</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="bulls-and-cows" data-cat="puzzle">
+                  <div class="tile-icon-box bg-blue">🔢</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">几A几B</span>
+                      <span class="tile-badge badge-puzzle">益智</span>
+                    </div>
+                    <div class="tile-meta">1-8人 · 逻辑破译</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="math-24" data-cat="puzzle">
+                  <div class="tile-icon-box bg-violet">🧮</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">决战 24 点</span>
+                      <span class="tile-badge badge-puzzle">益智</span>
+                    </div>
+                    <div class="tile-meta">1-8人 · 心算速答</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="cube-count" data-cat="puzzle">
+                  <div class="tile-icon-box bg-teal">🧊</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">3D 数方块</span>
+                      <span class="tile-badge badge-puzzle">益智</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 空间立体</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="word-bomb" data-cat="action">
+                  <div class="tile-icon-box bg-red">💥</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">词汇炸弹</span>
+                      <span class="tile-badge badge-action">手速</span>
+                    </div>
+                    <div class="tile-meta">2-8人 · 成语接龙</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="perfect-slice" data-cat="puzzle">
+                  <div class="tile-icon-box bg-yellow">🍕</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">切披萨</span>
+                      <span class="tile-badge badge-puzzle">益智</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 直觉等分</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="hold-five" data-cat="action">
+                  <div class="tile-icon-box bg-purple">⏱️</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">盲压挑战</span>
+                      <span class="tile-badge badge-action">手速</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 随机3-10秒</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 非房主展示卡 -->
+            <div id="guest-game-display" class="guest-game-display">
+              <div class="guest-showcase-card">
+                <div class="showcase-icon-box" id="guest-banner-icon">🎨</div>
+                <div class="showcase-info">
+                  <h4 id="guest-banner-title">你画我猜</h4>
+                  <p id="guest-banner-desc">房主正在调整本局游戏参数...</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 规则与参数配置卡片 -->
+            <div id="host-settings-container" class="settings-panel">
+              <!-- 你画我猜 -->
+              <div id="settings-draw-guess" class="game-settings-subpanel">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>局数</label>
+                    <select id="dg-rounds">
+                      <option value="2">2 轮</option>
+                      <option value="3" selected>3 轮</option>
+                      <option value="5">5 轮</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>作画时间</label>
+                    <select id="dg-time">
+                      <option value="45">45 秒</option>
+                      <option value="60" selected>60 秒</option>
+                      <option value="90">90 秒</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>首字提示</label>
+                    <select id="dg-hints">
+                      <option value="true" selected>半程公布</option>
+                      <option value="false">关闭</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">画师根据题目作画（禁写汉字），其他玩家在聊天框打字抢答。</span>
+                </div>
+              </div>
+
+              <!-- 谁是卧底 -->
+              <div id="settings-undercover" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>卧底人数</label>
+                    <select id="uc-spy-count">
+                      <option value="1" selected>1 名</option>
+                      <option value="2">2 名</option>
+                      <option value="3">3 名</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>白板角色</label>
+                    <select id="uc-blank">
+                      <option value="false" selected>无白板</option>
+                      <option value="true">1 名白板 (无词)</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>单人发言时间</label>
+                    <select id="uc-time">
+                      <option value="30">30 秒</option>
+                      <option value="45" selected>45 秒</option>
+                      <option value="60">60 秒</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">卧底与平民各持相似词语，依次单句描述，投票放逐嫌疑人。</span>
+                </div>
+              </div>
+
+              <!-- 阿瓦隆 -->
+              <div id="settings-avalon" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid" style="margin-bottom:10px">
+                  <div class="form-item">
+                    <label>发言模式</label>
+                    <select id="av-speech-mode">
+                      <option value="online" selected>🌐 线上轮流麦序</option>
+                      <option value="offline">👥 线下自由讨论</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>单人发言时长</label>
+                    <select id="av-speech-duration">
+                      <option value="30">30 秒 (极速)</option>
+                      <option value="60" selected>60 秒 (标准)</option>
+                      <option value="90">90 秒 (充裕)</option>
+                      <option value="120">120 秒 (深度)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="checkbox-row">
+                  <label class="check-box-item">
+                    <input type="checkbox" id="av-percival" checked>
+                    <span>派西维尔 & 莫甘娜</span>
+                  </label>
+                  <label class="check-box-item">
+                    <input type="checkbox" id="av-mordred">
+                    <span>莫德雷德</span>
+                  </label>
+                  <label class="check-box-item">
+                    <input type="checkbox" id="av-oberon">
+                    <span>奥伯伦</span>
+                  </label>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">正邪身份隐藏对抗，组队执行 5 次任务，率先 3 胜阵营获胜。</span>
+                </div>
+              </div>
+
+              <!-- UNO -->
+              <div id="settings-uno" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>初始手牌</label>
+                    <select id="uno-hand-size">
+                      <option value="7" selected>7 张 (标准)</option>
+                      <option value="5">5 张 (极速)</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>+2/+4 叠加</label>
+                    <select id="uno-stack-rules">
+                      <option value="true" selected>允许连环叠加</option>
+                      <option value="false">禁止叠加</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">打出同色或同点数牌，剩 1 张时必须点击【喊 UNO】，最先清空手牌者胜。</span>
+                </div>
+              </div>
+
+              <!-- 瞬间数羊 -->
+              <div id="settings-flash-counter" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>局数</label>
+                    <select id="fc-rounds">
+                      <option value="3" selected>3 局</option>
+                      <option value="5">5 局</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>飞掠时长</label>
+                    <select id="fc-speed">
+                      <option value="normal" selected>正常 (2.0s)</option>
+                      <option value="fast">快速 (1.2s)</option>
+                      <option value="insane">极速 (0.8s)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">屏幕瞬间疾速飞过目标物体，考验瞬间记忆与动态视力，迅速选出数量。</span>
+                </div>
+              </div>
+
+              <!-- 拆弹轮盘 -->
+              <div id="settings-bomb-roulette" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>引线总数</label>
+                    <select id="br-wires">
+                      <option value="6" selected>6 根</option>
+                      <option value="8">8 根</option>
+                      <option value="10">10 根</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>单人限时</label>
+                    <select id="br-time">
+                      <option value="15" selected>15 秒</option>
+                      <option value="10">10 秒</option>
+                      <option value="20">20 秒</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">轮流上前剪断引线，其中仅 1 根是爆炸雷管，剪中安全线得分，爆炸出局。</span>
+                </div>
+              </div>
+
+              <!-- 几A几B -->
+              <div id="settings-bulls-and-cows" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>最大尝试次数</label>
+                    <select id="bc-rounds">
+                      <option value="6">6 次</option>
+                      <option value="8" selected>8 次</option>
+                      <option value="10">10 次</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>思考限时</label>
+                    <select id="bc-time">
+                      <option value="30">30 秒</option>
+                      <option value="45" selected>45 秒</option>
+                      <option value="60">60 秒</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">根据几A（全对）几B（位置错）反馈，用最少尝试次数猜出4位神秘数字。</span>
+                </div>
+              </div>
+
+              <!-- 决战 24 点 -->
+              <div id="settings-math-24" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>题目数量</label>
+                    <select id="m24-rounds">
+                      <option value="3" selected>3 题</option>
+                      <option value="5">5 题</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>单题思考限时</label>
+                    <select id="m24-time">
+                      <option value="30">30 秒</option>
+                      <option value="45" selected>45 秒</option>
+                      <option value="60">60 秒</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">用给出的 4 张牌点数，结合加减乘除与括号拼凑出 24 点完整算式。</span>
+                </div>
+              </div>
+
+              <!-- 3D 数方块 -->
+              <div id="settings-cube-count" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>题目数量</label>
+                    <select id="cc-rounds">
+                      <option value="3" selected>3 题</option>
+                      <option value="5">5 题</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>复杂度</label>
+                    <select id="cc-diff">
+                      <option value="standard" selected>标准 (3-4层)</option>
+                      <option value="hard">进阶 (4-5层)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">3D立体多视角观察几何体，计算包含内部隐藏支撑立方体在内的全部数量。</span>
+                </div>
+              </div>
+
+              <!-- 词汇炸弹 -->
+              <div id="settings-word-bomb" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>生命心数</label>
+                    <select id="wb-lives">
+                      <option value="2">2 颗心</option>
+                      <option value="3" selected>3 颗心</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>单次引信时间</label>
+                    <select id="wb-time">
+                      <option value="8">8 秒 (极速)</option>
+                      <option value="10" selected>10 秒 (标准)</option>
+                      <option value="15">15 秒 (休闲)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">引信倒计时！输入包含指定汉字的成语或词语传出炸弹，引爆扣除生命。</span>
+                </div>
+              </div>
+
+              <!-- 切披萨 -->
+              <div id="settings-perfect-slice" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>挑战轮次</label>
+                    <select id="ps-rounds">
+                      <option value="3" selected>3 轮</option>
+                      <option value="5">5 轮</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>容差精度</label>
+                    <select id="ps-tolerance">
+                      <option value="1.0">±1.0% (苛刻)</option>
+                      <option value="2.0" selected>±2.0% (标准)</option>
+                      <option value="3.0">±3.0% (宽松)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">划一刀将不规则图形切成两块，面积比例越接近 50.0% : 50.0% 得分越高。</span>
+                </div>
+              </div>
+
+              <!-- 盲压挑战 -->
+              <div id="settings-hold-five" class="game-settings-subpanel hidden">
+                <div class="settings-form-grid">
+                  <div class="form-item">
+                    <label>局数</label>
+                    <select id="hf-rounds">
+                      <option value="3" selected>3 局</option>
+                      <option value="5">5 局</option>
+                    </select>
+                  </div>
+                  <div class="form-item">
+                    <label>目标时长模式</label>
+                    <select id="hf-target">
+                      <option value="random" selected>🎲 随机整数 (3~10秒)</option>
+                      <option value="5.000">固定 5.000 秒</option>
+                      <option value="3.000">固定 3.000 秒</option>
+                      <option value="10.000">固定 10.000 秒</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="rule-tip-bar">
+                  <span class="tip-label">玩法</span>
+                  <span class="tip-desc">每轮随机抽取 3~10 秒目标时间，无秒表提示，凭内心生物钟精准松手！</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 掌机级主副操作卡槽 (Gamepad Action Dock) -->
+            <div class="arcade-action-dock">
+              <button id="btn-lobby-share" type="button" class="btn-dock-sub" title="复制房间邀请链接">
+                <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                <span>邀请好友</span>
+              </button>
+              <button id="btn-start-game" type="button" class="btn-dock-main btn-arcade-start hidden">
+                <span class="btn-glyph">▶</span>
+                <span>立即开局</span>
+              </button>
+              <button id="btn-toggle-ready" type="button" class="btn-dock-main btn-arcade-ready">
+                <span class="btn-glyph">⚡</span>
+                <span>准备就绪</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 【你画我猜】舞台 -->
+        <div id="stage-draw-guess" class="game-stage-container hidden">
+          <div id="draw-turn-banner" class="draw-turn-banner">
+            <div class="banner-left">
+              <span id="draw-role-icon">🎨</span>
+              <span id="draw-status-text">等待开局...</span>
+            </div>
+            <div class="banner-right">
+              <span id="draw-word-badge" class="draw-word-badge hidden">--</span>
+            </div>
+          </div>
+          <div class="canvas-wrapper">
+            <div class="canvas-box" id="canvas-container">
+              <canvas id="game-canvas"></canvas>
+            </div>
+          </div>
+          <div id="drawing-toolbar" class="drawing-toolbar hidden">
+            <div class="color-palette-scroll">
+              <div class="color-palette">
+                <span class="color-dot active" style="background-color: #000000;" data-color="#000000" title="黑色"></span>
+                <span class="color-dot" style="background-color: #EF4444;" data-color="#EF4444" title="红色"></span>
+                <span class="color-dot" style="background-color: #F97316;" data-color="#F97316" title="橙色"></span>
+                <span class="color-dot" style="background-color: #FBBF24;" data-color="#FBBF24" title="黄色"></span>
+                <span class="color-dot" style="background-color: #10B981;" data-color="#10B981" title="绿色"></span>
+                <span class="color-dot" style="background-color: #06B6D4;" data-color="#06B6D4" title="青色"></span>
+                <span class="color-dot" style="background-color: #3B82F6;" data-color="#3B82F6" title="蓝色"></span>
+                <span class="color-dot" style="background-color: #8B5CF6;" data-color="#8B5CF6" title="紫色"></span>
+                <span class="color-dot" style="background-color: #EC4899;" data-color="#EC4899" title="粉色"></span>
+                <span class="color-dot" style="background-color: #78350F;" data-color="#78350F" title="棕色"></span>
+                <span class="color-dot color-white" style="background-color: #FFFFFF;" data-color="#FFFFFF" title="白色"></span>
+              </div>
+            </div>
+            <div class="toolbar-controls">
+              <div class="brush-sizes">
+                <button class="btn-tool btn-size" data-size="3"><span class="dot-preview dot-3"></span></button>
+                <button class="btn-tool btn-size active" data-size="6"><span class="dot-preview dot-6"></span></button>
+                <button class="btn-tool btn-size" data-size="12"><span class="dot-preview dot-12"></span></button>
+                <button class="btn-tool btn-size" data-size="20"><span class="dot-preview dot-20"></span></button>
+              </div>
+              <div class="action-tools">
+                <button id="btn-eraser" class="btn-tool" title="橡皮擦">🧹</button>
+                <button id="btn-undo" class="btn-tool" title="撤销">↩</button>
+                <button id="btn-clear" class="btn-tool" title="清空">🗑</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 非画师实时猜词条（支持无限次快速作答） -->
+          <div id="draw-guess-bar" class="draw-guess-bar hidden">
+            <form id="draw-guess-form" class="draw-guess-form">
+              <input type="text" id="draw-guess-input" class="input-base draw-guess-input" placeholder="输入你猜的词语（可多次尝试）..." autocomplete="off" maxlength="20">
+              <button type="submit" id="btn-draw-guess-submit" class="btn btn-primary btn-draw-guess">⚡ 抢答</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- 3. 【谁是卧底】舞台 -->
+        <div id="stage-undercover" class="game-stage-container hidden">
+          <div class="uc-secret-card-box">
+            <div id="uc-secret-card" class="uc-secret-card masked">
+              <div class="card-front">
+                <span class="card-eye">👁</span>
+                <p>点击查看 / 隐藏底牌</p>
+                <small class="card-security-hint">（防偷窥模式）</small>
+              </div>
+              <div class="card-back">
+                <div class="card-role-label" id="uc-role-label">我的词语</div>
+                <div class="card-word" id="uc-word-text">--</div>
+              </div>
+            </div>
+          </div>
+          <div class="uc-speaker-spotlight" id="uc-speaker-spotlight">
+            <div class="speaker-avatar" id="uc-speaker-avatar">🐱</div>
+            <div class="speaker-details">
+              <div class="speaker-title">当前发言</div>
+              <div class="speaker-name" id="uc-speaker-name">玩家名</div>
+            </div>
+            <button id="btn-finish-speech" class="btn btn-sm btn-primary hidden">发言完毕 ✓</button>
+          </div>
+          <div class="uc-grid-container">
+            <div class="stage-sub-header"><span id="uc-stage-desc">发言阶段</span></div>
+            <div class="uc-player-grid" id="uc-player-grid"></div>
+          </div>
+        </div>
+
+        <!-- 4. 【阿瓦隆】舞台 -->
+        <div id="stage-avalon" class="game-stage-container hidden">
+          <div class="avalon-hero-card" id="avalon-hero-card">
+            <div class="av-role-header">
+              <span class="av-role-badge" id="av-role-badge">梅林</span>
+              <span class="av-side-badge" id="av-side-badge">正义阵营</span>
+            </div>
+            <p class="av-role-desc" id="av-role-desc">感知阵营信息中...</p>
+            <div class="av-seen-container" id="av-seen-container"></div>
+          </div>
+          <div class="avalon-quest-track" id="avalon-quest-track">
+            <div class="quest-node" data-index="0"><div class="grail-icon">🏆</div><div class="quest-count">2人</div></div>
+            <div class="quest-node" data-index="1"><div class="grail-icon">🏆</div><div class="quest-count">3人</div></div>
+            <div class="quest-node" data-index="2"><div class="grail-icon">🏆</div><div class="quest-count">2人</div></div>
+            <div class="quest-node" data-index="3"><div class="grail-icon">🏆</div><div class="quest-count">3人*</div></div>
+            <div class="quest-node" data-index="4"><div class="grail-icon">🏆</div><div class="quest-count">3人</div></div>
+          </div>
+          <!-- 线上发言聚光灯区域 -->
+          <div class="av-speech-panel hidden" id="av-speech-panel">
+            <div class="av-speaker-card">
+              <div class="av-speaker-left">
+                <div class="av-speaker-avatar" id="av-speaker-avatar">🐱</div>
+                <div class="av-speaker-meta">
+                  <div class="av-speaker-name-row">
+                    <span class="av-speaker-name" id="av-speaker-name">玩家名</span>
+                    <span class="av-speaker-tag" id="av-speaker-tag">麦序 1/5</span>
+                  </div>
+                  <div class="av-speech-status-bar">
+                    <div class="av-voice-waves" id="av-voice-waves">
+                      <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <span class="av-speech-tip" id="av-speech-tip">正在发言中...</span>
+                  </div>
+                </div>
+              </div>
+              <div class="av-speaker-actions">
+                <button id="btn-av-mic-toggle" class="btn btn-sm btn-secondary">🎤 开麦</button>
+                <button id="btn-av-finish-speech" class="btn btn-sm btn-primary hidden">结束发言 ✓</button>
+              </div>
+            </div>
+          </div>
+          <div class="av-reject-bar">
+            <span>流产追踪：</span>
+            <div class="reject-dots" id="av-reject-dots">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot danger">💀</span>
+            </div>
+          </div>
+          <div class="av-team-board">
+            <div class="av-board-header">
+              <span id="av-board-status">挑选队员中...</span>
+              <button id="btn-submit-team" class="btn btn-sm btn-primary hidden">确认出征队伍</button>
+            </div>
+            <div class="av-player-cards-grid" id="av-player-cards-grid"></div>
+          </div>
+        </div>
+
+        <!-- 5. 【UNO】舞台 -->
+        <div id="stage-uno" class="game-stage-container hidden">
+          <div class="uno-opponents-strip" id="uno-opponents-strip"></div>
+          <div class="uno-table-center">
+            <div class="uno-deck-pile" id="btn-uno-draw">
+              <div class="uno-card-back">UNO</div>
+              <span class="deck-tip">摸牌</span>
+            </div>
+            <div class="uno-discard-pile">
+              <div class="uno-card current-top-card" id="uno-top-card"><span class="card-val">0</span></div>
+              <div class="uno-color-indicator" id="uno-color-indicator">🔴 红色</div>
+            </div>
+          </div>
+          <div class="uno-my-area">
+            <div class="uno-my-controls">
+              <span class="my-turn-label" id="uno-turn-label">等待出牌...</span>
+              <div class="uno-btn-group">
+                <button id="btn-uno-pass" class="btn btn-sm btn-secondary hidden">过牌</button>
+                <button id="btn-uno-call" class="btn btn-sm btn-danger uno-call-btn hidden">喊 UNO!</button>
+              </div>
+            </div>
+            <div class="uno-hand-container" id="uno-hand-container"></div>
+          </div>
+        </div>
+
+        <!-- 6. 【瞬间数小鸡/数动物】舞台 -->
+        <div id="stage-flash-counter" class="game-stage-container hidden">
+          <div class="flash-arena">
+            <div class="flash-canvas-wrapper" id="flash-canvas-wrapper">
+              <canvas id="flash-canvas"></canvas>
+              <!-- DOM 奔跑动物层 (保证所有手机/电脑 100% 绝对可见) -->
+              <div id="flash-runners-layer" class="flash-runners-layer"></div>
+              <!-- 准备期聚焦提示 -->
+              <div id="flash-ready-banner" class="flash-ready-banner hidden">
+                <span class="ready-target-emoji" id="ready-target-emoji">🐥</span>
+                <div class="ready-target-text">
+                  <div class="ready-sub">睁大眼睛！准备数</div>
+                  <div class="ready-main"><b id="ready-target-name">小鸡</b> 的数量</div>
+                </div>
+                <div class="ready-countdown" id="ready-countdown">3</div>
+              </div>
+            </div>
+            <!-- 答题浮层面板 -->
+            <div id="flash-overlay-card" class="flash-overlay-card hidden">
+              <div class="flash-question-header">
+                <span class="flash-target-emoji" id="flash-target-emoji">🐥</span>
+                <div class="flash-question-title">
+                  <div class="flash-q-sub">刚才一共跑过了几只</div>
+                  <div class="flash-q-main"><b id="flash-target-name">小鸡</b>？</div>
+                </div>
+              </div>
+              <div class="flash-options-grid" id="flash-options-grid"></div>
+              <form id="flash-direct-form" class="cube-direct-form">
+                <input type="number" id="flash-direct-input" placeholder="或输入数字" min="1" max="99">
+                <button type="submit" class="btn btn-primary">提交答案</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7. 【拆弹轮盘赌】舞台 -->
+        <div id="stage-bomb-roulette" class="game-stage-container hidden">
+          <div class="bomb-arena">
+            <div class="bomb-center-graphic" id="bomb-center-graphic">
+              <div class="bomb-body-icon">💣</div>
+              <div class="bomb-spark-fx">⚡</div>
+              <div class="bomb-turn-tip" id="bomb-turn-tip">拆弹进行中...</div>
+            </div>
+            <div class="wires-grid" id="wires-grid"></div>
+          </div>
+        </div>
+
+        <!-- 8. 【几A几B】舞台 -->
+        <div id="stage-bulls-and-cows" class="game-stage-container hidden">
+          <div class="bc-arena">
+            <div class="bc-history-panel">
+              <div class="bc-panel-title">破译记录</div>
+              <div class="bc-log-list" id="bc-log-list">
+                <div class="bc-empty-tip">请输入 4 位不重复数字</div>
+              </div>
+            </div>
+            <div class="bc-input-panel">
+              <div class="bc-digits-display" id="bc-digits-display">_ _ _ _</div>
+              <div class="bc-keypad">
+                <button class="btn-key" data-key="1">1</button>
+                <button class="btn-key" data-key="2">2</button>
+                <button class="btn-key" data-key="3">3</button>
+                <button class="btn-key" data-key="4">4</button>
+                <button class="btn-key" data-key="5">5</button>
+                <button class="btn-key" data-key="6">6</button>
+                <button class="btn-key" data-key="7">7</button>
+                <button class="btn-key" data-key="8">8</button>
+                <button class="btn-key" data-key="9">9</button>
+                <button class="btn-key btn-key-action" id="btn-bc-clear">C</button>
+                <button class="btn-key" data-key="0">0</button>
+                <button class="btn-key btn-key-action" id="btn-bc-submit">↵</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 9. 【决战 24 点】舞台 -->
+        <div id="stage-math-24" class="game-stage-container hidden">
+          <div class="m24-arena">
+            <!-- 扑克牌发牌展示区 -->
+            <div class="m24-poker-deck">
+              <div class="m24-deck-header">
+                <span class="m24-tag">🧮 4 张卡牌</span>
+                <span class="m24-hint">使用下方按键拼凑 24 点算式</span>
+              </div>
+              <div class="m24-cards-row" id="m24-cards-row">
+                <div class="m24-card"><span class="m24-card-val">?</span></div>
+                <div class="m24-card"><span class="m24-card-val">?</span></div>
+                <div class="m24-card"><span class="m24-card-val">?</span></div>
+                <div class="m24-card"><span class="m24-card-val">?</span></div>
+              </div>
+            </div>
+
+            <!-- 算式编辑看板与实时求值 -->
+            <div class="m24-display-board">
+              <div class="m24-formula-bar" id="m24-formula-bar">
+                <span id="m24-formula-text">拼凑 24 点算式...</span>
+              </div>
+              <div class="m24-eval-preview" id="m24-eval-preview">当前计算结果：--</div>
+            </div>
+
+            <!-- 现代计算键盘与操作区 -->
+            <div class="m24-keypad-card">
+              <!-- 4个数字快捷键 -->
+              <div class="m24-keypad-section">
+                <div class="m24-section-label">可用数字</div>
+                <div class="m24-num-buttons" id="m24-num-buttons"></div>
+              </div>
+
+              <!-- 运算符与括号 -->
+              <div class="m24-keypad-section">
+                <div class="m24-section-label">运算符</div>
+                <div class="m24-op-buttons">
+                  <button type="button" class="btn-m24-op" data-op="+">+</button>
+                  <button type="button" class="btn-m24-op" data-op="-">-</button>
+                  <button type="button" class="btn-m24-op" data-op="*">×</button>
+                  <button type="button" class="btn-m24-op" data-op="/">÷</button>
+                  <button type="button" class="btn-m24-op btn-op-paren" data-op="(">(</button>
+                  <button type="button" class="btn-m24-op btn-op-paren" data-op=")">)</button>
+                  <button type="button" class="btn-m24-op btn-op-del" id="btn-m24-del">⌫ 退格</button>
+                  <button type="button" class="btn-m24-op btn-op-clear" id="btn-m24-clear">清空</button>
+                </div>
+              </div>
+
+              <!-- 提交主按钮 -->
+              <button type="button" id="btn-m24-submit" class="btn btn-primary btn-block btn-lg m24-submit-btn">
+                ⚡ 提交 24 点解法
+              </button>
+              <button type="button" id="btn-m24-skip" class="btn btn-secondary btn-block" style="margin-top: 8px;">
+                ⏩ 申请跳过本题 / 揭晓答案
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 10. 【3D 数方块】舞台 -->
+        <div id="stage-cube-count" class="game-stage-container hidden">
+          <div class="cube-canvas-wrapper" id="cube-canvas-wrapper">
+            <canvas id="cube-canvas"></canvas>
+          </div>
+          <div class="cube-control-panel" id="cube-control-panel">
+            <div class="cube-prompt-bar">
+              <span class="prompt-title">🧊 立方体总数是多少？</span>
+              <span class="prompt-sub">（包含内部支撑方块）</span>
+            </div>
+            <!-- 快捷选项按钮 -->
+            <div class="cube-options-grid" id="cube-options-grid"></div>
+            <!-- 自定义数字输入提交 -->
+            <form id="cube-direct-form" class="cube-direct-form">
+              <input type="number" id="cube-direct-input" placeholder="输入答案" min="1" max="99">
+              <button type="submit" class="btn btn-primary">提交答案</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- 11. 【词汇炸弹】舞台 -->
+        <div id="stage-word-bomb" class="game-stage-container hidden">
+          <div class="wb-arena">
+            <div class="wb-bomb-box">
+              <div class="wb-bomb-icon" id="wb-bomb-icon">💣</div>
+              <div class="wb-keyword-banner">
+                <span>必须包含：</span>
+                <span class="wb-keyword-badge" id="wb-keyword-badge">天</span>
+              </div>
+              <div class="wb-turn-status" id="wb-turn-status">持弹人：玩家</div>
+              <div class="wb-lives-bar" id="wb-lives-bar"></div>
+            </div>
+            <form id="wb-input-form" class="wb-input-form">
+              <input type="text" id="wb-input" placeholder="输入词语传出炸弹..." autocomplete="off">
+              <button type="submit" class="btn btn-danger">传弹</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- 12. 【切披萨】舞台 -->
+        <div id="stage-perfect-slice" class="game-stage-container hidden">
+          <div class="slice-arena">
+            <div class="slice-header-info">
+              <div class="slice-cut-prompt" id="slice-cut-prompt">
+                <span class="cut-icon-dot"></span>
+                <span>划一刀将披萨二等分 (50:50)</span>
+              </div>
+            </div>
+            
+            <div class="slice-canvas-wrapper" id="slice-canvas-wrapper">
+              <canvas id="slice-canvas"></canvas>
+            </div>
+
+            <!-- 切割结果大看板 -->
+            <div class="slice-result-panel hidden" id="slice-result-badge">
+              <div class="slice-ratio-title">你的切割比例</div>
+              <div class="slice-ratio-val" id="slice-ratio-text">50.0% : 50.0%</div>
+              <div class="slice-ratio-bar-wrap">
+                <div class="slice-bar-left" id="slice-bar-left" style="width: 50%;"></div>
+                <div class="slice-bar-right" id="slice-bar-right" style="width: 50%;"></div>
+              </div>
+              <div class="slice-diff-badge" id="slice-diff-text">误差 ±0.0%</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 13. 【盲压挑战】舞台 -->
+        <div id="stage-hold-five" class="game-stage-container hidden">
+          <div class="hold-arena">
+            <div class="hold-target-title" id="hold-target-title">🎯 目标时间：5.000 秒</div>
+            <div class="hold-btn-wrapper">
+              <button type="button" class="btn-hold-trigger" id="btn-hold-trigger">
+                <span class="hold-icon">⏱</span>
+                <span class="hold-text" id="hold-text">按住计时</span>
+              </button>
+            </div>
+            <div class="hold-result-box hidden" id="hold-result-box">
+              <div class="hold-score-time" id="hold-score-time">5.000s</div>
+              <div class="hold-score-diff" id="hold-score-diff">误差 ±0.000s</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 底部聊天栏 -->
+      <section class="chat-section collapsed" id="chat-section">
+        <div class="chat-header-bar" id="chat-header-bar">
+          <div class="chat-header-title">
+            <span class="chat-live-dot"></span>
+            <span class="chat-title-text">房间聊天</span>
+            <span id="chat-unread-badge" class="chat-unread-badge hidden">1</span>
+          </div>
+          <button type="button" id="btn-toggle-chat" class="btn-toggle-chat">
+            <span id="chat-toggle-text">收起</span>
+          </button>
+        </div>
+
+        <div class="chat-body-collapsible" id="chat-body-collapsible">
+          <div id="chat-messages" class="chat-messages">
+            <div class="msg-item msg-system">欢迎加入房间！房主选定游戏即可开局。</div>
+          </div>
+
+          <div class="reaction-bar">
+            <button class="btn-reaction" data-emoji="👏">👏</button>
+            <button class="btn-reaction" data-emoji="❤️">❤️</button>
+            <button class="btn-reaction" data-emoji="😂">😂</button>
+            <button class="btn-reaction" data-emoji="🔥">🔥</button>
+            <button class="btn-reaction" data-emoji="💩">💩</button>
+            <button class="btn-reaction" data-emoji="🎉">🎉</button>
+          </div>
+
+          <form id="chat-form" class="chat-form">
+            <input type="text" id="chat-input" placeholder="输入聊天内容..." maxlength="50" autocomplete="off">
+            <button type="submit" id="btn-send" class="btn btn-primary btn-sm">发送</button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+
+    <!-- 头像挑选弹窗 (Avatar Picker Modal) -->
+  <div id="avatar-modal" class="modal">
+    <div class="modal-backdrop" id="avatar-modal-backdrop"></div>
+    <div class="modal-card avatar-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-icon">🎨</span>
+          <h3>挑选个性头像</h3>
+        </div>
+        <button id="btn-close-avatar-modal" class="btn-close-modal" type="button">✕</button>
+      </div>
+      <div class="avatar-modal-grid" id="avatar-modal-grid">
+        <button type="button" class="avatar-option-btn active" data-avatar="🐱"><span class="avatar-emoji">🐱</span><span class="avatar-name">小猫</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="🐶"><span class="avatar-emoji">🐶</span><span class="avatar-name">小狗</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="🐼"><span class="avatar-emoji">🐼</span><span class="avatar-name">熊猫</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="🦊"><span class="avatar-emoji">🦊</span><span class="avatar-name">狐狸</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="🐯"><span class="avatar-emoji">🐯</span><span class="avatar-name">老虎</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="🐰"><span class="avatar-emoji">🐰</span><span class="avatar-name">兔子</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="🚀"><span class="avatar-emoji">🚀</span><span class="avatar-name">火箭</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="👑"><span class="avatar-emoji">👑</span><span class="avatar-name">皇冠</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="🦄"><span class="avatar-emoji">🦄</span><span class="avatar-name">独角兽</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="🤖"><span class="avatar-emoji">🤖</span><span class="avatar-name">机器人</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="🧙"><span class="avatar-emoji">🧙</span><span class="avatar-name">法师</span></button>
+        <button type="button" class="avatar-option-btn" data-avatar="🥷"><span class="avatar-emoji">🥷</span><span class="avatar-name">忍者</span></button>
+      </div>
+      <div class="avatar-modal-footer">
+        <button type="button" id="btn-avatar-random" class="btn btn-secondary btn-sm">🎲 随机挑选</button>
+        <button type="button" id="btn-avatar-confirm" class="btn btn-primary btn-sm">确认使用</button>
+      </div>
+    </div>
+  </div>
+
+<!-- 弹窗系统 -->
+  <div id="word-modal" class="modal">
+    <div class="modal-content">
+      <h3>请选择作画题目</h3>
+      <p class="modal-timer">剩余时间: <span id="modal-timer">15</span>s</p>
+      <div id="word-options" class="word-options"></div>
+    </div>
+  </div>
+
+  <div id="reveal-modal" class="modal">
+    <div class="modal-content reveal-content">
+      <h3 id="reveal-reason">回合结束</h3>
+      <p class="reveal-label">正确答案</p>
+      <h1 id="reveal-word" class="reveal-word">--</h1>
+    </div>
+  </div>
+
+  <div id="avalon-vote-modal" class="modal">
+    <div class="modal-content">
+      <h3>组队表决</h3>
+      <p>队长提议出征队伍，你是否赞成？</p>
+      <div class="modal-actions-row">
+        <button id="btn-team-approve" class="btn btn-success">赞成出征</button>
+        <button id="btn-team-reject" class="btn btn-danger">反对队伍</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="avalon-quest-modal" class="modal">
+    <div class="modal-content">
+      <h3>执行远征任务</h3>
+      <p>（好人仅可投成功，坏人可选择成功或破坏）</p>
+      <div class="modal-actions-row">
+        <button id="btn-quest-success" class="btn btn-primary">任务成功</button>
+        <button id="btn-quest-fail" class="btn btn-danger">任务破坏</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="avalon-assassin-modal" class="modal">
+    <div class="modal-content">
+      <h3>刺杀梅林</h3>
+      <p>选择一名你认为是梅林的玩家进行刺杀：</p>
+      <div id="assassin-target-list" class="assassin-target-list"></div>
+    </div>
+  </div>
+
+  <div id="uno-color-modal" class="modal">
+    <div class="modal-content">
+      <h3>选择变色目标</h3>
+      <div class="uno-color-picker-grid">
+        <button class="btn-color-pick bg-red" data-color="red">红色</button>
+        <button class="btn-color-pick bg-yellow" data-color="yellow">黄色</button>
+        <button class="btn-color-pick bg-green" data-color="green">绿色</button>
+        <button class="btn-color-pick bg-blue" data-color="blue">蓝色</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameover-modal" class="modal">
+    <div class="modal-content gameover-content">
+      <h2 id="gameover-title">游戏结束</h2>
+      <p id="gameover-desc" class="gameover-desc"></p>
+      <div id="gameover-body" class="gameover-body"></div>
+      <div class="modal-footer-btn">
+        <button id="btn-back-lobby" class="btn btn-primary btn-block">返回大厅</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自定义精致确认对话框 (替代浏览器原生 alert/confirm) -->
+  <div id="confirm-modal" class="modal">
+    <div class="modal-content confirm-modal-content">
+      <div class="confirm-modal-icon" id="confirm-modal-icon">
+        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3 id="confirm-modal-title" class="confirm-modal-title">返回房间大厅</h3>
+      <p id="confirm-modal-desc" class="confirm-modal-desc">确定要中断当前正在进行的游戏并返回大厅吗？</p>
+      <div class="confirm-modal-actions">
+        <button id="btn-confirm-cancel" class="btn btn-outline">继续游戏</button>
+        <button id="btn-confirm-ok" class="btn btn-danger">确认返回</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/game.js"></script>
+</body>
+</html>
