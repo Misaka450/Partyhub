@@ -199,23 +199,65 @@ async function runSuite() {
     await host.wait(1000);
 
     // =========================================================================
-    // 游戏 2: 3D 数方块 (cube-count)
+    // 游戏 2: 3D 数方块 (cube-count) [含多回合流转与残余选项拦截测试]
     // =========================================================================
-    console.log('\n--- 2/12 🧊 《3D 数方块》CDP 实测 ---');
+    console.log('\n--- 2/12 🧊 《3D 数方块》多回合 CDP 实测 ---');
     await switchAndStart('cube-count');
-    const ccObserve = await host.eval(`
+    
+    // 第 1 轮观察期验证
+    const ccObserveR1 = await host.eval(`
       const c = document.getElementById('cube-canvas');
-      return { stageVisible: !document.getElementById('stage-cube-count').classList.contains('hidden'), canvasW: c.width, canvasH: c.height };
+      return {
+        stageVisible: !document.getElementById('stage-cube-count').classList.contains('hidden'),
+        canvasW: c.width,
+        canvasH: c.height,
+        hasObserveHint: !!document.querySelector('.cube-observe-hint'),
+        inputDisabled: document.getElementById('cube-direct-input')?.disabled,
+        optionButtonsCount: document.querySelectorAll('.btn-cube-option').length
+      };
     `);
-    console.log('  -> 3D 观察期 Canvas:', ccObserve);
+    console.log('  -> 第 1 轮观察期锁定与提示:', ccObserveR1);
+    if (!ccObserveR1.hasObserveHint || !ccObserveR1.inputDisabled || ccObserveR1.optionButtonsCount !== 0) {
+      throw new Error('第 1 轮观察期未正确锁定！');
+    }
+
+    // 等待抢答期
     await host.waitFor("return document.querySelectorAll('.btn-cube-option').length >= 4", 20000);
-    const ccOpts = await host.eval("return Array.from(document.querySelectorAll('.btn-cube-option')).map(b => b.textContent)");
-    console.log('  -> 选项按钮:', ccOpts);
+    const ccOptsR1 = await host.eval("return Array.from(document.querySelectorAll('.btn-cube-option')).map(b => b.textContent)");
+    console.log('  -> 第 1 轮选项按钮:', ccOptsR1);
     for (const c of allClients) {
       await c.click('.btn-cube-option');
     }
-    console.log('  ✓ 3D 方块立体渲染与选项提交成功！');
-    testReport.push({ game: '3D 数方块', status: 'PASS', details: `Canvas【${ccObserve.canvasW}x${ccObserve.canvasH}】，选项【${ccOpts.join(',')}】全员提交成功` });
+    console.log('  ✓ 第 1 轮 5 位玩家选项提交完成');
+
+    // 核心回归测试：等待进入第 2 轮观察期，断言上一轮 4 个按钮已彻底清空，防止旧按钮残留误按
+    console.log('  -> 等待结算公布并进入第 2 轮观察期...');
+    await host.waitFor("return currentRoomState && currentRoomState.round === 2 && currentRoomState.status === 'CUBE_OBSERVE'", 12000);
+    const ccObserveR2 = await host.eval(`
+      return {
+        roundText: document.getElementById('display-round')?.textContent,
+        hasObserveHint: !!document.querySelector('.cube-observe-hint'),
+        optionButtonsCount: document.querySelectorAll('.btn-cube-option').length,
+        inputDisabled: document.getElementById('cube-direct-input')?.disabled
+      };
+    `);
+    console.log('  -> 【核心断言】第 2 轮观察期状态:', ccObserveR2);
+    if (ccObserveR2.optionButtonsCount !== 0) {
+      throw new Error(`第 2 轮观察期残留了 ${ccObserveR2.optionButtonsCount} 个旧选项按钮！`);
+    }
+    if (!ccObserveR2.hasObserveHint || !ccObserveR2.inputDisabled) {
+      throw new Error('第 2 轮观察期未正确锁定输入！');
+    }
+
+    // 等待第 2 轮抢答期并作答
+    await host.waitFor("return currentRoomState && currentRoomState.round === 2 && currentRoomState.status === 'CUBE_GUESSING'", 10000);
+    const ccOptsR2 = await host.eval("return Array.from(document.querySelectorAll('.btn-cube-option')).map(b => b.textContent)");
+    console.log('  -> 第 2 轮全新选项按钮:', ccOptsR2);
+    for (const c of allClients) {
+      await c.click('.btn-cube-option');
+    }
+    console.log('  ✓ 3D 方块多回合跨轮切换、残余清理与选项提交全量成功！');
+    testReport.push({ game: '3D 数方块', status: 'PASS', details: `多回合流转通过 (R1:【${ccOptsR1.join(',')}】-> R2:【${ccOptsR2.join(',')}】无残余)` });
     await host.wait(1000);
 
     // =========================================================================

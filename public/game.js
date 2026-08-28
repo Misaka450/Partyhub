@@ -199,6 +199,9 @@ const cubeOverlayCard = document.getElementById('cube-overlay-card');
 const cubeOptionsGrid = document.getElementById('cube-options-grid');
 const cubeDirectForm = document.getElementById('cube-direct-form');
 const cubeDirectInput = document.getElementById('cube-direct-input');
+const cubePromptTitle = document.getElementById('cube-prompt-title');
+const cubePromptSub = document.getElementById('cube-prompt-sub');
+const cubeSubmitBtn = document.getElementById('cube-submit-btn');
 
 // 绑定 24 点跳过按钮
 const btnM24Skip = document.getElementById('btn-m24-skip');
@@ -2643,12 +2646,14 @@ function updateM24EvalPreview() {
   }
 }
 
+let lastM24Round = 0;
 function renderMath24State(state) {
   displayRoundTag.classList.remove('hidden');
   displayRound.textContent = `第 ${state.round}/${state.maxRounds} 轮`;
   wordHintBox.textContent = `用给定的 4 张牌算 24 点！剩余 ${state.timeLeft}s`;
 
-  if (state.currentCards && JSON.stringify(state.currentCards) !== JSON.stringify(currentM24Cards)) {
+  if (state.currentCards && (state.round !== lastM24Round || JSON.stringify(state.currentCards) !== JSON.stringify(currentM24Cards))) {
+    lastM24Round = state.round;
     currentM24Cards = [...state.currentCards];
     currentM24Formula = '';
     usedM24CardIndices = new Set();
@@ -2767,7 +2772,72 @@ socket.on('m24_game_over', (data) => {
   });
 });
 
-// =====================【3D 几何数方块 渲染】=====================
+// =====================【3D 几何数方块 渲染】=====================\
+function setCubeObserveMode() {
+  if (cubeOptionsGrid) {
+    cubeOptionsGrid.innerHTML = '<div class="cube-observe-hint">👀 观察阶段：请仔细默数方块，倒计时结束后开启抢答</div>';
+  }
+  if (cubeDirectInput) {
+    cubeDirectInput.value = '';
+    cubeDirectInput.disabled = true;
+    cubeDirectInput.placeholder = '👀 观察中，稍后开启输入...';
+  }
+  if (cubeSubmitBtn) {
+    cubeSubmitBtn.disabled = true;
+    cubeSubmitBtn.textContent = '👀 观察中...';
+    cubeSubmitBtn.style.background = '';
+  }
+  if (cubePromptTitle) cubePromptTitle.textContent = '👀 仔细观察 3D 几何体结构并默数';
+  if (cubePromptSub) cubePromptSub.textContent = '（包含内部隐藏支撑方块 · 倒计时结束后开始抢答）';
+}
+
+function setCubeGuessingMode(options, submittedOpt = null) {
+  if (cubePromptTitle) {
+    cubePromptTitle.textContent = submittedOpt ? `✓ 已提交答案：【${submittedOpt}】` : '🧊 立方体总数是多少？';
+  }
+  if (cubePromptSub) {
+    cubePromptSub.textContent = submittedOpt ? '（已锁定提交，等待结算...）' : '（包含内部支撑方块 · 抢答加分）';
+  }
+
+  if (submittedOpt) {
+    setFormAnswerSubmitted({
+      inputEl: cubeDirectInput,
+      formEl: cubeDirectForm,
+      optionButtonsSelector: '.btn-cube-option',
+      submittedVal: submittedOpt
+    });
+    return;
+  }
+
+  resetFormAnswerState({
+    inputEl: cubeDirectInput,
+    formEl: cubeDirectForm,
+    optionButtonsSelector: '.btn-cube-option',
+    submitDefaultText: '提交答案'
+  });
+  if (cubeDirectInput) {
+    cubeDirectInput.placeholder = '输入答案';
+    cubeDirectInput.disabled = false;
+  }
+
+  if (cubeOptionsGrid && options && options.length > 0) {
+    cubeOptionsGrid.innerHTML = '';
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-cube-option';
+      btn.textContent = opt;
+      btn.onclick = () => {
+        if (cubeDirectInput) cubeDirectInput.value = opt;
+        setCubeAnswerSubmitted(opt);
+        socket.emit('cube_submit_answer', { option: opt });
+        playSound('tick');
+      };
+      cubeOptionsGrid.appendChild(btn);
+    });
+  }
+}
+
 function setCubeAnswerSubmitted(opt) {
   setFormAnswerSubmitted({
     inputEl: cubeDirectInput,
@@ -2775,6 +2845,9 @@ function setCubeAnswerSubmitted(opt) {
     optionButtonsSelector: '.btn-cube-option',
     submittedVal: opt
   });
+  if (cubePromptTitle) cubePromptTitle.textContent = `✓ 已提交答案：【${opt}】`;
+  if (cubePromptSub) cubePromptSub.textContent = '（已锁定提交，等待结算...）';
+  if (wordHintBox) wordHintBox.textContent = `✓ 已提交答案 (${opt})，等待其他玩家结算...`;
 }
 
 function resetCubeForm() {
@@ -2784,9 +2857,12 @@ function resetCubeForm() {
     optionButtonsSelector: '.btn-cube-option',
     submitDefaultText: '提交答案'
   });
+  if (cubeDirectInput) {
+    cubeDirectInput.placeholder = '输入答案';
+  }
 }
 
-// =====================【3D 几何数方块 渲染引擎 (Depth-Sorted & Modern Isometric)】=====================
+// =====================【3D 几何数方块 渲染引擎 (Depth-Sorted & Modern Isometric)】=====================\
 let currentCubeGrid = null;
 
 function initCubeCanvasResolution() {
@@ -2797,27 +2873,25 @@ function renderCubeCountState(state) {
   displayRoundTag.classList.remove('hidden');
   displayRound.textContent = `第 ${state.round}/${state.maxRounds} 轮`;
 
+  const isMySubmitted = state.answeredTokens && (state.answeredTokens.includes(myPlayerToken) || state.answeredTokens.includes(socket?.id));
+
   if (state.status === 'CUBE_OBSERVE') {
     wordHintBox.textContent = `👀 观察 3D 几何体结构并默数... 剩余 ${state.timeLeft}s`;
-  } else if (state.status === 'CUBE_GUESSING') {
-    wordHintBox.textContent = `❓ 请选择或输入立方体总数！剩余 ${state.timeLeft}s`;
-    // 状态自愈：如果尚未渲染选项按钮则即时渲染
-    if (state.options && state.options.length > 0 && cubeOptionsGrid.children.length === 0) {
-      cubeOptionsGrid.innerHTML = '';
-      state.options.forEach(opt => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn-cube-option';
-        btn.textContent = opt;
-        btn.onclick = () => {
-          if (cubeDirectInput) cubeDirectInput.value = opt;
-          setCubeAnswerSubmitted(opt);
-          socket.emit('cube_submit_answer', { option: opt });
-          playSound('tick');
-        };
-        cubeOptionsGrid.appendChild(btn);
-      });
+    if (!cubeOptionsGrid?.querySelector('.cube-observe-hint')) {
+      setCubeObserveMode();
     }
+  } else if (state.status === 'CUBE_GUESSING') {
+    if (isMySubmitted) {
+      wordHintBox.textContent = `✓ 已提交答案，等待结算... 剩余 ${state.timeLeft}s`;
+    } else {
+      wordHintBox.textContent = `❓ 请选择或输入立方体总数！剩余 ${state.timeLeft}s`;
+    }
+    // 状态自愈：如果尚未渲染当前轮的选项按钮则即时渲染
+    if (state.options && state.options.length > 0 && (cubeOptionsGrid.children.length === 0 || cubeOptionsGrid.querySelector('.cube-observe-hint'))) {
+      setCubeGuessingMode(state.options);
+    }
+  } else if (state.status === 'CUBE_ROUND_RESULT') {
+    wordHintBox.textContent = `🎯 结算中，准备进入下一轮...`;
   }
 
   // 保持当前 3D 几何体持续渲染
@@ -2825,44 +2899,30 @@ function renderCubeCountState(state) {
     const { w, h, dpr } = initCubeCanvasResolution();
     if (cubeCtx) {
       cubeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawIsometricCubes(cubeCtx, currentCubeGrid, w, h);
+      drawIsometricCubes(cubeCtx, currentCubeGrid, w, h, state.status === 'CUBE_ROUND_RESULT');
     }
   }
 }
 
 socket.on('cube_start_observe', (data) => {
-  resetCubeForm();
+  setCubeObserveMode();
   currentCubeGrid = data.grid;
   const { w, h, dpr } = initCubeCanvasResolution();
   if (!cubeCanvas || !cubeCtx) return;
   cubeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawIsometricCubes(cubeCtx, data.grid, w, h);
+  drawIsometricCubes(cubeCtx, data.grid, w, h, false);
   playSound('card');
 });
 
 socket.on('cube_question', (data) => {
-  resetCubeForm();
   if (data.grid) currentCubeGrid = data.grid;
   const { w, h, dpr } = initCubeCanvasResolution();
   if (cubeCanvas && cubeCtx && currentCubeGrid) {
     cubeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawIsometricCubes(cubeCtx, currentCubeGrid, w, h);
+    drawIsometricCubes(cubeCtx, currentCubeGrid, w, h, false);
   }
-
-  cubeOptionsGrid.innerHTML = '';
-  data.options.forEach(opt => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn-cube-option';
-    btn.textContent = opt;
-    btn.onclick = () => {
-      if (cubeDirectInput) cubeDirectInput.value = opt;
-      setCubeAnswerSubmitted(opt);
-      socket.emit('cube_submit_answer', { option: opt });
-      playSound('tick');
-    };
-    cubeOptionsGrid.appendChild(btn);
-  });
+  setCubeGuessingMode(data.options);
+  playSound('pop');
 });
 
 function drawIsometricCubes(c, grid, width, height, showHeightLabels = false) {
@@ -3005,6 +3065,7 @@ function drawSingleModernVoxel(c, x, y, w, h, ch) {
 if (cubeDirectForm) {
   cubeDirectForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (cubeDirectInput?.disabled) return;
     const val = parseInt(cubeDirectInput?.value);
     if (!isNaN(val) && val > 0) {
       setCubeAnswerSubmitted(val);
@@ -3035,6 +3096,7 @@ function resetFlashForm() {
 if (flashDirectForm) {
   flashDirectForm.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (flashDirectInput?.disabled) return;
     const val = parseInt(flashDirectInput?.value);
     if (!isNaN(val) && val > 0) {
       setFlashAnswerSubmitted(val);
@@ -3051,6 +3113,8 @@ socket.on('cube_round_result', (data) => {
     cubeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawIsometricCubes(cubeCtx, data.grid, w, h, true);
   }
+  if (cubePromptTitle) cubePromptTitle.textContent = `🎯 正确方块总数：【${data.totalCubes} 个】`;
+  if (cubePromptSub) cubePromptSub.textContent = '（绿色圆圈标明了各柱高度 · 正在结算战报）';
   showRevealModal('🧊 正确方块总数：', `${data.totalCubes} 个`, 3500);
 });
 

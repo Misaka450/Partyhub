@@ -86,7 +86,8 @@ function submitHoldTime(room, playerToken, elapsedMs, io, broadcastRoom) {
 
   broadcastRoom(room);
 
-  const allSubmitted = room.players.every(p => room.playerHolds[p.token] !== undefined);
+  const activePlayers = room.players.filter(p => !p.offlineTimer);
+  const allSubmitted = activePlayers.length > 0 && activePlayers.every(p => room.playerHolds[p.token] !== undefined);
   if (allSubmitted) {
     clearInterval(room.timer);
     endRound(room, io, broadcastRoom);

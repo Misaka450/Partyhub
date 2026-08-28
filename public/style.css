@@ -4162,7 +4162,22 @@ html, body {
 .cube-prompt-bar { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
 .prompt-title { font-size: 0.88rem; font-weight: 800; color: var(--text-main); }
 .prompt-sub { font-size: 0.68rem; color: var(--text-muted); }
-.cube-options-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+.cube-options-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; min-height: 42px; }
+.cube-observe-hint {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-sub);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+}
 .cube-direct-form { display: flex; align-items: center; gap: 8px; }
 .cube-direct-form input { flex: 1 1 auto; min-width: 0; }
 

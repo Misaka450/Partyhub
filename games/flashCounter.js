@@ -247,7 +247,8 @@ function submitAnswer(room, playerToken, chosenOption, io, broadcastRoom) {
   broadcastRoom(room);
 
   // 检查是否全员已作答
-  const allAnswered = room.players.every(p => room.playerAnswers[p.token] !== undefined);
+  const activePlayers = room.players.filter(p => !p.offlineTimer);
+  const allAnswered = activePlayers.length > 0 && activePlayers.every(p => room.playerAnswers[p.token] !== undefined);
   if (allAnswered) {
     clearInterval(room.timer);
     endRound(room, io, broadcastRoom);

@@ -992,15 +992,15 @@
           </div>
           <div class="cube-control-panel" id="cube-control-panel">
             <div class="cube-prompt-bar">
-              <span class="prompt-title">🧊 立方体总数是多少？</span>
-              <span class="prompt-sub">（包含内部支撑方块）</span>
+              <span class="prompt-title" id="cube-prompt-title">🧊 立方体总数是多少？</span>
+              <span class="prompt-sub" id="cube-prompt-sub">（包含内部支撑方块）</span>
             </div>
             <!-- 快捷选项按钮 -->
             <div class="cube-options-grid" id="cube-options-grid"></div>
             <!-- 自定义数字输入提交 -->
             <form id="cube-direct-form" class="cube-direct-form">
               <input type="number" id="cube-direct-input" placeholder="输入答案" min="1" max="99">
-              <button type="submit" class="btn btn-primary">提交答案</button>
+              <button type="submit" class="btn btn-primary" id="cube-submit-btn">提交答案</button>
             </form>
           </div>
         </div>

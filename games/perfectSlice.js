@@ -220,7 +220,8 @@ function submitSlice(room, playerToken, p1, p2, io, broadcastRoom) {
   broadcastRoom(room);
 
   // 检查是否全员已切完
-  const allSubmitted = room.players.every(p => room.playerSlices[p.token] !== undefined);
+  const activePlayers = room.players.filter(p => !p.offlineTimer);
+  const allSubmitted = activePlayers.length > 0 && activePlayers.every(p => room.playerSlices[p.token] !== undefined);
   if (allSubmitted) {
     clearInterval(room.timer);
     endRound(room, io, broadcastRoom);

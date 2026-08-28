@@ -265,7 +265,9 @@ function submitSolution(room, playerToken, exprStr, io, broadcastRoom) {
 
   // 抢答成功！
   clearInterval(room.timer);
-  player.score += 150;
+  const timeBonus = Math.floor(room.timeLeft * 1.5);
+  const earnedScore = 150 + timeBonus;
+  player.score += earnedScore;
   room.roundWinner = player;
   room.roundExpression = exprStr;
 
