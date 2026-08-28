@@ -3980,15 +3980,36 @@ function renderHoldFiveState(state) {
     targetTitle.textContent = `🎯 目标时间：${targetSec} 秒`;
   }
 
+  const isMySubmitted = hasSubmittedHold || (state.heldTokens && state.heldTokens.includes(myPlayerToken)) || (state.answeredTokens && state.answeredTokens.includes(myPlayerToken));
+
   if (state.status === 'HOLD_PRESSING') {
     timerBox?.classList.add('hidden'); // 盲压阶段隐藏顶部倒计时秒数防作弊
     wordHintBox.textContent = `🎯 凭内心节奏按住大按钮，在正好 ${targetSec} 秒时精准松开！`;
-    if (!hasSubmittedHold) {
+    if (btnHoldTrigger) {
       btnHoldTrigger.classList.remove('hidden');
-      holdText.textContent = '按住开始计时';
+      if (isMySubmitted) {
+        btnHoldTrigger.classList.remove('pressing');
+        btnHoldTrigger.style.pointerEvents = 'none';
+        if (holdText) holdText.textContent = '已提交！等待结算...';
+      } else if (isHoldingButton) {
+        btnHoldTrigger.classList.add('pressing');
+        btnHoldTrigger.style.pointerEvents = '';
+        if (holdText) holdText.textContent = '计时中...松开提交';
+      } else {
+        btnHoldTrigger.classList.remove('pressing');
+        btnHoldTrigger.style.pointerEvents = '';
+        if (holdText) holdText.textContent = '按住开始计时';
+      }
     }
   } else {
     timerBox?.classList.remove('hidden');
+    if (btnHoldTrigger) {
+      btnHoldTrigger.classList.remove('pressing');
+      btnHoldTrigger.style.pointerEvents = 'none';
+    }
+    if (state.status === 'HOLD_ROUND_RESULT' && isMySubmitted && holdText) {
+      holdText.textContent = '已结算！';
+    }
   }
 }
 
@@ -3996,9 +4017,12 @@ socket.on('hold_start_round', (data) => {
   hasSubmittedHold = false;
   isHoldingButton = false;
   holdPressStartTime = null;
-  holdResultBox.classList.add('hidden');
-  btnHoldTrigger.classList.remove('pressing');
-  holdText.textContent = '按住开始计时';
+  if (holdResultBox) holdResultBox.classList.add('hidden');
+  if (btnHoldTrigger) {
+    btnHoldTrigger.classList.remove('pressing');
+    btnHoldTrigger.style.pointerEvents = '';
+  }
+  if (holdText) holdText.textContent = '按住开始计时';
 
   const targetSec = data.targetSeconds ? `${data.targetSeconds}.000` : '5.000';
   const targetTitle = document.getElementById('hold-target-title');
@@ -4012,24 +4036,29 @@ socket.on('hold_start_round', (data) => {
 
 function handleHoldStart(e) {
   if (hasSubmittedHold) return;
-  e.preventDefault();
+  if (e && e.cancelable) e.preventDefault();
   initAudio();
   isHoldingButton = true;
   holdPressStartTime = performance.now();
-  btnHoldTrigger.classList.add('pressing');
-  holdText.textContent = '计时中...松开提交';
+  if (btnHoldTrigger) btnHoldTrigger.classList.add('pressing');
+  if (holdText) holdText.textContent = '计时中...松开提交';
   playSound('tick');
 }
 
 function handleHoldEnd(e) {
   if (!isHoldingButton || hasSubmittedHold) return;
+  if (e && e.cancelable) e.preventDefault();
   isHoldingButton = false;
-  btnHoldTrigger.classList.remove('pressing');
+  if (btnHoldTrigger) {
+    btnHoldTrigger.classList.remove('pressing');
+    btnHoldTrigger.style.pointerEvents = 'none';
+  }
 
   if (holdPressStartTime) {
     const elapsedMs = Math.round(performance.now() - holdPressStartTime);
+    holdPressStartTime = null;
     hasSubmittedHold = true;
-    holdText.textContent = '已提交！等待结算...';
+    if (holdText) holdText.textContent = '已提交！等待结算...';
     socket.emit('hold_submit_time', { elapsedMs });
     playSound('card');
   }
@@ -4039,7 +4068,8 @@ btnHoldTrigger?.addEventListener('mousedown', handleHoldStart);
 window.addEventListener('mouseup', handleHoldEnd);
 
 btnHoldTrigger?.addEventListener('touchstart', handleHoldStart, { passive: false });
-window.addEventListener('touchend', handleHoldEnd);
+window.addEventListener('touchend', handleHoldEnd, { passive: false });
+window.addEventListener('touchcancel', handleHoldEnd);
 
 socket.on('hold_submit_feedback', (data) => {
   playSound('tick');

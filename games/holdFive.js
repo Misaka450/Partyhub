@@ -168,7 +168,8 @@ function getPublicState(room) {
     maxRounds: room.maxRounds,
     timeLeft: room.timeLeft,
     targetSeconds: room.targetSeconds,
-    heldTokens: Object.keys(room.playerHolds || {})
+    heldTokens: Object.keys(room.playerHolds || {}),
+    answeredTokens: Object.keys(room.playerHolds || {})
   };
 }
 
