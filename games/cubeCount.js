@@ -1,3 +1,5 @@
+const { shuffle } = require('./shuffle');
+
 function generateCubeGrid(round = 1) {
   // 3x3 空间等轴测立方体柱状阵列
   const size = 3;
@@ -33,8 +35,8 @@ function generateCubeGrid(round = 1) {
   // 生成 4 个相近选项
   const optionsSet = new Set([totalCubes]);
   const offsets = [-4, -3, -2, -1, 1, 2, 3, 4];
-  offsets.sort(() => 0.5 - Math.random());
-  for (const off of offsets) {
+  // Fisher-Yates 无偏洗牌打乱干扰项顺序
+  for (const off of shuffle(offsets)) {
     const opt = totalCubes + off;
     if (opt > 0) optionsSet.add(opt);
     if (optionsSet.size >= 4) break;

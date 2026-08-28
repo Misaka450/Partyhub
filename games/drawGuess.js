@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { shuffle } = require('./shuffle');
 
 let categorizedWords = {
   food: ["西瓜", "苹果", "香蕉", "火锅", "奶茶", "披萨", "冰淇淋", "烤鸭", "寿司", "汉堡"],
@@ -35,7 +36,8 @@ function getWordPool(room) {
 
 function getRandomWords(count = 3, room) {
   const pool = getWordPool(room);
-  const shuffled = [...pool].sort(() => 0.5 - Math.random());
+  // Fisher-Yates 无偏洗牌后取前 N 个
+  const shuffled = shuffle(pool);
   return shuffled.slice(0, count);
 }
 
@@ -80,6 +82,9 @@ function initRoomState(room) {
   room.status = 'LOBBY';
   clearInterval(room.timer);
   room.timer = null;
+  // 与其他引擎保持一致：清理回合结束的延迟定时器，防止状态重置后残留回调
+  clearTimeout(room.roundTimeout);
+  room.roundTimeout = null;
 }
 
 function getPublicState(room) {

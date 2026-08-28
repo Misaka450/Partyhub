@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { shuffle } = require('./shuffle');
 
 let wordPairs = [];
 try {
@@ -78,8 +79,8 @@ function startGame(room, io, broadcastRoom) {
   room.spyWord = swap ? pair.civ : pair.spy;
   room.currentPair = pair;
 
-  // 分配身份
-  const shuffledPlayers = [...room.players].sort(() => 0.5 - Math.random());
+  // 分配身份（Fisher-Yates 无偏洗牌，保证卧底/白板落位概率均匀）
+  const shuffledPlayers = shuffle(room.players);
   
   let spiesAssigned = 0;
   let blankAssigned = 0;
@@ -142,8 +143,8 @@ function startSpeakingPhase(room, io, broadcastRoom, customOrder = null) {
   if (customOrder && customOrder.length > 0) {
     room.speechOrder = customOrder;
   } else {
-    // 随机麦序
-    room.speechOrder = [...alivePlayers].sort(() => 0.5 - Math.random()).map(p => p.token);
+    // 随机麦序（Fisher-Yates 无偏洗牌）
+    room.speechOrder = shuffle(alivePlayers).map(p => p.token);
   }
 
   room.currentSpeakerIndex = 0;

@@ -47,6 +47,12 @@ function safeEngineCall(engineFn, ...args) {
   }
 }
 
+// 把任意数值夹到 [0, 1] 区间（画笔坐标等归一化字段专用），非法输入返回 0
+function clamp01(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0;
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 const rooms = new Map();
@@ -139,7 +145,17 @@ io.on('connection', (socket) => {
   let currentPlayerToken = null;
 
   socket.on('join_room', ({ roomId, playerName, avatar, playerToken }) => {
+    // 输入校验：限制类型与长度，防止超长字符串滥用内存/带宽（昵称最长12字、房间号最长32字符）
+    if (typeof roomId !== 'string' || typeof playerName !== 'string') return;
+    roomId = roomId.trim().slice(0, 32);
+    playerName = playerName.trim().slice(0, 12);
     if (!roomId || !playerName) return;
+    if (typeof avatar !== 'string' || !avatar) avatar = '🐱';
+    avatar = avatar.slice(0, 8);
+    // token 必须是 64 字符以内的字符串，否则视为无效并重新生成
+    if (typeof playerToken !== 'string' || !playerToken || playerToken.length > 64) {
+      playerToken = `token_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    }
 
     currentRoomId = roomId;
     currentPlayerToken = playerToken || socket.id;
@@ -192,6 +208,18 @@ io.on('connection', (socket) => {
       player.name = playerName;
       player.avatar = avatar || player.avatar;
     } else {
+      // 人数上限保护：防止恶意客户端无限创建连接挤爆房间
+      if (room.players.length >= 20) {
+        socket.emit('system_message', '⚠️ 房间人数已满（最多 20 人），无法加入！');
+        return;
+      }
+
+      // 安全防护：token 已被房内其他席位占用时，为本连接换发全新 token，
+      // 杜绝"同 token 重复席位"被用于冒充他人投票/出牌（会话劫持）
+      if (room.players.some(p => p.token === currentPlayerToken)) {
+        currentPlayerToken = `token_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+      }
+
       // 检查是否有重名且真正活跃在线的玩家，若有则自动加上后缀 (如 bao (2)) 避免同名混淆
       let finalName = playerName;
       const existingNames = new Set(room.players.map(p => p.name));
@@ -236,6 +264,14 @@ io.on('connection', (socket) => {
 
     if (room.gameType === 'draw-guess' && room.drawHistory && room.drawHistory.length > 0) {
       socket.emit('sync_draw_history', room.drawHistory);
+    }
+
+    // 几A几B：断线重连时私发本人历史猜测记录（用于前端状态自愈），
+    // 历史只发给本人，不再通过公共 room_state 泄露给其他玩家
+    if (room.gameType === 'bulls-and-cows' && room.playerGuesses?.[player.token]?.length > 0) {
+      const history = room.playerGuesses[player.token];
+      const last = history[history.length - 1];
+      socket.emit('bc_guess_result', { guess: last.guess, a: last.a, b: last.b, history });
     }
 
     broadcastRoom(room);
@@ -413,6 +449,9 @@ io.on('connection', (socket) => {
     const player = room.players.find(p => p.token === currentPlayerToken);
     if (!player) return;
 
+    // 表情校验：限字符串且长度不超过 8，防止任意大 payload 借广播通道刷屏/放大带宽
+    if (typeof emoji !== 'string' || !emoji || emoji.length > 8) return;
+
     io.to(room.id).emit('floating_reaction', {
       emoji,
       sender: player.name
@@ -458,13 +497,42 @@ io.on('connection', (socket) => {
     const currentDrawer = room.players[room.currentDrawerIndex];
     if (!currentDrawer || currentDrawer.token !== currentPlayerToken) return;
 
+    // 结构校验：只接受规定类型、数值范围与长度的笔画数据，
+    // 防止恶意画师发送超大/畸形 payload 撑爆 drawHistory 内存或破坏其他端渲染
+    if (!data || typeof data !== 'object') return;
+    let clean = null;
+    if (data.type === 'start') {
+      if (!Number.isFinite(data.x) || !Number.isFinite(data.y)
+          || typeof data.color !== 'string' || !Number.isFinite(data.size)) return;
+      clean = {
+        type: 'start',
+        x: clamp01(data.x), y: clamp01(data.y),
+        color: data.color.slice(0, 32),
+        size: Math.min(100, Math.max(1, Number(data.size)))
+      };
+    } else if (data.type === 'line') {
+      if (![data.x1, data.y1, data.x2, data.y2].every(Number.isFinite)
+          || typeof data.color !== 'string' || !Number.isFinite(data.size)) return;
+      clean = {
+        type: 'line',
+        x1: clamp01(data.x1), y1: clamp01(data.y1),
+        x2: clamp01(data.x2), y2: clamp01(data.y2),
+        color: data.color.slice(0, 32),
+        size: Math.min(100, Math.max(1, Number(data.size)))
+      };
+    } else if (data.type === 'end') {
+      clean = { type: 'end' };
+    } else {
+      return;
+    }
+
     if (!room.drawHistory) room.drawHistory = [];
-    room.drawHistory.push(data);
+    room.drawHistory.push(clean);
     // 限定画布历史条数，防止恶意画师无限绘制撑爆服务端内存
     if (room.drawHistory.length > 3000) {
       room.drawHistory.splice(0, room.drawHistory.length - 3000);
     }
-    socket.to(room.id).emit('draw_stroke', data);
+    socket.to(room.id).emit('draw_stroke', clean);
   });
 
   socket.on('clear_canvas', () => {
@@ -698,8 +766,10 @@ io.on('connection', (socket) => {
           io.to(room.id).emit('system_message', `🚪 【${removed.name}】离开了房间`);
 
           if (removed.isHost && room.players.length > 0) {
-            room.players[0].isHost = true;
-            io.to(room.id).emit('system_message', `👑 【${room.players[0].name}】成为了新房主`);
+            // 与 leave_room 保持一致：优先把房主移交给仍在保留期之外的首个在线玩家
+            const nextHost = room.players.find(p => !p.offlineTimer) || room.players[0];
+            nextHost.isHost = true;
+            io.to(room.id).emit('system_message', `👑 【${nextHost.name}】成为了新房主`);
           }
 
           if (room.players.length === 0) {

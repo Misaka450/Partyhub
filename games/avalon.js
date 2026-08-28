@@ -1,3 +1,5 @@
+const { shuffle } = require('./shuffle');
+
 const QUEST_CONFIGS = {
   5: { good: 3, evil: 2, quests: [2, 3, 2, 3, 3], failsRequired: [1, 1, 1, 1, 1] },
   6: { good: 4, evil: 2, quests: [2, 3, 4, 3, 4], failsRequired: [1, 1, 1, 1, 1] },
@@ -79,8 +81,9 @@ function startGame(room, io, broadcastRoom) {
     evilRoles.push('minion');
   }
 
-  const allRoles = [...goodRoles, ...evilRoles].sort(() => 0.5 - Math.random());
-  const shuffledPlayers = [...room.players].sort(() => 0.5 - Math.random());
+  // Fisher-Yates 无偏洗牌：保证角色与玩家的配对完全均匀
+  const allRoles = shuffle([...goodRoles, ...evilRoles]);
+  const shuffledPlayers = shuffle(room.players);
 
   shuffledPlayers.forEach((p, i) => {
     p.avalonRole = allRoles[i];
@@ -115,9 +118,7 @@ function startGame(room, io, broadcastRoom) {
       seenInfo = evilSeen;
     } else if (role === 'percival') {
       // 派西维尔看到梅林和莫甘娜（分不清）
-      const candidates = room.players
-        .filter(p => p.avalonRole === 'merlin' || p.avalonRole === 'morgana')
-        .sort(() => 0.5 - Math.random())
+      const candidates = shuffle(room.players.filter(p => p.avalonRole === 'merlin' || p.avalonRole === 'morgana'))
         .map(p => ({ token: p.token, name: p.name, avatar: p.avatar, tag: '梅林候选人' }));
       seenInfo = candidates;
     } else if (player.avalonSide === 'evil' && role !== 'oberon') {
@@ -442,8 +443,8 @@ function tallyQuestVotes(room, io, broadcastRoom) {
   const cards = [];
   for (let i = 0; i < successCount; i++) cards.push('SUCCESS');
   for (let i = 0; i < failsCount; i++) cards.push('FAIL');
-  // 打乱牌序保证匿名
-  const shuffledCards = cards.sort(() => 0.5 - Math.random());
+  // 打乱牌序保证匿名（Fisher-Yates 无偏洗牌）
+  const shuffledCards = shuffle(cards);
 
   const questPassed = failsCount < requiredFails;
 
@@ -524,16 +525,19 @@ function startAssassinPhase(room, io, broadcastRoom) {
     room.timeLeft -= 1;
     if (room.timeLeft <= 0) {
       clearInterval(room.timer);
-      // 刺客超时，随机刺杀一个好人玩家；好人阵营无人或刺客缺席则直接判好人胜
+      // 刺客超时：实时重新查找刺客（阶段开始时的快照可能已因掉线被移出房间），
+      // 找不到任何邪恶玩家则直接判好人胜，避免刺杀阶段永久卡死
+      const liveAssassin = room.players.find(p => p.avalonRole === 'assassin')
+        || room.players.find(p => p.avalonSide === 'evil');
       const goodPlayers = room.players.filter(p => p.avalonSide === 'good');
-      if (goodPlayers.length === 0 || !assassin) {
+      if (goodPlayers.length === 0 || !liveAssassin) {
         room.winner = 'good';
         room.winReason = '🕊️ 刺客缺席，正义阵营获得最终胜利！';
         endGame(room, io, broadcastRoom);
         return;
       }
       const target = goodPlayers[Math.floor(Math.random() * goodPlayers.length)];
-      assassinatePlayer(room, assassin.token, target.token, io, broadcastRoom);
+      assassinatePlayer(room, liveAssassin.token, target.token, io, broadcastRoom);
     } else {
       io.to(room.id).emit('timer_tick', { timeLeft: room.timeLeft });
     }

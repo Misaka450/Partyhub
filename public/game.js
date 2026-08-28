@@ -675,7 +675,8 @@ function showToast(text, icon = '✨') {
   }
   const toast = document.createElement('div');
   toast.className = 'app-toast';
-  toast.innerHTML = `<span>${icon}</span><span>${text}</span>`;
+  // 对 icon/text 做转义后再插入，防止 toast 通道被注入 HTML（XSS）
+  toast.innerHTML = `<span>${escapeHtml(icon)}</span><span>${escapeHtml(text)}</span>`;
   container.appendChild(toast);
   playSound('pop');
   triggerVibration('pop');
@@ -1838,8 +1839,8 @@ function renderUndercoverState(state) {
     card.className = `uc-player-card ${p.token === state.currentSpeakerToken ? 'is-speaking' : ''} ${!p.alive ? 'is-dead' : ''}`;
     
     card.innerHTML = `
-      <div style="font-size:1.6rem">${p.avatar}</div>
-      <b style="font-size:0.85rem;display:block;margin-top:2px">${p.name}</b>
+      <div style="font-size:1.6rem">${escapeHtml(p.avatar)}</div>
+      <b style="font-size:0.85rem;display:block;margin-top:2px">${escapeHtml(p.name)}</b>
       <small style="font-size:0.7rem;color:#94A3B8">${p.alive ? '存活' : '已出局'}</small>
       ${p.votesReceived > 0 ? `<span class="uc-vote-badge">${p.votesReceived}票</span>` : ''}
     `;
@@ -1969,8 +1970,8 @@ function renderAvalonState(state) {
         item.className = 'assassin-target-item';
         item.innerHTML = `
           <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:1.4rem">${p.avatar}</span>
-            <span style="font-weight:700;font-size:0.9rem">${p.name}</span>
+            <span style="font-size:1.4rem">${escapeHtml(p.avatar)}</span>
+            <span style="font-weight:700;font-size:0.9rem">${escapeHtml(p.name)}</span>
           </div>
           <button class="btn btn-sm btn-danger">刺杀此人</button>
         `;
@@ -2006,8 +2007,8 @@ function renderAvalonState(state) {
     if (isSpeaker) badgeText = '🎤发言中';
 
     card.innerHTML = `
-      <div style="font-size:1.5rem">${p.avatar}</div>
-      <div style="font-size:0.8rem;font-weight:bold">${p.name}</div>
+      <div style="font-size:1.5rem">${escapeHtml(p.avatar)}</div>
+      <div style="font-size:0.8rem;font-weight:bold">${escapeHtml(p.name)}</div>
       <small style="font-size:0.7rem;color:${isSpeaker ? '#60A5FA' : '#94A3B8'}">${badgeText}</small>
     `;
 
@@ -2197,7 +2198,7 @@ function renderUnoState(state) {
       const chip = document.createElement('div');
       chip.className = `uno-opp-chip ${p.token === state.currentTurnToken ? 'is-turn' : ''}`;
       chip.innerHTML = `
-        <span>${p.avatar} ${p.name}</span>
+        <span>${escapeHtml(p.avatar)} ${escapeHtml(p.name)}</span>
         <span class="uno-card-badge">${p.cardCount}张</span>
       `;
       // 点击抓未喊UNO
@@ -2620,6 +2621,51 @@ socket.on('bc_game_over', (data) => {
 // =====================【决战 24 点 渲染】=====================
 const cardSuits = ['♠', '♥', '♣', '♦'];
 
+// 安全算式求值器（递归下降解析，仅支持 + - * / 与括号）：
+// 与服务端 math24.js 的 Shunting-yard 同等安全级别，绝不使用 eval/Function，
+// 从前端预览层面也杜绝任何表达式注入风险。非法/不完整算式直接抛错。
+function safeEvalExpression(expr) {
+  let i = 0;
+  function parseExpr() {
+    let v = parseTerm();
+    while (i < expr.length && (expr[i] === '+' || expr[i] === '-')) {
+      const op = expr[i++];
+      const r = parseTerm();
+      v = op === '+' ? v + r : v - r;
+    }
+    return v;
+  }
+  function parseTerm() {
+    let v = parseFactor();
+    while (i < expr.length && (expr[i] === '*' || expr[i] === '/')) {
+      const op = expr[i++];
+      const r = parseFactor();
+      if (op === '/' && r === 0) throw new Error('不能除以 0');
+      v = op === '*' ? v * r : v / r;
+    }
+    return v;
+  }
+  function parseFactor() {
+    if (expr[i] === '(') {
+      i++;
+      const v = parseExpr();
+      if (expr[i] !== ')') throw new Error('括号不匹配');
+      i++;
+      return v;
+    }
+    if (expr[i] === '-') { i++; return -parseFactor(); }
+    let j = i;
+    while (j < expr.length && ((expr[j] >= '0' && expr[j] <= '9') || expr[j] === '.')) j++;
+    if (j === i) throw new Error('表达式无效');
+    const v = parseFloat(expr.slice(i, j));
+    i = j;
+    return v;
+  }
+  const v = parseExpr();
+  if (i < expr.length) throw new Error('表达式无效');
+  return v;
+}
+
 function updateM24EvalPreview() {
   const evalEl = document.getElementById('m24-eval-preview');
   if (!evalEl) return;
@@ -2629,9 +2675,9 @@ function updateM24EvalPreview() {
     return;
   }
   try {
-    // 安全求值算式
+    // 只保留数字与四则运算/括号字符后交给安全求值器（替代原先的 Function 构造器）
     const sanitized = currentM24Formula.replace(/[^0-9+\-*/()]/g, '');
-    const res = Function(`"use strict"; return (${sanitized})`)();
+    const res = safeEvalExpression(sanitized);
     if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
       const rounded = Math.round(res * 1000) / 1000;
       evalEl.textContent = `当前计算结果 = ${rounded} ${Math.abs(rounded - 24) < 0.001 ? '🎯 (正好为 24 !)' : ''}`;

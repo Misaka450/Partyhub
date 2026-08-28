@@ -4,11 +4,14 @@
   "description": "多人在线聚会小游戏聚合平台 (12款热门聚会小游戏)",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test tests/unit/engine_core.test.js"
   },
   "dependencies": {
     "express": "^4.21.2",
-    "socket.io": "^4.8.1",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
     "socket.io-client": "^4.8.3"
   }
 }

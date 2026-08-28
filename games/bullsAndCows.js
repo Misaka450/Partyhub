@@ -1,7 +1,9 @@
+const { shuffle } = require('./shuffle');
+
 function generateSecretCode() {
   const digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-  digits.sort(() => 0.5 - Math.random());
-  return digits.slice(0, 4).join('');
+  // Fisher-Yates 无偏洗牌，保证 4 位暗号的每种组合等概率出现
+  return shuffle(digits).slice(0, 4).join('');
 }
 
 function evaluateGuess(secret, guess) {
@@ -23,8 +25,9 @@ function initRoomState(room) {
   room.secretCode = '';
   room.playerGuesses = {}; // token -> [{ guess, a, b, time }]
   room.winner = null;
-  room.maxTime = 120; // 2分钟抢答竞速
-  room.timeLeft = 120;
+  // 竞速总时长读取房间设置 bcTime（30~600 秒），房主未配置则默认 120 秒
+  room.maxTime = Math.min(600, Math.max(30, Number.isFinite(room.bcTime) && room.bcTime > 0 ? Math.round(room.bcTime) : 120));
+  room.timeLeft = room.maxTime;
   clearInterval(room.timer);
   room.timer = null;
   clearTimeout(room.roundTimeout);
@@ -44,7 +47,7 @@ function startGame(room, io, broadcastRoom) {
   });
   room.winner = null;
   room.status = 'BC_PLAYING';
-  room.timeLeft = 120;
+  room.timeLeft = room.maxTime;
 
   broadcastRoom(room);
   io.to(room.id).emit('bc_game_start');
@@ -94,9 +97,10 @@ function submitGuess(room, playerToken, guessStr, io, broadcastRoom) {
     history: room.playerGuesses[playerToken]
   });
 
-  // 公共广播该玩家提交了第几次猜想（不泄露数字）
+  // 公共广播该玩家提交了第几次猜想（只报次数，不泄露猜测数字与 a/b 反馈，
+  // 防止其他玩家蹭用他人结果加速破译）
   const attemptCount = room.playerGuesses[playerToken].length;
-  io.to(room.id).emit('system_message', `🔍 【${player.name}】进行了第 ${attemptCount} 次破译：获得【${a}A${b}B】！`);
+  io.to(room.id).emit('system_message', `🔍 【${player.name}】进行了第 ${attemptCount} 次破译！`);
 
   broadcastRoom(room);
 
@@ -138,7 +142,8 @@ function getPublicState(room) {
     gameType: 'bulls-and-cows',
     status: room.status,
     timeLeft: room.timeLeft,
-    playerGuesses: room.playerGuesses || {},
+    // 注意：不广播 playerGuesses（各玩家猜测历史与 a/b 结果为私有信息，
+    // 重连恢复通过 join_room 时私发 bc_guess_result 实现）
     playerAttemptCounts: room.players.map(p => ({
       token: p.token,
       name: p.name,
@@ -153,5 +158,6 @@ module.exports = {
   initRoomState,
   getPublicState,
   startGame,
-  submitGuess
+  submitGuess,
+  evaluateGuess
 };

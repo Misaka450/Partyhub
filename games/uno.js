@@ -1,3 +1,5 @@
+const { shuffle } = require('./shuffle');
+
 function generateDeck() {
   const deck = [];
   const colors = ['red', 'yellow', 'green', 'blue'];
@@ -25,7 +27,8 @@ function generateDeck() {
     deck.push({ id: `c_${id++}`, color: 'wild', value: 'wild4', type: 'wild4', score: 50 });
   }
 
-  return deck.sort(() => 0.5 - Math.random());
+  // 用 Fisher-Yates 无偏洗牌，保证发牌公平
+  return shuffle(deck);
 }
 
 function initRoomState(room) {
@@ -39,7 +42,6 @@ function initRoomState(room) {
   room.pendingDraw = 0; // accumulated +2 / +4 penalty
   room.hasDrawnThisTurn = false;
   room.drawnCardId = null;
-  room.unoCallers = new Set(); // tokens who called UNO
   room.winner = null;
   clearInterval(room.timer);
   room.timer = null;
@@ -60,12 +62,14 @@ function startGame(room, io, broadcastRoom) {
   room.pendingDraw = 0;
   room.hasDrawnThisTurn = false;
   room.drawnCardId = null;
-  room.unoCallers = new Set();
   room.winner = null;
 
-  // 每人发 7 张牌
+  // 发牌数读取房间设置 unoHandSize（1~20 张），房主未配置则默认 7 张
+  const handSize = Math.min(20, Math.max(1, Number.isFinite(room.unoHandSize) ? Math.round(room.unoHandSize) : 7));
+
+  // 每人发牌
   room.players.forEach(p => {
-    p.hand = room.deck.splice(0, 7);
+    p.hand = room.deck.splice(0, handSize);
     p.hasCalledUno = false;
   });
 
@@ -73,7 +77,7 @@ function startGame(room, io, broadcastRoom) {
   let firstCard = room.deck.pop();
   while (firstCard.color === 'wild') {
     room.deck.unshift(firstCard);
-    room.deck.sort(() => 0.5 - Math.random());
+    room.deck = shuffle(room.deck);
     firstCard = room.deck.pop();
   }
 
@@ -261,7 +265,7 @@ function drawCardsForPlayer(room, player, count) {
     if (room.deck.length === 0) {
       // 牌堆抽空，将弃牌堆（除最上一张）洗回牌堆
       const top = room.discardPile.pop();
-      room.deck = room.discardPile.sort(() => 0.5 - Math.random());
+      room.deck = shuffle(room.discardPile);
       room.discardPile = [top];
     }
     if (room.deck.length > 0) {
@@ -275,6 +279,22 @@ function drawCardAction(room, playerToken, io, broadcastRoom) {
   const current = room.players[room.currentTurnIndex];
   if (!current || current.token !== playerToken) return;
   if (room.hasDrawnThisTurn) return;
+
+  clearInterval(room.timer);
+
+  // 罚牌规则：场上存在未结算的累计罚抽（+2/+4 叠加）时，
+  // 摸牌必须一次吃满全部罚牌并结束回合，防止"摸1张过牌"把罚牌转嫁给下家
+  if (room.pendingDraw > 0) {
+    const penalty = room.pendingDraw;
+    drawCardsForPlayer(room, current, penalty);
+    room.pendingDraw = 0;
+    io.to(room.id).emit('system_message', `💥 【${current.name}】吃下 ${penalty} 张罚牌并跳过回合！`);
+    advanceTurn(room, 1);
+    broadcastRoom(room);
+    sendPrivateHands(room, io);
+    startTurnTimer(room, io, broadcastRoom);
+    return;
+  }
 
   drawCardsForPlayer(room, current, 1);
   const drawnCard = current.hand[current.hand.length - 1];
@@ -292,6 +312,8 @@ function passTurnAction(room, playerToken, io, broadcastRoom) {
   const current = room.players[room.currentTurnIndex];
   if (!current || current.token !== playerToken) return;
   if (!room.hasDrawnThisTurn) return; // 必须先摸牌才能过牌
+  // 场上有未结算罚牌时不允许直接过牌，必须先吃满罚牌（见 drawCardAction）
+  if (room.pendingDraw > 0) return;
 
   clearInterval(room.timer);
   advanceTurn(room, 1);
@@ -304,8 +326,18 @@ function autoPlayOrPass(room, playerToken, io, broadcastRoom) {
   const current = room.players[room.currentTurnIndex];
   if (!current || current.token !== playerToken) return;
 
-  // 自动摸一张牌并过牌
-  drawCardsForPlayer(room, current, 1);
+  clearInterval(room.timer);
+
+  // 超时处理：场上有未结算罚牌则吃满罚牌，否则摸 1 张过牌
+  if (room.pendingDraw > 0) {
+    const penalty = room.pendingDraw;
+    drawCardsForPlayer(room, current, penalty);
+    room.pendingDraw = 0;
+    io.to(room.id).emit('system_message', `⏰ 【${current.name}】超时，吃下 ${penalty} 张罚牌！`);
+  } else {
+    drawCardsForPlayer(room, current, 1);
+  }
+
   advanceTurn(room, 1);
   broadcastRoom(room);
   sendPrivateHands(room, io);
@@ -408,5 +440,6 @@ module.exports = {
   drawCardAction,
   passTurnAction,
   callUno,
-  catchUno
+  catchUno,
+  isPlayable
 };

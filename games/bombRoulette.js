@@ -1,3 +1,5 @@
+const { shuffle } = require('./shuffle');
+
 function initRoomState(room) {
   room.gameType = 'bomb-roulette';
   room.status = 'LOBBY';
@@ -40,9 +42,11 @@ function startGame(room, io, broadcastRoom) {
   clearTimeout(room.roundTimeout);
   room.roundTimeout = null;
 
-  // 根据人数生成引线：通常每人 2 根引线
-  const wireCount = Math.max(6, Math.min(12, playerCount * 2));
-  const selectedColors = [...WIRE_COLORS].sort(() => 0.5 - Math.random()).slice(0, wireCount);
+  // 引线数读取房间设置 bombWires（2~12 根），未配置则按人数默认（每人 2 根，6~12 根）
+  const wireCount = Math.min(12, Math.max(2, Number.isFinite(room.bombWires) && room.bombWires > 0
+    ? Math.round(room.bombWires)
+    : Math.min(12, Math.max(6, playerCount * 2))));
+  const selectedColors = shuffle(WIRE_COLORS).slice(0, wireCount);
 
   // 随机挑 1 根作为引爆线
   const trapIndex = Math.floor(Math.random() * wireCount);
@@ -61,7 +65,8 @@ function startGame(room, io, broadcastRoom) {
   room.explodedPlayer = null;
   room.winner = null;
   room.status = 'BOMB_PLAYING';
-  room.timeLeft = 15;
+  // 每回合倒计时读取房间设置 bombTime（5~60 秒），未配置则默认 15 秒
+  room.timeLeft = Math.min(60, Math.max(5, Number.isFinite(room.bombTime) && room.bombTime > 0 ? Math.round(room.bombTime) : 15));
 
   broadcastRoom(room);
 
@@ -73,7 +78,8 @@ function startGame(room, io, broadcastRoom) {
 
 function startTurnTimer(room, io, broadcastRoom) {
   clearInterval(room.timer);
-  room.timeLeft = 15;
+  // 与开局保持一致：读取房间设置 bombTime（5~60 秒）
+  room.timeLeft = Math.min(60, Math.max(5, Number.isFinite(room.bombTime) && room.bombTime > 0 ? Math.round(room.bombTime) : 15));
 
   const current = room.players[room.currentTurnIndex];
   if (!current) return;

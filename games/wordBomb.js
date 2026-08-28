@@ -49,15 +49,18 @@ function startGame(room, io, broadcastRoom) {
 
   room.usedWords = new Set();
   room.playerLives = {};
+  // 生命值读取房间设置 wbLives（1~5 条），未配置则默认 2 条
+  const lives = Math.min(5, Math.max(1, Number.isFinite(room.wbLives) && room.wbLives > 0 ? Math.round(room.wbLives) : 2));
   room.players.forEach(p => {
-    room.playerLives[p.token] = 2; // 每人 2 条命
+    room.playerLives[p.token] = lives;
   });
 
   room.currentTurnIndex = Math.floor(Math.random() * room.players.length);
   room.currentKeyword = KEYWORDS[Math.floor(Math.random() * KEYWORDS.length)];
   room.status = 'BOMB_TICKING';
-  room.baseTime = 8;
-  room.timeLeft = 8;
+  // 基础引信时长读取房间设置 wbTime（4~30 秒），未配置则默认 8 秒
+  room.baseTime = Math.min(30, Math.max(4, Number.isFinite(room.wbTime) && room.wbTime > 0 ? room.wbTime : 8));
+  room.timeLeft = room.baseTime;
   room.winner = null;
 
   broadcastRoom(room);
@@ -97,6 +100,11 @@ function submitWord(room, playerToken, wordInput, io, broadcastRoom) {
   const word = wordInput.trim();
   if (word.length < 2) {
     io.to(current.id).emit('system_message', '⚠️ 词语长度至少为 2 个字！');
+    return;
+  }
+  // 长度上限防御：防止超长字符串进入聊天广播与词库比对
+  if (word.length > 12) {
+    io.to(current.id).emit('system_message', '⚠️ 词语长度不能超过 12 个字！');
     return;
   }
 

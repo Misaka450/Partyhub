@@ -1,3 +1,5 @@
+const { shuffle } = require('./shuffle');
+
 const ANIMAL_TYPES = [
   { id: 'sheep', name: '绵羊', emoji: '🐑' },
   { id: 'chick', name: '小鸡', emoji: '🐥' },
@@ -9,15 +11,6 @@ const ANIMAL_TYPES = [
   { id: 'dog', name: '小狗', emoji: '🐶' },
   { id: 'penguin', name: '企鹅', emoji: '🐧' }
 ];
-
-function shuffleArray(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 function initRoomState(room) {
   room.gameType = 'flash-counter';
@@ -40,7 +33,7 @@ function generateRoundData(room) {
   const round = room.round || 1;
   // 动物种类数按轮次严格递增：第1轮2种，第2轮3种，第3轮4种...
   const totalSpecies = Math.min(ANIMAL_TYPES.length, round + 1);
-  const shuffledAnimals = shuffleArray(ANIMAL_TYPES);
+  const shuffledAnimals = shuffle(ANIMAL_TYPES);
 
   const target = shuffledAnimals[0];
   const distractors = shuffledAnimals.slice(1, totalSpecies);
@@ -64,8 +57,8 @@ function generateRoundData(room) {
     }
   });
 
-  // 随机乱序池
-  pool.sort(() => 0.5 - Math.random());
+  // 随机乱序池（Fisher-Yates 无偏洗牌）
+  const orderedPool = shuffle(pool);
 
   // 5 条全屏独立跑道 (Y 轴等距分布：10%, 30%, 50%, 70%, 90%)
   const lanes = [0.10, 0.30, 0.50, 0.70, 0.90];
@@ -73,7 +66,7 @@ function generateRoundData(room) {
   const flyingItems = [];
   let waveBaseTime = 0.2;
 
-  pool.forEach((item, idx) => {
+  orderedPool.forEach((item, idx) => {
     // 寻找当前最空闲的跑道，杜绝同跑道拥挤重叠
     let minTrack = 0;
     for (let t = 1; t < 5; t++) {
@@ -111,8 +104,7 @@ function generateRoundData(room) {
   // 生成 4 个竞猜选项（含正确答案与相近的干扰项）
   const optionsSet = new Set([targetCount]);
   const offsets = [-3, -2, -1, 1, 2, 3, 4];
-  offsets.sort(() => 0.5 - Math.random());
-  for (const off of offsets) {
+  for (const off of shuffle(offsets)) {
     const opt = targetCount + off;
     if (opt > 0) optionsSet.add(opt);
     if (optionsSet.size >= 4) break;
@@ -263,7 +255,7 @@ function endRound(room, io, broadcastRoom) {
   clearTimeout(room.roundTimeout);
   room.roundTimeout = null;
 
-  // 结算得分（正解 100 分，按答题速度额外奖励前三名 50/30/20 分）
+  // 结算得分（正解 100 分，按答题速度额外奖励前三名 50/30/10 分）
   const correctAnswers = Object.entries(room.playerAnswers)
     .filter(([_, ans]) => ans.isCorrect)
     .sort((a, b) => a[1].timeTaken - b[1].timeTaken);

@@ -85,6 +85,11 @@ function getRandom24Puzzle() {
 // 用 Shunting-yard（调度场）算法安全求值四则运算表达式，不依赖 eval/Function，
 // 从根本上避免任意代码执行风险。仅支持数字、+ - * / 与括号，按标准运算优先级。
 function safeEvaluate(expr) {
+  // 严格字符白名单：表达式中出现任何数字/运算符/括号/点以外的字符直接抛错，
+  // 不依赖后续分词正则"静默跳过"未知字符（防止被绕过构造意外输入）
+  if (typeof expr !== 'string' || !/^[\d\+\-\*\/\(\)\.\s]+$/.test(expr)) {
+    throw new Error('非法字符');
+  }
   const tokens = expr.match(/(\d+\.?\d*|\+|-|\*|\/|\(|\))/g) || [];
   const precedence = { '+': 1, '-': 1, '*': 2, '/': 2 };
   const opStack = [];
@@ -188,7 +193,8 @@ function initRoomState(room) {
   room.currentCards = [];
   room.roundWinner = null;
   room.roundExpression = '';
-  room.timeLeft = 60;
+  // 每轮答题时长读取房间设置 m24Time（15~300 秒），未配置则默认 60 秒
+  room.timeLeft = Math.min(300, Math.max(15, Number.isFinite(room.m24Time) && room.m24Time > 0 ? Math.round(room.m24Time) : 60));
   clearInterval(room.timer);
   room.timer = null;
   clearTimeout(room.roundTimeout);
@@ -222,7 +228,8 @@ function startRound(room, io, broadcastRoom) {
   room.currentCards = getRandom24Puzzle();
   room.roundWinner = null;
   room.roundExpression = '';
-  room.timeLeft = 60;
+  // 与 initRoomState 保持一致：读取房间设置 m24Time（15~300 秒）
+  room.timeLeft = Math.min(300, Math.max(15, Number.isFinite(room.m24Time) && room.m24Time > 0 ? Math.round(room.m24Time) : 60));
 
   broadcastRoom(room);
   io.to(room.id).emit('system_message', `🧮 第 ${room.round}/${room.maxRounds} 轮：请使用【${room.currentCards.join('、')}】计算出 24 点！`);
@@ -292,7 +299,7 @@ function endRound(room, winner, expression, io, broadcastRoom) {
   if (winner) {
     io.to(room.id).emit('system_message', `🎉 【${winner.name}】神速算出了 24 点！算式：【${expression} = 24】（+150 分）`);
   } else {
-    io.to(room.id).emit('system_message', `⏰ 60 秒时间到，本轮无人解出！参考解法：【${solution} = 24】`);
+    io.to(room.id).emit('system_message', `⏰ 时间到，本轮无人解出！参考解法：【${solution} = 24】`);
   }
 
   broadcastRoom(room);
@@ -351,5 +358,7 @@ module.exports = {
   getPublicState,
   startGame,
   submitSolution,
-  skipPuzzleAction
+  skipPuzzleAction,
+  safeEvaluate,
+  validateExpression
 };
