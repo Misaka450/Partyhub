@@ -2,6 +2,9 @@ const { spawn } = require('child_process');
 const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs');
+const path = require('path');
+// 跨平台浏览器启动工具：自动探测浏览器路径 + 统一截图输出目录
+const { findBrowserPath, ensureScreensDir } = require('./lib/browser_launcher');
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -23,7 +26,14 @@ function createTarget(url, port = 9550) {
 }
 
 async function run() {
-  const proc = spawn('/usr/bin/chromium-browser', [
+  // 先探测本机可用浏览器路径（支持 TEST_BROWSER 环境变量覆盖），找不到直接退出
+  const browserPath = findBrowserPath();
+  if (!browserPath) {
+    console.error('未找到可用浏览器，可用 TEST_BROWSER 环境变量指定路径');
+    process.exit(1);
+  }
+
+  const proc = spawn(browserPath, [
     '--headless',
     '--disable-gpu',
     '--no-sandbox',
@@ -65,7 +75,9 @@ async function run() {
 
   // 1. 登录页全新通行证
   let shot = await send('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync('/tmp/ui_inspect/01_login_screen_new.png', Buffer.from(shot.data, 'base64'));
+  // 截图统一保存到 tests/screens 目录（跨平台，ensureScreensDir 会自动创建目录）
+  const shot1Path = path.join(ensureScreensDir(), '01_login_screen_new.png');
+  fs.writeFileSync(shot1Path, Buffer.from(shot.data, 'base64'));
 
   // 2. 点击头像打开 Avatar Modal
   await send('Runtime.evaluate', {
@@ -74,9 +86,10 @@ async function run() {
   await sleep(600);
 
   shot = await send('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync('/tmp/ui_inspect/02_avatar_modal_opened.png', Buffer.from(shot.data, 'base64'));
+  const shot2Path = path.join(ensureScreensDir(), '02_avatar_modal_opened.png');
+  fs.writeFileSync(shot2Path, Buffer.from(shot.data, 'base64'));
 
-  console.log("Screenshots captured: /tmp/ui_inspect/01_login_screen_new.png and 02_avatar_modal_opened.png");
+  console.log(`Screenshots captured: ${shot1Path} and ${shot2Path}`);
   ws.close();
   proc.kill();
 }

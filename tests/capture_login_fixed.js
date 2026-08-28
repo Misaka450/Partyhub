@@ -2,6 +2,9 @@ const { spawn } = require('child_process');
 const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs');
+const path = require('path');
+// 跨平台浏览器启动工具：自动探测浏览器路径 + 统一截图输出目录
+const { findBrowserPath, ensureScreensDir } = require('./lib/browser_launcher');
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -23,7 +26,14 @@ function createTarget(url, port = 9997) {
 }
 
 async function captureLoginScreens() {
-  const proc = spawn('/usr/bin/chromium-browser', [
+  // 先探测本机可用浏览器路径（支持 TEST_BROWSER 环境变量覆盖），找不到直接退出
+  const browserPath = findBrowserPath();
+  if (!browserPath) {
+    console.error('未找到可用浏览器，可用 TEST_BROWSER 环境变量指定路径');
+    process.exit(1);
+  }
+
+  const proc = spawn(browserPath, [
     '--headless',
     '--disable-gpu',
     '--no-sandbox',
@@ -60,8 +70,10 @@ async function captureLoginScreens() {
 
   // 1. Capture Login Screen Light Mode
   const shot1 = await send('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync('/tmp/ui_inspect/login_screen_fixed.png', Buffer.from(shot1.data, 'base64'));
-  console.log("Captured /tmp/ui_inspect/login_screen_fixed.png");
+  // 截图统一保存到 tests/screens 目录（跨平台，ensureScreensDir 会自动创建目录）
+  const shot1Path = path.join(ensureScreensDir(), 'login_screen_fixed.png');
+  fs.writeFileSync(shot1Path, Buffer.from(shot1.data, 'base64'));
+  console.log(`Captured ${shot1Path}`);
 
   // 2. Open Avatar Selection Modal
   await send('Runtime.evaluate', {
@@ -69,8 +81,9 @@ async function captureLoginScreens() {
   });
   await sleep(400);
   const shot2 = await send('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync('/tmp/ui_inspect/login_avatar_modal.png', Buffer.from(shot2.data, 'base64'));
-  console.log("Captured /tmp/ui_inspect/login_avatar_modal.png");
+  const shot2Path = path.join(ensureScreensDir(), 'login_avatar_modal.png');
+  fs.writeFileSync(shot2Path, Buffer.from(shot2.data, 'base64'));
+  console.log(`Captured ${shot2Path}`);
 
   // 3. Close modal, join room, capture lobby
   await send('Runtime.evaluate', {
@@ -84,8 +97,9 @@ async function captureLoginScreens() {
   });
   await sleep(1000);
   const shot3 = await send('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync('/tmp/ui_inspect/lobby_after_login.png', Buffer.from(shot3.data, 'base64'));
-  console.log("Captured /tmp/ui_inspect/lobby_after_login.png");
+  const shot3Path = path.join(ensureScreensDir(), 'lobby_after_login.png');
+  fs.writeFileSync(shot3Path, Buffer.from(shot3.data, 'base64'));
+  console.log(`Captured ${shot3Path}`);
 
   ws.close();
   proc.kill();

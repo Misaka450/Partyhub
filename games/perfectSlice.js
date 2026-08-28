@@ -169,6 +169,9 @@ function startRound(room, io, broadcastRoom) {
 function submitSlice(room, playerToken, p1, p2, io, broadcastRoom) {
   if (room.status !== 'SLICE_CUTTING') return;
   if (room.playerSlices[playerToken]) return; // 已下刀
+  // 校验提交者真实在房：防止被踢/已退出玩家的幽灵提交污染数据（审计 R2-40）
+  const submitter = room.players.find(p => p.token === playerToken);
+  if (!submitter) return;
 
   // 校验切点坐标完整且是有限数字，防止缺字段崩溃或非数字绕过判定拿满分
   if (!p1 || !p2 ||
@@ -179,15 +182,20 @@ function submitSlice(room, playerToken, p1, p2, io, broadcastRoom) {
     return;
   }
 
-  const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+  // 坐标范围钳制：切线端点应落在 [0,1] 归一化画布内。
+  // 原实现对 -1000 之类的越界值照单全收，属输入卫生缺失（审计 R2-13）
+  const clamp01 = v => Math.min(1, Math.max(0, v));
+  const cleanP1 = { x: clamp01(p1.x), y: clamp01(p1.y) };
+  const cleanP2 = { x: clamp01(p2.x), y: clamp01(p2.y) };
+
+  const dist = Math.hypot(cleanP2.x - cleanP1.x, cleanP2.y - cleanP1.y);
   if (dist < 0.06) {
-    const player = room.players.find(p => p.token === playerToken);
-    if (player) io.to(player.id).emit('system_message', '⚠️ 下刀距离过短，请滑动划出一条完整切线！');
+    io.to(submitter.id).emit('system_message', '⚠️ 下刀距离过短，请滑动划出一条完整切线！');
     return;
   }
 
   const timeTaken = Date.now() - (room.roundStartTime || Date.now());
-  const { ratio1, ratio2, poly1, poly2 } = slicePolygon(room.currentShape.points, p1, p2);
+  const { ratio1, ratio2, poly1, poly2 } = slicePolygon(room.currentShape.points, cleanP1, cleanP2);
   const cleanRatio1 = isNaN(ratio1) ? 50.0 : ratio1;
   const cleanRatio2 = isNaN(ratio2) ? 50.0 : ratio2;
   const diff = Math.abs(50.0 - cleanRatio1); // 误差 (越小越好)
@@ -196,8 +204,8 @@ function submitSlice(room, playerToken, p1, p2, io, broadcastRoom) {
   const baseScore = Math.max(0, Math.round(100 - diff * 15));
 
   room.playerSlices[playerToken] = {
-    p1,
-    p2,
+    p1: cleanP1,
+    p2: cleanP2,
     ratio1: parseFloat(cleanRatio1.toFixed(2)),
     ratio2: parseFloat(cleanRatio2.toFixed(2)),
     diff: parseFloat(diff.toFixed(2)),

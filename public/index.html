@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- viewport：保留双指缩放能力（无障碍 WCAG 1.4.4），
+       防双击误缩放改由 CSS touch-action: manipulation 处理（审计 R2-51） -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <!-- 网站图标：使用内嵌 SVG 避免 favicon.ico 404，支持彩色 Emoji 风格 logo -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236366F1'/%3E%3Ctext x='32' y='42' font-size='34' text-anchor='middle' font-family='Segoe UI Emoji,Apple Color Emoji,sans-serif'%3E🎉%3C/text%3E%3C/svg%3E">
   <title>Party Hub · 聚会游戏</title>

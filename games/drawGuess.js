@@ -154,17 +154,40 @@ function startTurn(room, io, broadcastRoom) {
     room.timeLeft -= 1;
     if (room.timeLeft <= 0) {
       clearInterval(room.timer);
-      selectWord(room, drawer.id, room.wordOptions[0], io, broadcastRoom);
+      // 超时自动选第一个候选词：以"当前"画师为准（闭包快照的画师可能已离场，
+      // 若仍按旧 id 校验会导致校验失败后无人推进、整房卡死，审计 R2-02）
+      if (room.status === 'SELECTING' && room.wordOptions.length > 0) {
+        autoSelectFirstWord(room, io, broadcastRoom);
+      }
     } else {
       io.to(room.id).emit('timer_tick', { timeLeft: room.timeLeft });
     }
   }, 1000);
 }
 
+// 超时自动选词：跳过"必须本人选词"的校验，以当前画师身份推进到绘制阶段（防卡死兜底）
+function autoSelectFirstWord(room, io, broadcastRoom) {
+  const drawer = room.players[room.currentDrawerIndex];
+  if (!drawer) {
+    // 画师位完全空缺（极端）：重开本回合
+    startTurn(room, io, broadcastRoom);
+    return;
+  }
+  applySelectedWord(room, drawer, room.wordOptions[0], io, broadcastRoom);
+}
+
 function selectWord(room, socketId, chosenWord, io, broadcastRoom) {
   const drawer = room.players[room.currentDrawerIndex];
   if (!drawer || drawer.id !== socketId || room.status !== 'SELECTING') return;
 
+  // 词必须在候选白名单内且为字符串：防止被篡改的客户端提交任意超长/非字符串谜底（审计 R2-34）
+  if (typeof chosenWord !== 'string' || !room.wordOptions.includes(chosenWord)) return;
+
+  applySelectedWord(room, drawer, chosenWord, io, broadcastRoom);
+}
+
+// 选词生效共用逻辑：设置谜底并进入绘制阶段
+function applySelectedWord(room, drawer, chosenWord, io, broadcastRoom) {
   room.currentWord = chosenWord;
   room.currentCategory = findCategoryOfWord(chosenWord);
   room.status = 'DRAWING';
@@ -269,7 +292,9 @@ function endGame(room, io, broadcastRoom) {
   clearInterval(room.timer);
 
   const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score);
-  io.to(room.id).emit('game_over', {
+  // 事件名带 dg_ 前缀与其他 11 款游戏对齐：无前缀的 'game_over' 前端根本没有监听，
+  // 导致打满轮数后结算数据被静默丢弃、玩家看不到颁奖界面（审计 R2-09）
+  io.to(room.id).emit('dg_game_over', {
     podium: sortedPlayers.slice(0, 3).map(p => ({
       name: p.name,
       avatar: p.avatar,
@@ -280,6 +305,37 @@ function endGame(room, io, broadcastRoom) {
   broadcastRoom(room);
 }
 
+// 玩家被移除后的善后钩子：修正画师指针；画师离场时推进流程防止整房卡死（审计 R2-02）。
+// server.js 在 leave_room / kick / 掉线超时移除玩家后会调用本函数
+function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
+  const count = room.players.length;
+  if (count === 0) return;
+  if (room.status === 'LOBBY' || room.status === 'GAME_OVER') return;
+
+  const drawerRemoved = removedIndex === room.currentDrawerIndex;
+
+  if (room.status === 'SELECTING') {
+    if (removedIndex < room.currentDrawerIndex) room.currentDrawerIndex -= 1;
+    if (room.currentDrawerIndex >= count) room.currentDrawerIndex %= count;
+    if (drawerRemoved) {
+      // 选词阶段画师离场：清掉旧计时器并由下一位玩家重新开始选词
+      clearInterval(room.timer);
+      startTurn(room, io, broadcastRoom);
+    }
+  } else if (room.status === 'DRAWING') {
+    if (drawerRemoved) {
+      // 绘制阶段画师离场：直接结算本回合（提示语见原因字段）
+      endRound(room, '画师离开了房间，本回合提前结束！', io, broadcastRoom);
+    } else if (removedIndex < room.currentDrawerIndex) {
+      room.currentDrawerIndex -= 1;
+    }
+  } else if (room.status === 'ROUND_END') {
+    // 回合间等待期：仅修正指针，roundTimeout 闭包推进的 startTurn 会自处理
+    if (removedIndex < room.currentDrawerIndex) room.currentDrawerIndex -= 1;
+    if (room.currentDrawerIndex >= count) room.currentDrawerIndex %= count;
+  }
+}
+
 module.exports = {
   initRoomState,
   getPublicState,
@@ -288,5 +344,6 @@ module.exports = {
   selectWord,
   handleGuess,
   endRound,
-  endGame
+  endGame,
+  onPlayerRemoved
 };

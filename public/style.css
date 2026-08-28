@@ -193,6 +193,8 @@ html, body {
   color: var(--text-main);
   position: fixed;
   -webkit-font-smoothing: antialiased;
+  /* 移动端禁用双击缩放但保留双指捏合缩放（配合 viewport 不再禁用 user-scalable，审计 R2-51） */
+  touch-action: manipulation;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -3651,7 +3653,8 @@ html, body {
   position: absolute;
   left: -70px;
   transform: translateY(-50%);
-  will-change: left;
+  /* 动画走 transform（GPU 合成器驱动）；原 left 动画每帧强制布局回流，多动物并行时移动端掉帧（审计 R2-20） */
+  will-change: transform;
 }
 .flash-runner-hop { position: relative; animation: runnerHop 0.42s ease-in-out infinite; }
 .flash-runner-emoji { display: block; line-height: 1; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.35)); }
@@ -3663,10 +3666,11 @@ html, body {
   background: radial-gradient(ellipse, rgba(0,0,0,0.35), transparent 70%);
   border-radius: 50%;
 }
-/* 横穿屏幕动画（JS 内联设置 duration / delay） */
+/* 横穿屏幕动画（JS 内联设置 duration / delay / --runner-travel 行程距离）。
+   注意保留 translateY(-50%) 的垂直居中：动画帧会整体覆盖 transform 属性 */
 @keyframes runnerAcrossContainer {
-  from { left: -70px; }
-  to   { left: calc(100% + 70px); }
+  from { transform: translateY(-50%) translateX(0); }
+  to   { transform: translateY(-50%) translateX(var(--runner-travel, 600px)); }
 }
 @keyframes runnerHop {
   0%, 100% { transform: translateY(0); }

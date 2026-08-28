@@ -14,7 +14,7 @@
  * 本机无头 Edge / Chrome，无需额外安装 Playwright/Puppeteer。
  */
 
-const { spawn, execSync } = require('child_process');
+const { spawn } = require('child_process');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');

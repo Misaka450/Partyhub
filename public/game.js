@@ -1,12 +1,60 @@
 const socket = io();
 
+// =====================【安全存储工具】=====================
+// 统一包裹 localStorage/sessionStorage：旧版 Safari 隐私模式 / 禁用存储时会抛
+// QuotaExceededError，裸调用会导致整个脚本在加载早期中断（页面白屏）（审计 R2-18）
+function safeSetItem(key, value, useSession = false) {
+  try {
+    (useSession ? sessionStorage : localStorage).setItem(key, value);
+  } catch (e) { /* 存储被禁用时静默降级为不持久化 */ }
+}
+function safeGetItem(key, useSession = false) {
+  try {
+    return (useSession ? sessionStorage : localStorage).getItem(key);
+  } catch (e) { return null; }
+}
+function safeRemoveItem(key, useSession = false) {
+  try {
+    (useSession ? sessionStorage : localStorage).removeItem(key);
+  } catch (e) { /* 忽略 */ }
+}
+
+// 生成身份 token：优先使用浏览器加密安全随机（Math.random 可被预测）（审计 R2-49）
+function generatePlayerToken() {
+  if (window.crypto && typeof crypto.randomUUID === 'function') {
+    return `token_${crypto.randomUUID()}`;
+  }
+  if (window.crypto && crypto.getRandomValues) {
+    const bytes = new Uint8Array(9);
+    crypto.getRandomValues(bytes);
+    return `token_${Date.now()}_${Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')}`;
+  }
+  return `token_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
+// token 存取：sessionStorage（标签页隔离）优先 + localStorage 兜底。
+// 双开标签页共享 localStorage 会互相覆盖 token 导致身份错乱（审计 R2-16）
+function loadPlayerToken() {
+  const sessionToken = safeGetItem('dg_player_token', true);
+  if (sessionToken) return sessionToken;
+  return safeGetItem('dg_player_token');
+}
+function savePlayerToken(token) {
+  safeSetItem('dg_player_token', token, true); // 本标签页专属
+  safeSetItem('dg_player_token', token);       // 兜底（sessionStorage 不可用时）
+}
+function clearPlayerToken() {
+  safeRemoveItem('dg_player_token', true);
+  safeRemoveItem('dg_player_token');
+}
+
 // 主题管理 (深色 / 浅色模式)
-let currentTheme = localStorage.getItem('party_theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+let currentTheme = safeGetItem('party_theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
 
 function applyTheme(theme) {
   currentTheme = theme;
   document.documentElement.setAttribute('data-theme', theme);
-  localStorage.setItem('party_theme', theme);
+  safeSetItem('party_theme', theme);
   
   const loginThemeBtn = document.getElementById('btn-login-theme');
   if (loginThemeBtn) {
@@ -45,12 +93,12 @@ let isIMEComposing = false;
 document.addEventListener('compositionstart', () => { isIMEComposing = true; });
 document.addEventListener('compositionend', () => { isIMEComposing = false; });
 
-// 身份持久化
-let myPlayerToken = localStorage.getItem('dg_player_token') || `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-localStorage.setItem('dg_player_token', myPlayerToken);
+// 身份持久化（token 存取经统一工具函数：sessionStorage 标签页隔离 + localStorage 兜底）
+let myPlayerToken = loadPlayerToken() || generatePlayerToken();
+savePlayerToken(myPlayerToken);
 
-let savedName = localStorage.getItem('dg_player_name') || ('玩家' + Math.floor(Math.random() * 900 + 100));
-let savedAvatar = localStorage.getItem('dg_player_avatar') || '🐱';
+let savedName = safeGetItem('dg_player_name') || ('玩家' + Math.floor(Math.random() * 900 + 100));
+let savedAvatar = safeGetItem('dg_player_avatar') || '🐱';
 
 // 全局状态
 let myPlayerId = '';
@@ -475,16 +523,26 @@ function showGameOverModal({
 }
 
 // =====================【高高清 DPR 响应式画布通用初始化】=====================
+// 尺寸缓存：canvas.width 赋值即使数值相同也会清空画布并触发重新光栅化，
+// 高频调用（如切披萨拖动）会造成布局抖动与掉帧，尺寸未变时跳过重设（审计 R2-19）
+const canvasSizeCache = new WeakMap();
+
 function fitCanvasResolution(canvas, ctx, defaultW = 360, defaultH = 320, maxW = 600) {
   if (!canvas) return { w: defaultW, h: defaultH, dpr: 1 };
   const parent = canvas.parentElement;
   const dpr = window.devicePixelRatio || 1;
   const w = (parent && parent.clientWidth > 50) ? parent.clientWidth : (window.innerWidth > 50 ? Math.min(window.innerWidth - 32, maxW) : defaultW);
   const h = (parent && parent.clientHeight > 50) ? parent.clientHeight : defaultH;
-  canvas.width = Math.floor(w * dpr);
-  canvas.height = Math.floor(h * dpr);
-  canvas.style.width = `${w}px`;
-  canvas.style.height = `${h}px`;
+  const physW = Math.floor(w * dpr);
+  const physH = Math.floor(h * dpr);
+  const cached = canvasSizeCache.get(canvas);
+  if (!cached || cached.w !== w || cached.h !== h || cached.dpr !== dpr) {
+    canvas.width = physW;
+    canvas.height = physH;
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+    canvasSizeCache.set(canvas, { w, h, dpr });
+  }
   if (ctx) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
@@ -546,7 +604,7 @@ if (playerNameInput) {
     const val = e.target.value.trim();
     if (val) {
       myPlayerName = val;
-      localStorage.setItem('dg_player_name', val);
+      safeSetItem('dg_player_name', val);
     }
   });
 }
@@ -566,7 +624,7 @@ document.querySelectorAll('.avatar-item').forEach(item => {
   item.addEventListener('click', () => {
     myAvatar = item.dataset.avatar;
     selectedAvatarEl.textContent = myAvatar;
-    localStorage.setItem('dg_player_avatar', myAvatar);
+    safeSetItem('dg_player_avatar', myAvatar);
     avatarPicker.classList.add('hidden');
   });
 });
@@ -633,7 +691,7 @@ if (btnAvatarConfirm) {
   btnAvatarConfirm.addEventListener('click', () => {
     myAvatar = tempSelectedAvatar;
     if (selectedAvatarEl) selectedAvatarEl.textContent = myAvatar;
-    localStorage.setItem('dg_player_avatar', myAvatar);
+    safeSetItem('dg_player_avatar', myAvatar);
     closeAvatarModal();
     showToast(`头像已更换为 ${myAvatar} ✨`, '🎨');
     playSound('correct');
@@ -828,7 +886,7 @@ if (btnRandomName) {
     if (playerNameInput) {
       playerNameInput.value = rName;
       myPlayerName = rName;
-      localStorage.setItem('dg_player_name', rName);
+      safeSetItem('dg_player_name', rName);
       playSound('tick');
       triggerVibration('pop');
     }
@@ -867,8 +925,12 @@ btnJoin.addEventListener('click', () => {
     return;
   }
   myPlayerName = name;
-  localStorage.setItem('dg_player_name', name);
+  safeSetItem('dg_player_name', name);
   initAudio();
+
+  // 防连点：点击后临时禁用，收到 joined_successfully / join_error 后恢复（审计 R2-17）
+  btnJoin.disabled = true;
+  setTimeout(() => { btnJoin.disabled = false; }, 5000);
 
   socket.emit('join_room', {
     roomId: room,
@@ -878,16 +940,24 @@ btnJoin.addEventListener('click', () => {
   });
 });
 
+// 加入失败（房间满/参数非法）：登录界面直接弹出提示并恢复按钮，
+// 原实现只有 system_message（渲染在不可见的游戏屏），用户毫无反馈（审计 R2-17）
+socket.on('join_error', (data) => {
+  btnJoin.disabled = false;
+  showToast(data?.reason || '加入房间失败，请稍后重试', '⚠️');
+});
+
 socket.on('joined_successfully', (data) => {
+  btnJoin.disabled = false;
   currentRoomId = data.roomId;
   currentGameType = data.gameType || 'draw-guess';
   myPlayerId = data.playerId;
   isHost = !!data.isHost;
 
-  // 以服务端下发的 token 为准并持久化，保证断线重连 / 认领席位一致
+  // 以服务端下发的 token 为准并持久化（双写 sessionStorage + localStorage，标签页隔离，审计 R2-16）
   if (data.playerToken) {
     myPlayerToken = data.playerToken;
-    try { localStorage.setItem('dg_player_token', myPlayerToken); } catch (e) {}
+    savePlayerToken(myPlayerToken);
   }
 
   loginScreen.classList.remove('active');
@@ -921,16 +991,46 @@ socket.on('joined_successfully', (data) => {
   updateGameStageView(currentGameType);
 });
 
+// 退出/被踢后统一清理本地房间状态：聊天记录、游戏私密角色、未读徽标、URL 房间参数
+// （原实现只清 token，旧房间聊天与私密状态会带进新房间）（审计 R2-43）
+function resetRoomLocalState() {
+  currentRoomId = '';
+  currentRoomState = null;
+  myUndercoverRole = null;
+  myAvalonRole = null;
+  myUnoHand = [];
+  if (typeof chatMessages !== 'undefined' && chatMessages) {
+    chatMessages.innerHTML = '<div class="chat-system-msg">🎉 欢迎加入！和朋友输入相同房间号即可一起开黑～</div>';
+  }
+  unreadMessageCount = 0;
+  if (typeof chatUnreadBadge !== 'undefined' && chatUnreadBadge) chatUnreadBadge.classList.add('hidden');
+  // 清除 URL 中的房间直链参数，防止被踢后刷新又自动回到原房间
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('room')) {
+      url.searchParams.delete('room');
+      window.history.replaceState({}, '', url);
+    }
+  } catch (e) { /* 忽略 URL 操作异常 */ }
+}
+
 // 被房主请出房间：清理本地身份缓存（换新 token），回到登录界面，防止凭旧 token 反复闯房
 socket.on('kicked', () => {
-  currentRoomId = '';
-  try { localStorage.removeItem('dg_player_token'); } catch (e) {}
-  try { localStorage.removeItem('dg_player_name'); } catch (e) {}
-  myPlayerToken = `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  try { localStorage.setItem('dg_player_token', myPlayerToken); } catch (e) {}
+  resetRoomLocalState();
+  clearPlayerToken();
+  safeRemoveItem('dg_player_name');
+  myPlayerToken = generatePlayerToken();
+  savePlayerToken(myPlayerToken);
   gameScreen.classList.remove('active');
   loginScreen.classList.add('active');
   showToast('你已被房主请出房间', '🚫');
+});
+
+// 断线提示：原实现没有 disconnect 监听，服务重启/网络切换时界面静止无感知（审计 R2-48）
+socket.on('disconnect', (reason) => {
+  if (currentRoomId) {
+    showToast('⚠️ 连接已断开，正在自动重连...', '📡');
+  }
 });
 
 // 跨应用切换/网络唤醒自动无感极速重连与防假死机制 (Mobile Wakeup Watchdog)
@@ -1005,7 +1105,9 @@ window.addEventListener('pageshow', () => {
   tryAutoReconnect(true);
 });
 
-// 每 2.5 秒心跳保活，避免移动端 NAT 超时丢包
+// 每 2.5 秒心跳保活，避免移动端 NAT 超时丢包。
+// 设计说明：本计时器是有意的全局保活机制，退出房间后仍在运行（内部已判空跳过 emit），
+// 保持 socket 活性以便随时重新入房，属可接受权衡（审计 R2-48 注记）
 setInterval(() => {
   lastWakeupCheck = Date.now();
   if (currentRoomId && socket.connected) {
@@ -1217,17 +1319,29 @@ settingElementIds.forEach(id => {
   }
 });
 
-btnStartGame.addEventListener('click', () => {
+// 简单防抖：300ms 内重复点击直接忽略。
+// 双击"准备"会让服务端翻转两次回到原值（UI 与服务端短暂不一致），双击"开局"重复下发设置（审计 R2-47）
+function debounceClick(fn, waitMs = 300) {
+  let lastCall = 0;
+  return (...args) => {
+    const now = Date.now();
+    if (now - lastCall < waitMs) return;
+    lastCall = now;
+    fn(...args);
+  };
+}
+
+btnStartGame.addEventListener('click', debounceClick(() => {
   if (isHost) {
     if (!socket.connected) socket.connect();
     socket.emit('update_room_settings', collectCurrentRoomSettings());
     socket.emit('start_game');
   }
-});
+}));
 
-btnToggleReady.addEventListener('click', () => {
+btnToggleReady.addEventListener('click', debounceClick(() => {
   socket.emit('toggle_ready');
-});
+}));
 
 btnBackLobby?.addEventListener('click', () => {
   document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
@@ -1247,13 +1361,10 @@ if (btnLeaveRoom) {
       isDanger: true,
       onConfirm: () => {
         socket.emit('leave_room');
-        currentRoomId = '';
-        currentRoomState = null;
+        // 统一清理本地房间状态（聊天/私密角色/未读徽标/URL 参数）（审计 R2-43）
+        resetRoomLocalState();
         gameScreen.classList.remove('active');
         loginScreen.classList.add('active');
-        const url = new URL(window.location);
-        url.searchParams.delete('room');
-        window.history.replaceState({}, '', url);
         showToast('已退出房间 🚪', '👋');
         playSound('tick');
       }
@@ -1659,9 +1770,16 @@ function resizeCanvas() {
   }
 }
 
+// resize 监听只注册一次：initCanvas 会在每次 joined_successfully（含断线重连）时被调用，
+// 无条件 addEventListener 会导致监听器随重连次数累积、每个 resize 事件执行 N 次（审计 R2-15）
+let canvasResizeListenerBound = false;
+
 function initCanvas() {
   resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+  if (!canvasResizeListenerBound) {
+    canvasResizeListenerBound = true;
+    window.addEventListener('resize', resizeCanvas);
+  }
 }
 
 function getPos(e) {
@@ -2222,14 +2340,15 @@ socket.on('uno_game_over', (data) => {
   }));
 
   showGameOverModal({
-    title: `🃏 【${escapeHtml(data.winnerName)}】赢得 UNO 胜局！`,
+    // title/desc 走 textContent 渲染（不解析 HTML），无需预转义——预转义反而会把 < & 显示成实体字符（审计 R2-44）
+    title: `🃏 【${data.winnerName}】赢得 UNO 胜局！`,
     desc: `获得积分 +${data.earnedScore} 分！`,
     podium
   });
 });
 
 // =====================【瞬间数小鸡/数动物 奔跑渲染引擎 (DOM + Canvas 双重保险)】=====================
-let flashAnimationId = null;
+// 注：飞掠动画已改用 CSS animation 驱动，原 flashAnimationId 已删除（从未被赋值的死代码，审计 R2-48）
 
 function initFlashCanvasResolution() {
   return fitCanvasResolution(flashCanvas, flashCtx, 360, 260, 600);
@@ -2319,7 +2438,6 @@ function renderFlashCounterState(state) {
 socket.on('flash_round_ready', (data) => {
   resetFlashForm();
   flashOverlayCard.classList.add('hidden');
-  if (flashAnimationId) cancelAnimationFrame(flashAnimationId);
   if (readyTargetEmoji && data.targetAnimal) readyTargetEmoji.textContent = data.targetAnimal.emoji;
   if (readyTargetName && data.targetAnimal) readyTargetName.textContent = data.targetAnimal.name;
   if (readyCountdown) readyCountdown.textContent = '3';
@@ -2352,6 +2470,9 @@ socket.on('flash_start_flying', (data) => {
     flashRunnersLayer.innerHTML = '';
     const wrapperH = (flashCanvas && flashCanvas.clientHeight > 50) ? flashCanvas.clientHeight : (h || 320);
     const laneH = wrapperH / 5;
+    // 横穿行程：容器宽 + 左右各 70px 出场缓冲（transform 动画用，审计 R2-20）
+    const wrapperW = (flashCanvas && flashCanvas.clientWidth > 50) ? flashCanvas.clientWidth : (w || 600);
+    const travelDist = Math.round(wrapperW + 140);
 
     items.forEach(item => {
       const el = document.createElement('div');
@@ -2362,6 +2483,8 @@ socket.on('flash_start_flying', (data) => {
       const targetPixelY = Math.round((item.laneIndex + 0.5) * laneH);
       el.style.top = `${targetPixelY}px`;
       el.style.fontSize = `${item.size || 44}px`;
+      // 用 CSS 变量把行程距离传给 transform 动画（合成器驱动，无逐帧回流，审计 R2-20）
+      el.style.setProperty('--runner-travel', `${travelDist}px`);
       el.style.animation = `runnerAcrossContainer ${runDuration.toFixed(2)}s linear ${item.delay.toFixed(2)}s forwards`;
       el.innerHTML = `
         <div class="flash-runner-hop">
@@ -2445,7 +2568,8 @@ socket.on('wire_cut_safe', (data) => {
 socket.on('bomb_exploded', (data) => {
   playSound('boom');
   launchConfetti();
-  showRevealModal('💥 BOOM！！！炸弹引爆！', `💀 ${escapeHtml(data.victimName)}`, 4000);
+  // word 走 textContent 渲染，无需预转义（审计 R2-44）
+  showRevealModal('💥 BOOM！！！炸弹引爆！', `💀 ${data.victimName}`, 4000);
 });
 
 socket.on('bomb_game_over', (data) => {
@@ -2469,9 +2593,10 @@ function renderBullsAndCowsState(state) {
       history.forEach((h, idx) => {
         const item = document.createElement('div');
         item.className = 'bc-log-item';
+        // h.guess 是用户提交的输入回显，即便服务端有 /^\d{4}$/ 校验，客户端也统一转义（纵深防御，审计 R2-45）
         item.innerHTML = `
-          <span>#${idx + 1} 猜想 <b class="bc-log-guess">${h.guess}</b></span>
-          <span class="bc-log-feedback">${h.a}A ${h.b}B</span>
+          <span>#${idx + 1} 猜想 <b class="bc-log-guess">${escapeHtml(h.guess)}</b></span>
+          <span class="bc-log-feedback">${escapeHtml(String(h.a))}A ${escapeHtml(String(h.b))}B</span>
         `;
         bcLogList.appendChild(item);
       });
@@ -2508,7 +2633,6 @@ function resetAllGameStages() {
 
   // 4. 瞬间数小鸡
   resetFlashForm();
-  if (flashAnimationId) cancelAnimationFrame(flashAnimationId);
   if (flashOverlayCard) flashOverlayCard.classList.add('hidden');
   if (flashReadyBanner) flashReadyBanner.classList.add('hidden');
   if (flashRunnersLayer) flashRunnersLayer.innerHTML = '';
@@ -2589,9 +2713,10 @@ socket.on('bc_guess_result', (data) => {
   data.history.forEach((h, idx) => {
     const item = document.createElement('div');
     item.className = 'bc-log-item';
+    // 用户输入回显统一客户端转义（纵深防御，审计 R2-45）
     item.innerHTML = `
-      <span>#${idx + 1} 猜想 <b class="bc-log-guess">${h.guess}</b></span>
-      <span class="bc-log-feedback">${h.a}A ${h.b}B</span>
+      <span>#${idx + 1} 猜想 <b class="bc-log-guess">${escapeHtml(h.guess)}</b></span>
+      <span class="bc-log-feedback">${escapeHtml(String(h.a))}A ${escapeHtml(String(h.b))}B</span>
     `;
     bcLogList.appendChild(item);
   });
@@ -2612,7 +2737,8 @@ socket.on('bc_game_over', (data) => {
   }));
   showGameOverModal({
     title: '🔢 密码破解揭晓！',
-    desc: `解密王者：【${escapeHtml(data.winnerName)}】`,
+    // desc 走 textContent 渲染，无需预转义（审计 R2-44）
+    desc: `解密王者：【${data.winnerName}】`,
     extraHtml: secretHtml,
     podium
   });
@@ -3201,9 +3327,49 @@ wbInputForm?.addEventListener('submit', (e) => {
 socket.on('word_bomb_game_over', (data) => {
   showGameOverModal({
     title: '💥 词汇炸弹 决出胜者！',
-    desc: `最终幸存王者：【${escapeHtml(data.winnerName)}】！`,
+    // desc 走 textContent 渲染，无需预转义（审计 R2-44）
+    desc: `最终幸存王者：【${data.winnerName}】！`,
     podium: data.podium || []
   });
+});
+
+// 你画我猜终局结算：引擎已改发带前缀的 dg_game_over（原无前缀 'game_over' 无监听，
+// 打满轮数后 podium 数据被静默丢弃，玩家看不到颁奖界面）（审计 R2-09）
+socket.on('dg_game_over', (data) => {
+  showGameOverModal({
+    title: '🎨 你画我猜 圆满收官！',
+    desc: '感谢各位灵魂画师与猜词大师的精彩表现！',
+    podium: data.podium || []
+  });
+});
+
+// 谁是卧底投票结果：展示各玩家得票明细（原 uc_vote_result 无监听，核心结算 UI 失效）（审计 R2-10）
+socket.on('uc_vote_result', (data) => {
+  if (data && Array.isArray(data.voteDetails) && data.voteDetails.length > 0) {
+    const top = (data.topCandidates || []).map(p => p.name).join('、');
+    showToast(`🗳️ 最高 ${data.maxVotes} 票：${top || '无人得票'}`, '📊');
+  }
+});
+
+// 谁是卧底出局身份揭示（原 uc_player_eliminated 无监听）（审计 R2-10）
+socket.on('uc_player_eliminated', (data) => {
+  if (data && data.name) {
+    showToast(`【${data.name}】出局，身份：${data.roleName || '未知'}`, '🚨');
+  }
+});
+
+// 阿瓦隆组队表决结果：展示赞成/反对票数（原 avalon_team_vote_result 无监听，博弈明细缺失）（审计 R2-30）
+socket.on('avalon_team_vote_result', (data) => {
+  if (data) {
+    showToast(`表决${data.passed ? '通过' : '未通过'}：赞成 ${data.approves} : 反对 ${data.rejects}`, data.passed ? '🛡️' : '❌');
+  }
+});
+
+// 阿瓦隆任务结果：展示成功/失败卡数量（原 avalon_quest_result 无监听）（审计 R2-30）
+socket.on('avalon_quest_result', (data) => {
+  if (data) {
+    showToast(`任务 ${data.questIndex + 1} ${data.questPassed ? '成功 🏆' : '失败 💥'}（${data.successCount} 成功 / ${data.failsCount} 失败）`, data.questPassed ? '🏆' : '💥');
+  }
 });
 
 chatForm.addEventListener('submit', (e) => {
@@ -4004,7 +4170,7 @@ socket.on('slice_round_summary', (data) => {
     });
     summaryHtml += '</div>';
   }
-  showRevealModal(`🍕 本轮刀工榜首：【${escapeHtml(data.bestCutter)}】`, '50.0% : 50.0%', 4500, summaryHtml);
+  showRevealModal(`🍕 本轮刀工榜首：【${data.bestCutter}】`, '50.0% : 50.0%', 4500, summaryHtml);
 });
 
 socket.on('slice_game_over', (data) => {
@@ -4139,7 +4305,7 @@ socket.on('hold_round_summary', (data) => {
     });
     summaryHtml += '</div>';
   }
-  showRevealModal(`⏱️ 本轮时间领主：【${escapeHtml(data.bestHolder)}】`, '5.000s', 4500, summaryHtml);
+  showRevealModal(`⏱️ 本轮时间领主：【${data.bestHolder}】`, '5.000s', 4500, summaryHtml);
 });
 
 socket.on('hold_game_over', (data) => {

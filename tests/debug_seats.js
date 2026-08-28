@@ -2,6 +2,9 @@ const { spawn } = require('child_process');
 const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs');
+const path = require('path');
+// 跨平台浏览器启动工具：自动探测浏览器路径 + 统一截图输出目录
+const { findBrowserPath, ensureScreensDir } = require('./lib/browser_launcher');
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -23,7 +26,14 @@ function createTarget(url, port = 9660) {
 }
 
 async function run() {
-  const proc = spawn('/usr/bin/chromium-browser', [
+  // 先探测本机可用浏览器路径（支持 TEST_BROWSER 环境变量覆盖），找不到直接退出
+  const browserPath = findBrowserPath();
+  if (!browserPath) {
+    console.error('未找到可用浏览器，可用 TEST_BROWSER 环境变量指定路径');
+    process.exit(1);
+  }
+
+  const proc = spawn(browserPath, [
     '--headless',
     '--disable-gpu',
     '--no-sandbox',
@@ -83,8 +93,10 @@ async function run() {
   console.log("Seats debug info:", res.result.value);
 
   const shot = await send('Page.captureScreenshot', { format: 'png' });
-  fs.writeFileSync('/tmp/ui_inspect/debug_seats_lobby.png', Buffer.from(shot.data, 'base64'));
-  console.log("Captured /tmp/ui_inspect/debug_seats_lobby.png");
+  // 截图统一保存到 tests/screens 目录（跨平台，ensureScreensDir 会自动创建目录）
+  const shotPath = path.join(ensureScreensDir(), 'debug_seats_lobby.png');
+  fs.writeFileSync(shotPath, Buffer.from(shot.data, 'base64'));
+  console.log(`Captured ${shotPath}`);
 
   ws.close();
   proc.kill();

@@ -3,9 +3,11 @@ const http = require('http');
 const WebSocket = require('ws');
 const fs = require('fs');
 const path = require('path');
+// 跨平台浏览器启动工具：自动探测浏览器路径 + 统一截图输出目录
+const { findBrowserPath, ensureScreensDir } = require('./lib/browser_launcher');
 
-const OUT_DIR = '/tmp/ui_inspect';
-if (!fs.existsSync(OUT_DIR)) fs.mkdirSync(OUT_DIR, { recursive: true });
+// 截图统一保存到 tests/screens 目录（跨平台，ensureScreensDir 会自动创建目录）
+const OUT_DIR = ensureScreensDir();
 
 async function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
@@ -40,7 +42,14 @@ class CDPBrowser {
   }
 
   async launch() {
-    this.proc = spawn('/usr/bin/chromium-browser', [
+    // 先探测本机可用浏览器路径（支持 TEST_BROWSER 环境变量覆盖），找不到直接退出
+    const browserPath = findBrowserPath();
+    if (!browserPath) {
+      console.error('未找到可用浏览器，可用 TEST_BROWSER 环境变量指定路径');
+      process.exit(1);
+    }
+
+    this.proc = spawn(browserPath, [
       '--headless',
       '--disable-gpu',
       '--no-sandbox',

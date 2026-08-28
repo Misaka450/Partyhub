@@ -1,6 +1,8 @@
 const { spawn } = require('child_process');
 const http = require('http');
 const WebSocket = require('ws');
+// 跨平台浏览器启动工具：自动探测本机可用浏览器（Windows/Linux/macOS）
+const { findBrowserPath } = require('./lib/browser_launcher');
 
 async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -22,7 +24,14 @@ function createTarget(url, port = 9995) {
 }
 
 async function test2PlayerSwitch() {
-  const proc = spawn('/usr/bin/chromium-browser', [
+  // 先探测本机可用浏览器路径（支持 TEST_BROWSER 环境变量覆盖），找不到直接退出
+  const browserPath = findBrowserPath();
+  if (!browserPath) {
+    console.error('未找到可用浏览器，可用 TEST_BROWSER 环境变量指定路径');
+    process.exit(1);
+  }
+
+  const proc = spawn(browserPath, [
     '--headless',
     '--disable-gpu',
     '--no-sandbox',

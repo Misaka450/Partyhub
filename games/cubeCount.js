@@ -24,8 +24,13 @@ function generateCubeGrid(round = 1) {
     grid.push(row);
   }
 
-  // 兜底保障：至少有 6 个方块且不全平
+  // 兜底保障：至少有 6 个方块且不全平。
+  // 重建时先清零全部格子再固定对角线三格，保证 totalCubes 与 grid 实际数量严格一致
+  // （原实现只设三格不清零其他格，画面方块数可能与 totalCubes 不符导致整轮不可玩，审计 R2-39）
   if (totalCubes < 6) {
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) grid[r][c] = 0;
+    }
     grid[0][0] = 3;
     grid[1][1] = 2;
     grid[2][2] = 1;
@@ -148,9 +153,16 @@ function startGuessPhase(room, io, broadcastRoom) {
 function submitAnswer(room, playerToken, chosenOption, io, broadcastRoom) {
   if (room.status !== 'CUBE_GUESSING') return;
   if (room.playerAnswers[playerToken]) return;
+  // 校验提交者真实在房：被踢/已退出玩家的 socket 若仍残留，不能让其幽灵作答污染数据（审计 R2-40）
+  const player = room.players.find(p => p.token === playerToken);
+  if (!player) return;
+
+  // 严格校验答案：必须是整数且在选项集内（parseInt 会把 '6abc' 解析成 6 绕过判定，审计 R2-41）
+  const answerNum = Number(chosenOption);
+  if (!Number.isInteger(answerNum) || !(room.options || []).includes(answerNum)) return;
 
   const timeTaken = Date.now() - (room.guessStartTime || Date.now());
-  const isCorrect = (parseInt(chosenOption) === room.totalCubes);
+  const isCorrect = (answerNum === room.totalCubes);
 
   room.playerAnswers[playerToken] = {
     option: chosenOption,
@@ -248,6 +260,9 @@ function getPublicState(room) {
     maxRounds: room.maxRounds,
     timeLeft: room.timeLeft,
     options: room.options || [],
+    // 题面网格放进公共状态：中途加入/断线重连的玩家可补渲染 3D 几何体，
+    // 否则只能看到抢答按钮却面对空白画布（审计 R2-33）
+    currentGrid: room.currentGrid || [],
     answeredTokens: Object.keys(room.playerAnswers || {})
   };
 }

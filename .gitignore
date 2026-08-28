@@ -8,8 +8,11 @@ yarn-error.log*
 .vscode/
 .idea/
 
-# ---- UI 自动化测试：浏览器临时用户目录 + 产出截图（二进制大文件，避免仓库膨胀）----
+# ---- UI 自动化测试：浏览器临时用户目录 + 产出截图与报告（避免大文件污染版本库，审计 R2-58）----
 .tmp_edge_profile_verify/
 .tmp_edge_profile/
 tests/ui_audit_screens/
+tests/screens/
 tests/ui_audit_run.log
+tests/ui_audit_report.json
+tests/ui_audit_report.md

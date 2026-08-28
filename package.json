@@ -5,13 +5,15 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/unit/engine_core.test.js"
+    "test": "node --test tests/unit/engine_core.test.js tests/unit/player_removal.test.js",
+    "test:e2e": "node tests/test_cube_round2.js && node tests/test_all_games.js && node tests/test_new_games.js && node tests/test_perfect_slice.js && node tests/test_reclaim.js"
   },
   "dependencies": {
     "express": "^4.21.2",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "ws": "^8.18.0"
   }
 }

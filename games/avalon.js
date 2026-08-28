@@ -107,35 +107,7 @@ function startGame(room, io, broadcastRoom) {
 
   // 下发专属夜晚视野
   room.players.forEach(player => {
-    const role = player.avalonRole;
-    let seenInfo = [];
-
-    if (role === 'merlin') {
-      // 梅林看到所有坏人（莫德雷德除外）
-      const evilSeen = room.players
-        .filter(p => p.avalonSide === 'evil' && p.avalonRole !== 'mordred')
-        .map(p => ({ token: p.token, name: p.name, avatar: p.avatar, tag: '邪恶阵营' }));
-      seenInfo = evilSeen;
-    } else if (role === 'percival') {
-      // 派西维尔看到梅林和莫甘娜（分不清）
-      const candidates = shuffle(room.players.filter(p => p.avalonRole === 'merlin' || p.avalonRole === 'morgana'))
-        .map(p => ({ token: p.token, name: p.name, avatar: p.avatar, tag: '梅林候选人' }));
-      seenInfo = candidates;
-    } else if (player.avalonSide === 'evil' && role !== 'oberon') {
-      // 坏人互看（奥伯伦除外）
-      const evilTeammates = room.players
-        .filter(p => p.avalonSide === 'evil' && p.avalonRole !== 'oberon' && p.token !== player.token)
-        .map(p => ({ token: p.token, name: p.name, avatar: p.avatar, tag: `${ROLE_INFO[p.avalonRole].name}` }));
-      seenInfo = evilTeammates;
-    }
-
-    io.to(player.id).emit('avalon_secret_role', {
-      role: player.avalonRole,
-      roleName: ROLE_INFO[player.avalonRole].name,
-      side: player.avalonSide,
-      desc: ROLE_INFO[player.avalonRole].desc,
-      seenInfo
-    });
+    io.to(player.id).emit('avalon_secret_role', buildSecretRolePayload(room, player));
   });
 
   io.to(room.id).emit('system_message', '👑 命运石板已镌刻！各位亚瑟骑士与邪恶爪牙已睁眼感知身份！');
@@ -152,13 +124,73 @@ function startGame(room, io, broadcastRoom) {
   }, 1000);
 }
 
+// 构建某玩家的私密身份载荷（含夜晚视野），开局下发与断线重连补发共用（审计 R2-33）
+function buildSecretRolePayload(room, player) {
+  const role = player.avalonRole;
+  let seenInfo = [];
+
+  if (role === 'merlin') {
+    // 梅林看到所有坏人（莫德雷德除外）
+    seenInfo = room.players
+      .filter(p => p.avalonSide === 'evil' && p.avalonRole !== 'mordred')
+      .map(p => ({ token: p.token, name: p.name, avatar: p.avatar, tag: '邪恶阵营' }));
+  } else if (role === 'percival') {
+    // 派西维尔看到梅林和莫甘娜（分不清）
+    seenInfo = shuffle(room.players.filter(p => p.avalonRole === 'merlin' || p.avalonRole === 'morgana'))
+      .map(p => ({ token: p.token, name: p.name, avatar: p.avatar, tag: '梅林候选人' }));
+  } else if (player.avalonSide === 'evil' && role !== 'oberon') {
+    // 坏人互看（奥伯伦除外）
+    seenInfo = room.players
+      .filter(p => p.avalonSide === 'evil' && p.avalonRole !== 'oberon' && p.token !== player.token)
+      .map(p => ({ token: p.token, name: p.name, avatar: p.avatar, tag: `${ROLE_INFO[p.avalonRole].name}` }));
+  }
+
+  return {
+    role: player.avalonRole,
+    roleName: ROLE_INFO[player.avalonRole].name,
+    side: player.avalonSide,
+    desc: ROLE_INFO[player.avalonRole].desc,
+    seenInfo
+  };
+}
+
+// 断线重连时供 server.js 调用：重建该玩家的私密身份载荷（审计 R2-33）
+function getSecretRoleFor(room, player) {
+  if (!player || !player.avalonRole || !ROLE_INFO[player.avalonRole]) return null;
+  return buildSecretRolePayload(room, player);
+}
+
+// 人数守卫：QUEST_CONFIGS 只覆盖 5~10 人，游戏中人数跌破 5 时提前结束，
+// 防止 config.quests 取到 undefined 抛 TypeError 导致整房卡死（审计 R2-08）
+function ensurePlayable(room, io, broadcastRoom) {
+  if (QUEST_CONFIGS[room.players.length]) return true;
+  if (room.status !== 'LOBBY' && room.status !== 'GAME_OVER') {
+    room.winner = null;
+    room.winReason = '⚠️ 玩家离开导致人数不足 5 人，阿瓦隆无法继续，游戏提前结束';
+    endGame(room, io, broadcastRoom);
+  }
+  return false;
+}
+
 function startTeamPropose(room, io, broadcastRoom) {
+  // 人数守卫：跌破 5 人直接结束，防止 QUEST_CONFIGS 取 undefined 崩溃（审计 R2-08）
+  if (!ensurePlayable(room, io, broadcastRoom)) return;
+
   room.status = 'AVALON_TEAM_PROPOSE';
   room.selectedTeam = [];
   room.teamVotes = {};
   room.questVotes = {};
 
+  // 队长指针归一化：玩家中途退出可能使 leaderIndex 越界（审计 R2-02）
+  if (typeof room.leaderIndex !== 'number' || room.leaderIndex >= room.players.length) {
+    room.leaderIndex = 0;
+  }
   const leader = room.players[room.leaderIndex];
+  if (!leader) {
+    room.leaderIndex = 0;
+    ensurePlayable(room, io, broadcastRoom);
+    return;
+  }
   const count = room.players.length;
   const config = QUEST_CONFIGS[count];
   const requiredCount = config.quests[room.currentQuestIndex];
@@ -172,14 +204,18 @@ function startTeamPropose(room, io, broadcastRoom) {
   room.timer = setInterval(() => {
     room.timeLeft -= 1;
     if (room.timeLeft <= 0) {
-      // 队长超时自动随机凑齐队伍提交
+      clearInterval(room.timer);
+      // 队长超时自动随机凑齐队伍提交：
+      // 实时查找当前队长（闭包快照可能已离场导致校验失败卡死，审计 R2-02）
+      const liveLeader = room.players[room.leaderIndex] || room.players[0];
+      if (!liveLeader) return;
       if (room.selectedTeam.length < requiredCount) {
         const remaining = room.players.map(p => p.token).filter(t => !room.selectedTeam.includes(t));
         while (room.selectedTeam.length < requiredCount && remaining.length > 0) {
           room.selectedTeam.push(remaining.shift());
         }
       }
-      submitTeam(room, leader.token, room.selectedTeam, io, broadcastRoom);
+      submitTeam(room, liveLeader.token, room.selectedTeam, io, broadcastRoom);
     } else {
       io.to(room.id).emit('timer_tick', { timeLeft: room.timeLeft });
     }
@@ -187,8 +223,14 @@ function startTeamPropose(room, io, broadcastRoom) {
 }
 
 function selectTeamMember(room, leaderToken, memberToken, io, broadcastRoom) {
+  if (room.status !== 'AVALON_TEAM_PROPOSE') return;
+  // 人数守卫（审计 R2-08）
+  if (!QUEST_CONFIGS[room.players.length]) return;
   const leader = room.players[room.leaderIndex];
-  if (!leader || leader.token !== leaderToken || room.status !== 'AVALON_TEAM_PROPOSE') return;
+  if (!leader || leader.token !== leaderToken) return;
+  // 校验被选者真实在房且已有阵营身份（中途加入的无身份玩家不可入队，防止幽灵队员，审计 R2-31）
+  const member = room.players.find(p => p.token === memberToken);
+  if (!member) return;
 
   const count = room.players.length;
   const requiredCount = QUEST_CONFIGS[count].quests[room.currentQuestIndex];
@@ -205,8 +247,11 @@ function selectTeamMember(room, leaderToken, memberToken, io, broadcastRoom) {
 }
 
 function submitTeam(room, leaderToken, teamTokens, io, broadcastRoom) {
+  if (room.status !== 'AVALON_TEAM_PROPOSE') return;
+  // 人数守卫（审计 R2-08）
+  if (!QUEST_CONFIGS[room.players.length]) return;
   const leader = room.players[room.leaderIndex];
-  if (!leader || leader.token !== leaderToken || room.status !== 'AVALON_TEAM_PROPOSE') return;
+  if (!leader || leader.token !== leaderToken) return;
 
   const count = room.players.length;
   const requiredCount = QUEST_CONFIGS[count].quests[room.currentQuestIndex];
@@ -409,9 +454,10 @@ function castQuestVote(room, memberToken, isSuccess, io, broadcastRoom) {
   const player = room.players.find(p => p.token === memberToken);
   if (!player) return;
 
-  // 正义阵营只能投成功
+  // 正义阵营只能投成功；无阵营身份的中途加入者同样强制投成功，
+  // 防止其投出 FAIL 卡破坏好人任务（审计 R2-29）
   let finalVote = isSuccess;
-  if (player.avalonSide === 'good') {
+  if (!player.avalonSide || player.avalonSide === 'good') {
     finalVote = true;
   }
 
@@ -427,6 +473,9 @@ function castQuestVote(room, memberToken, isSuccess, io, broadcastRoom) {
 function tallyQuestVotes(room, io, broadcastRoom) {
   room.status = 'AVALON_QUEST_RESULT';
   clearInterval(room.timer);
+
+  // 人数守卫（审计 R2-08）
+  if (!QUEST_CONFIGS[room.players.length]) return;
 
   const count = room.players.length;
   const config = QUEST_CONFIGS[count];
@@ -601,6 +650,28 @@ function endGame(room, io, broadcastRoom) {
   broadcastRoom(room);
 }
 
+// 玩家被移除后的善后钩子：修正队长指针；人数跌破 5 时提前结束（审计 R2-02 / R2-08）。
+// server.js 在 leave_room / kick / 掉线超时移除玩家后会调用本函数
+function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
+  if (room.status === 'LOBBY' || room.status === 'GAME_OVER') return;
+
+  // 人数不足 5 人：提前结束（含 config 判空防护，双重保险）
+  if (!ensurePlayable(room, io, broadcastRoom)) return;
+
+  const count = room.players.length;
+
+  // 修正队长指针：被移除者在队长之前则前移；被移除的正是队长则顺延（splice 后同索引即原下一位）
+  if (typeof room.leaderIndex === 'number') {
+    if (removedIndex < room.leaderIndex) room.leaderIndex -= 1;
+    if (room.leaderIndex < 0 || room.leaderIndex >= count) {
+      room.leaderIndex = ((room.leaderIndex % count) + count) % count;
+    }
+  }
+
+  // 发言阶段用 token 查找（speechOrder），天然稳健；组队/投票阶段超时回调已实时查找队长
+  broadcastRoom(room);
+}
+
 function getPublicState(room) {
   const leader = room.players[room.leaderIndex];
   const count = room.players.length;
@@ -647,5 +718,7 @@ module.exports = {
   finishCurrentSpeech,
   castTeamVote,
   castQuestVote,
-  assassinatePlayer
+  assassinatePlayer,
+  getSecretRoleFor,
+  onPlayerRemoved
 };

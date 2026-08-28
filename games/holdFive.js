@@ -13,10 +13,17 @@ function initRoomState(room) {
 }
 
 function startGame(room, io, broadcastRoom) {
+  // 与其他引擎对齐：开局先清双计时器并校验游戏类型，防止残留回调（审计 R2-42）
+  if (room.gameType !== 'hold-five') return;
   if (room.players.length < 1) {
     io.to(room.id).emit('system_message', '至少需要 1 名玩家开始游戏！');
     return;
   }
+
+  clearInterval(room.timer);
+  room.timer = null;
+  clearTimeout(room.roundTimeout);
+  room.roundTimeout = null;
 
   room.round = 1;
   startRound(room, io, broadcastRoom);
@@ -25,16 +32,20 @@ function startGame(room, io, broadcastRoom) {
 function startRound(room, io, broadcastRoom) {
   room.status = 'HOLD_PRESSING';
   room.playerHolds = {};
-  
+
   // 随机 3 到 10 之间的整数秒 (3, 4, 5, 6, 7, 8, 9, 10)
   if (room.fixedTargetSeconds && room.fixedTargetSeconds > 0) {
-    room.targetSeconds = parseFloat(room.fixedTargetSeconds);
+    // 引擎侧钳制到 [1, 30]：服务端白名单已限，此处防御直接调用引擎的场景（审计 R2-42/HF-02）
+    room.targetSeconds = Math.min(30, Math.max(1, parseFloat(room.fixedTargetSeconds) || 1));
   } else {
     room.targetSeconds = Math.floor(Math.random() * (10 - 3 + 1)) + 3;
   }
 
   // 限时为 目标时间 + 5 秒缓冲 (至少 12 秒)
   room.timeLeft = Math.max(12, Math.ceil(room.targetSeconds + 5));
+
+  // 服务端时间锚点：用于校验客户端自报的按压时长是否物理可信（审计 R2-14）
+  room.roundStartAt = Date.now();
 
   broadcastRoom(room);
   io.to(room.id).emit('hold_start_round', {
@@ -47,6 +58,8 @@ function startRound(room, io, broadcastRoom) {
   io.to(room.id).emit('system_message', `⏱️ 第 ${room.round}/${room.maxRounds} 轮：本轮目标时间为【${room.targetSeconds}.000 秒】！按住大按钮凭直觉精准松开！`);
 
   clearInterval(room.timer);
+  clearTimeout(room.roundTimeout);
+  room.roundTimeout = null;
   room.timer = setInterval(() => {
     room.timeLeft -= 1;
     if (room.timeLeft <= 0) {
@@ -61,9 +74,20 @@ function startRound(room, io, broadcastRoom) {
 function submitHoldTime(room, playerToken, elapsedMs, io, broadcastRoom) {
   if (room.status !== 'HOLD_PRESSING') return;
   if (room.playerHolds[playerToken]) return;
+  // 校验提交者真实在房：防止被踢/已退出玩家的幽灵提交污染数据（审计 R2-40）
+  const player = room.players.find(p => p.token === playerToken);
+  if (!player) return;
 
   // 校验时间数值合理：必须是大于 0 的有限数字且不超过 60 秒，防止 NaN/伪造值污染成绩
   if (typeof elapsedMs !== 'number' || !Number.isFinite(elapsedMs) || elapsedMs <= 0 || elapsedMs > 60000) return;
+
+  // 服务端锚点校验（审计 R2-14）：按压时长不可能超过"本轮已过去的墙钟时间 + 容差"。
+  // 挡住开局瞬间直接伪造 elapsedMs = targetSeconds*1000 的最粗糙作弊
+  // （容差 1 秒覆盖客户端时钟偏差；等待后再提交的精细作弊属已知信任模型限制）
+  if (room.roundStartAt) {
+    const wallElapsed = Date.now() - room.roundStartAt;
+    if (elapsedMs > wallElapsed + 1000) return;
+  }
 
   const seconds = elapsedMs / 1000;
   const diff = Math.abs(seconds - room.targetSeconds);
@@ -75,14 +99,12 @@ function submitHoldTime(room, playerToken, elapsedMs, io, broadcastRoom) {
     baseScore
   };
 
-  const player = room.players.find(p => p.token === playerToken);
-  if (player) {
-    io.to(player.id).emit('hold_submit_feedback', {
-      seconds: room.playerHolds[playerToken].seconds,
-      diff: room.playerHolds[playerToken].diff,
-      targetSeconds: room.targetSeconds
-    });
-  }
+  // player 已在函数开头校验过存在性，直接发即时反馈
+  io.to(player.id).emit('hold_submit_feedback', {
+    seconds: room.playerHolds[playerToken].seconds,
+    diff: room.playerHolds[playerToken].diff,
+    targetSeconds: room.targetSeconds
+  });
 
   broadcastRoom(room);
 

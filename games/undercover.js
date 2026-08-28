@@ -63,12 +63,12 @@ function startGame(room, io, broadcastRoom) {
     return;
   }
 
-  // 自动校验卧底数
+  // 自动校验卧底数（含下限防御：spyCount 至少为 1，防止 0/负数导致"无卧底秒结局"，审计 R2-32）
   let maxSpies = Math.max(1, Math.floor((totalPlayers - 1) / 2));
   if (room.hasBlank && maxSpies > 1 && totalPlayers < 6) {
     maxSpies = 1;
   }
-  room.spyCount = Math.min(room.spyCount || 1, maxSpies);
+  room.spyCount = Math.max(1, Math.min(room.spyCount || 1, maxSpies));
 
   // 选词对
   const pool = getPairPool(room);

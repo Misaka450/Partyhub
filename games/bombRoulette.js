@@ -210,9 +210,34 @@ function getPublicState(room) {
   };
 }
 
+// 玩家被移除后的善后钩子：修正回合指针并重启定时器（审计 R2-02）。
+// server.js 在 leave_room / kick / 掉线超时移除玩家后会调用本函数
+function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
+  if (room.status !== 'BOMB_PLAYING') return;
+  const count = room.players.length;
+  if (count === 0) return;
+
+  const old = room.currentTurnIndex;
+  if (removedIndex === old) {
+    // 被移除者正是当前拆弹者：splice 后同索引已指向原下一位，回合自然顺延
+  } else if (removedIndex < old) {
+    // 被移除者在当前玩家之前：数组整体前移，索引同步减一
+    room.currentTurnIndex = old - 1;
+  }
+  if (room.currentTurnIndex < 0 || room.currentTurnIndex >= count) {
+    room.currentTurnIndex = ((room.currentTurnIndex % count) + count) % count;
+  }
+
+  // 旧计时器闭包持有已离场玩家的 token（超时随机剪线校验会失配导致死锁），必须换新计时器
+  clearInterval(room.timer);
+  broadcastRoom(room);
+  startTurnTimer(room, io, broadcastRoom);
+}
+
 module.exports = {
   initRoomState,
   getPublicState,
   startGame,
-  cutWire
+  cutWire,
+  onPlayerRemoved
 };

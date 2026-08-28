@@ -98,8 +98,23 @@ setInterval(() => {
   }
 }, 600000);
 
+// 玩家被移除后统一通知游戏引擎修正回合指针/重启定时器（审计 R2-02）。
+// leave_room / kick_player / disconnect 超时三条移除路径都会调用，
+// 防止 UNO、拆弹、词弹、阿瓦隆、你画我猜因索引漂移导致整房永久死锁。
+function notifyPlayerRemoved(room, removedIndex) {
+  if (!room || !room.players || room.players.length === 0) return;
+  if (room.status === 'LOBBY' || room.status === 'GAME_OVER') return;
+  const engine = GAME_ENGINES[room.gameType];
+  if (engine && typeof engine.onPlayerRemoved === 'function') {
+    safeEngineCall(engine.onPlayerRemoved, room, removedIndex, io, broadcastRoom);
+  }
+}
+
 function broadcastRoom(room) {
   room.lastActivity = Date.now();
+  // 注意：绝不序列化 avalonSide（阵营）等私密字段——room_state 会广播给全房间，
+  // 任何玩家开 DevTools 即可看到，等价于全员作弊（审计 R2-01）
+  // votesReceived 是卧底的公开得票数（前端票数徽章消费点），投票结束后属公开信息
   const safePlayers = room.players.map(p => ({
     id: p.id,
     token: p.token,
@@ -109,7 +124,7 @@ function broadcastRoom(room) {
     isHost: p.isHost,
     isReady: p.isReady,
     alive: p.alive !== undefined ? p.alive : true,
-    avalonSide: p.avalonSide || null
+    votesReceived: p.votesReceived || 0
   }));
 
   const engine = GAME_ENGINES[room.gameType] || drawGuessEngine;
@@ -146,10 +161,17 @@ io.on('connection', (socket) => {
 
   socket.on('join_room', ({ roomId, playerName, avatar, playerToken }) => {
     // 输入校验：限制类型与长度，防止超长字符串滥用内存/带宽（昵称最长12字、房间号最长32字符）
-    if (typeof roomId !== 'string' || typeof playerName !== 'string') return;
+    // 校验失败时回发 join_error，让登录界面能给出提示而不是毫无反应（审计 R2-17）
+    if (typeof roomId !== 'string' || typeof playerName !== 'string') {
+      socket.emit('join_error', { reason: '房间号或昵称格式不正确' });
+      return;
+    }
     roomId = roomId.trim().slice(0, 32);
     playerName = playerName.trim().slice(0, 12);
-    if (!roomId || !playerName) return;
+    if (!roomId || !playerName) {
+      socket.emit('join_error', { reason: '房间号和昵称不能为空' });
+      return;
+    }
     if (typeof avatar !== 'string' || !avatar) avatar = '🐱';
     avatar = avatar.slice(0, 8);
     // token 必须是 64 字符以内的字符串，否则视为无效并重新生成
@@ -210,7 +232,10 @@ io.on('connection', (socket) => {
     } else {
       // 人数上限保护：防止恶意客户端无限创建连接挤爆房间
       if (room.players.length >= 20) {
-        socket.emit('system_message', '⚠️ 房间人数已满（最多 20 人），无法加入！');
+        // 房满时回发 join_error 让登录界面弹出提示（system_message 渲染在不可见的游戏屏，登录页看不到，审计 R2-17）
+        socket.emit('join_error', { reason: '房间人数已满（最多 20 人），无法加入！' });
+        socket.leave(roomId);
+        currentRoomId = null;
         return;
       }
 
@@ -243,6 +268,21 @@ io.on('connection', (socket) => {
         alive: true,
         offlineTimer: null
       };
+
+      // UNO 进行中入房的新玩家补发空手牌，防止引擎访问 undefined 手牌崩溃（审计 R2-07）
+      if (room.gameType === 'uno' && room.status === 'UNO_PLAYING') {
+        player.hand = [];
+        player.hasCalledUno = false;
+      }
+      // 词汇炸弹进行中入房的新玩家补发生命值，否则会被引擎当作"已死亡"永远轮不到（审计 R2-12）
+      if (room.gameType === 'word-bomb' && room.status === 'BOMB_TICKING') {
+        if (!room.playerLives) room.playerLives = {};
+        if (!(player.token in room.playerLives)) {
+          const lives = Math.min(5, Math.max(1, Number.isFinite(room.wbLives) && room.wbLives > 0 ? Math.round(room.wbLives) : 2));
+          room.playerLives[player.token] = lives;
+        }
+      }
+
       room.players.push(player);
     }
 
@@ -274,6 +314,24 @@ io.on('connection', (socket) => {
       socket.emit('bc_guess_result', { guess: last.guess, a: last.a, b: last.b, history });
     }
 
+    // ===== 断线重连私密状态补发（审计 R2-33）=====
+    // 谁是卧底：重连后私发本人身份与词语（开局只发一次，不补发会导致玩家看不到自己的词）
+    if (room.gameType === 'undercover' && room.status !== 'LOBBY' && room.status !== 'GAME_OVER' && player.role) {
+      socket.emit('uc_secret_role', { role: player.role, word: player.word || '' });
+    }
+    // 阿瓦隆：重连后私发本人角色（视野信息由引擎重建，梅林/刺客等关键身份不丢失）
+    if (room.gameType === 'avalon' && room.status !== 'LOBBY' && room.status !== 'GAME_OVER' && player.avalonRole
+        && typeof avalonEngine.getSecretRoleFor === 'function') {
+      socket.emit('avalon_secret_role', avalonEngine.getSecretRoleFor(room, player));
+    }
+    // UNO：重连后私发本人手牌
+    if (room.gameType === 'uno' && room.status === 'UNO_PLAYING' && player.hand) {
+      socket.emit('uno_hand', {
+        hand: player.hand,
+        canCallUno: player.hand.length === 2
+      });
+    }
+
     broadcastRoom(room);
     if (!isReconnecting) {
       io.to(room.id).emit('system_message', `👋 【${player.name}】进入了房间`);
@@ -285,7 +343,13 @@ io.on('connection', (socket) => {
   socket.on('ping_sync', () => {
     if (!currentRoomId) return;
     const room = rooms.get(currentRoomId);
-    if (room) broadcastRoom(room);
+    if (!room) return;
+    // 500ms 频控：ping_sync 每次触发都是一次全房 room_state 广播，
+    // 不限频会被恶意客户端当广播放大器刷流量（审计 R2-21）
+    const nowSync = Date.now();
+    if (socket.lastPingSyncAt && nowSync - socket.lastPingSyncAt < 500) return;
+    socket.lastPingSyncAt = nowSync;
+    broadcastRoom(room);
   });
 
 // 房主切换游戏类型
@@ -342,6 +406,15 @@ io.on('connection', (socket) => {
     sliceTolerance: 'number', fixedTargetSeconds: 'number'
   };
 
+  // 数值型设置的范围钳制表：超出范围自动收敛到边界，
+  // 防止恶意/误设极端值（如 spyCount=-5 秒结局、fixedTargetSeconds=10000 卡死轮次）（审计 R2-32）
+  const SETTING_RANGES = {
+    maxRounds: [1, 20], roundTime: [10, 300], spyCount: [1, 4], speakTime: [10, 120],
+    speechDuration: [10, 180], unoHandSize: [1, 20], bombWires: [2, 12], bombTime: [5, 60],
+    bcRounds: [1, 10], bcTime: [30, 600], m24Time: [15, 300],
+    wbLives: [1, 5], wbTime: [4, 30], sliceTolerance: [0.5, 10], fixedTargetSeconds: [1, 30]
+  };
+
   // 房主更新房间配置参数（白名单过滤 + 类型校验）
   socket.on('update_room_settings', (settings) => {
     const room = rooms.get(currentRoomId);
@@ -356,7 +429,9 @@ io.on('connection', (socket) => {
       if (expectedType === 'number') {
         const num = Number(settings[key]);
         if (!Number.isFinite(num)) continue;
-        room[key] = num;
+        // 按范围表钳制，杜绝 0/负数/超大值绕过引擎防御
+        const range = SETTING_RANGES[key];
+        room[key] = range ? Math.min(range[1], Math.max(range[0], num)) : num;
       } else if (expectedType === 'boolean') {
         room[key] = !!settings[key];
       } else if (expectedType === 'string' && typeof settings[key] === 'string') {
@@ -484,7 +559,12 @@ io.on('connection', (socket) => {
     if (targetIndex >= 0 && room.players[targetIndex].token !== player.token) {
       const target = room.players[targetIndex];
       io.to(target.id).emit('kicked');
+      // 先通知引擎修正回合指针（被踢者可能是当前回合玩家，审计 R2-02），再移出席位
       room.players.splice(targetIndex, 1);
+      notifyPlayerRemoved(room, targetIndex);
+      // 被踢者的 socket 也移出房间频道，防止其继续接收游戏广播/幽灵提交（审计 R2-40）
+      const kickedSocket = io.sockets.sockets.get(target.id);
+      if (kickedSocket) kickedSocket.leave(room.id);
       io.to(room.id).emit('system_message', `🚫 【${target.name}】被房主请出了房间`);
       broadcastRoom(room);
     }
@@ -668,6 +748,13 @@ io.on('connection', (socket) => {
   socket.on('bc_submit_guess', ({ guess }) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'bulls-and-cows') return;
+    const player = room.players.find(p => p.token === currentPlayerToken);
+    if (!player) return;
+    // 500ms 频控：每次猜测都会全量回传历史并全房广播，
+    // 不限频可被恶意客户端用于 O(n²) 内存/带宽放大（审计 R2-11）
+    const nowGuessAt = Date.now();
+    if (player.lastGuessAt && nowGuessAt - player.lastGuessAt < 500) return;
+    player.lastGuessAt = nowGuessAt;
     safeEngineCall(bullsAndCowsEngine.submitGuess, room, currentPlayerToken, guess, io, broadcastRoom);
   });
 
@@ -725,6 +812,8 @@ io.on('connection', (socket) => {
     const idx = room.players.findIndex(p => p.token === currentPlayerToken);
     if (idx !== -1) {
       const removed = room.players.splice(idx, 1)[0];
+      // 通知引擎修正回合指针（离场者可能是当前回合玩家，审计 R2-02）
+      notifyPlayerRemoved(room, idx);
       if (removed.offlineTimer) {
         clearTimeout(removed.offlineTimer);
         removed.offlineTimer = null;
@@ -763,6 +852,8 @@ io.on('connection', (socket) => {
         const idx = room.players.findIndex(p => p.token === player.token);
         if (idx !== -1) {
           const removed = room.players.splice(idx, 1)[0];
+          // 通知引擎修正回合指针（掉线超时被移除的玩家可能是当前回合玩家，审计 R2-02）
+          notifyPlayerRemoved(room, idx);
           io.to(room.id).emit('system_message', `🚪 【${removed.name}】离开了房间`);
 
           if (removed.isHost && room.players.length > 0) {

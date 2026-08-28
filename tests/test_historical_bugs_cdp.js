@@ -17,6 +17,11 @@
 const { spawn } = require('child_process');
 const http = require('http');
 const WebSocket = require('ws');
+// 跨平台浏览器启动工具：自动探测本机可用浏览器（Windows/Linux/macOS）
+const { findBrowserPath } = require('./lib/browser_launcher');
+
+// 浏览器进程的模块级引用：成功/失败路径结束时都要清理，避免无头浏览器进程残留
+let chromeProc = null;
 
 function wait(ms) {
   return new Promise(r => setTimeout(r, ms));
@@ -127,7 +132,14 @@ async function runBugRegressionSuite() {
   console.log('🛡️  启动历史全部已知 Bug 专项回归 CDP 自动化测试套件');
   console.log('====================================================');
 
-  const chromeProc = spawn('/usr/bin/chromium-browser', [
+  // 先探测本机可用浏览器路径（支持 TEST_BROWSER 环境变量覆盖），找不到直接退出
+  const browserPath = findBrowserPath();
+  if (!browserPath) {
+    console.error('未找到可用浏览器，可用 TEST_BROWSER 环境变量指定路径');
+    process.exit(1);
+  }
+
+  chromeProc = spawn(browserPath, [
     '--headless',
     '--no-sandbox',
     '--disable-gpu',
@@ -334,5 +346,7 @@ async function runBugRegressionSuite() {
 
 runBugRegressionSuite().catch(err => {
   console.error('❌ 回归测试失败:', err);
+  // 失败路径同样要清理浏览器进程，避免无头浏览器残留
+  if (chromeProc) chromeProc.kill();
   process.exit(1);
 });

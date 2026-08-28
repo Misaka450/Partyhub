@@ -88,6 +88,10 @@ function submitGuess(room, playerToken, guessStr, io, broadcastRoom) {
 
   const record = { guess, a, b, time: Date.now() };
   room.playerGuesses[playerToken].push(record);
+  // 历史限长：每次提交都会全量回传本人历史，无限增长会造成 O(n²) 级流量放大（审计 R2-11）
+  if (room.playerGuesses[playerToken].length > 200) {
+    room.playerGuesses[playerToken].splice(0, room.playerGuesses[playerToken].length - 200);
+  }
 
   // 单独把最新反馈发给该玩家
   io.to(player.id).emit('bc_guess_result', {

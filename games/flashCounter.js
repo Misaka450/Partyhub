@@ -225,10 +225,16 @@ function startGuessingPhase(room, io, broadcastRoom) {
 function submitAnswer(room, playerToken, chosenOption, io, broadcastRoom) {
   if (room.status !== 'FLASH_GUESSING') return;
   if (room.playerAnswers[playerToken]) return; // 已作答
+  // 校验提交者真实在房：防止被踢/已退出玩家的幽灵作答污染数据（审计 R2-40）
+  const player = room.players.find(p => p.token === playerToken);
+  if (!player) return;
+
+  // 严格校验答案：必须是整数且在选项集内（parseInt 宽松解析会误判 '6abc' 类畸形值，审计 R2-41）
+  const answerNum = Number(chosenOption);
+  if (!Number.isInteger(answerNum) || !(room.options || []).includes(answerNum)) return;
 
   const timeTaken = Date.now() - (room.guessStartTime || Date.now());
-  // 将答案归一为数字再比对，与 cubeCount 行为保持一致，避免字符串答案被误判
-  const isCorrect = (parseInt(chosenOption, 10) === room.targetCount);
+  const isCorrect = (answerNum === room.targetCount);
 
   room.playerAnswers[playerToken] = {
     option: chosenOption,
@@ -329,6 +335,8 @@ function getPublicState(room) {
     timeLeft: room.timeLeft,
     targetAnimal: room.targetAnimal,
     options: room.options || [],
+    // 飞行阶段把动物清单放进公共状态：中途加入/断线重连的玩家可补看动画（审计 R2-33）
+    flyingItems: room.status === 'FLASH_FLYING' ? (room.flyingItems || []) : undefined,
     answeredTokens: Object.keys(room.playerAnswers || {})
   };
 }

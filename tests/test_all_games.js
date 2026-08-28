@@ -1,6 +1,10 @@
 const { io } = require('socket.io-client');
 
-const SERVER_URL = 'http://127.0.0.1:8080';
+// 测试服务器地址：默认本机 8080，可用环境变量 TEST_SERVER 覆盖（审计 R2-54）
+const SERVER_URL = process.env.TEST_SERVER || 'http://127.0.0.1:8080';
+
+// 失败计数器：每处断言失败 +1，结尾据此决定退出码（审计 R2-24）
+let failCount = 0;
 
 function createPlayer(name, avatar, token) {
   const socket = io(SERVER_URL, {
@@ -31,6 +35,28 @@ async function runTests() {
   ];
 
   console.log(`[1/5] 5 名玩家加入房间: ${roomId}`);
+
+  // 连接看门狗：若 10 秒内没有任何玩家成功连上服务器，直接快速失败退出（审计 R2-54）
+  // 避免服务未启动时脚本静默挂起几十秒后还显示"通过"
+  let connectedCount = 0;
+  setTimeout(() => {
+    if (connectedCount === 0) {
+      console.error(`✗ 10 秒内无法连接测试服务器 ${SERVER_URL}，测试快速失败退出！`);
+      process.exit(1);
+    }
+  }, 10000);
+  players.forEach(p => {
+    p.socket.on('connect', () => { connectedCount++; });
+    // 每个连接只记录一次错误日志，避免重连刷屏
+    let errLogged = false;
+    p.socket.on('connect_error', (err) => {
+      if (!errLogged) {
+        errLogged = true;
+        console.error(`✗ 玩家【${p.name}】连接服务器失败: ${err.message}`);
+      }
+    });
+  });
+
   for (const p of players) {
     p.socket.emit('join_room', {
       roomId,
@@ -83,9 +109,11 @@ async function runTests() {
       console.log(`  ✓ 猜词与加分判定正常：【${guesser.name}】正确猜中并触发加分与回合结束广播！`);
     } else {
       console.error('  ✗ 猜词判定未触发');
+      failCount++; // 断言失败计数（审计 R2-24）
     }
   } else {
     console.error('  ✗ 选词事件未下发');
+    failCount++; // 断言失败计数（审计 R2-24）
   }
 
   // 重置回大厅
@@ -113,7 +141,13 @@ async function runTests() {
   const roleTypes = Object.values(rolesReceived).map(r => r.role);
   const civCount = roleTypes.filter(r => r === 'civilian').length;
   const spyCount = roleTypes.filter(r => r === 'undercover').length;
-  console.log(`  ✓ 身份分发正常：平民 ${civCount} 人，卧底 ${spyCount} 人`);
+  // 断言：5 人局全员必须收到身份，且至少 1 名卧底、1 名平民
+  if (Object.keys(rolesReceived).length === 5 && spyCount >= 1 && civCount >= 1) {
+    console.log(`  ✓ 身份分发正常：平民 ${civCount} 人，卧底 ${spyCount} 人`);
+  } else {
+    failCount++;
+    console.error(`  ✗ 身份分发异常：${Object.keys(rolesReceived).length}/5 人收到身份，卧底 ${spyCount} 人，平民 ${civCount} 人`);
+  }
 
   const spyPlayer = players.find(p => rolesReceived[p.token]?.role === 'undercover');
   const civPlayers = players.filter(p => rolesReceived[p.token]?.role === 'civilian');
@@ -145,7 +179,8 @@ async function runTests() {
   if (ucGameOver && ucWinningTeam === 'civilians') {
     console.log('  ✓ 胜负与结算逻辑正常：卧底被成功投出，平民阵营取得最终胜利！');
   } else {
-    console.log(`  * 卧底结算结果: gameOver=${ucGameOver}, winner=${ucWinningTeam}`);
+    failCount++;
+    console.error(`  ✗ 卧底结算异常：gameOver=${ucGameOver}，winner=${ucWinningTeam}（应全员投出卧底后平民获胜）`);
   }
 
   // 重置回大厅
@@ -172,25 +207,55 @@ async function runTests() {
 
   const goodRoles = Object.values(avalonRoles).filter(r => r.side === 'good');
   const evilRoles = Object.values(avalonRoles).filter(r => r.side === 'evil');
-  console.log(`  ✓ 阵营分发正常：正义阵营 ${goodRoles.length} 人（含梅林/派西维尔），邪恶阵营 ${evilRoles.length} 人（含刺客/莫甘娜）`);
+  // 断言：5 人标准局应为 3 正义 + 2 邪恶，且全员都收到身份
+  const avalonRolesOk = Object.keys(avalonRoles).length === 5 && goodRoles.length === 3 && evilRoles.length === 2;
+  if (avalonRolesOk) {
+    console.log(`  ✓ 阵营分发正常：正义阵营 ${goodRoles.length} 人（含梅林/派西维尔），邪恶阵营 ${evilRoles.length} 人（含刺客/莫甘娜）`);
+  } else {
+    failCount++;
+    console.error(`  ✗ 阵营分发异常：${Object.keys(avalonRoles).length}/5 人收到身份，正义 ${goodRoles.length} 人（应 3），邪恶 ${evilRoles.length} 人（应 2）`);
+  }
 
   const merlinPlayer = players.find(p => avalonRoles[p.token]?.role === 'merlin');
   const percivalPlayer = players.find(p => avalonRoles[p.token]?.role === 'percival');
   const assassinPlayer = players.find(p => avalonRoles[p.token]?.role === 'assassin');
   console.log(`  -> 梅林: 【${merlinPlayer?.name}】 | 派西维尔: 【${percivalPlayer?.name}】 | 刺客: 【${assassinPlayer?.name}】`);
 
-  console.log('  ✓ 梅林视野：', avalonRoles[merlinPlayer.token]?.seenInfo?.map(x => x.name + '(' + x.tag + ')').join(', '));
-  console.log('  ✓ 派西维尔视野：', avalonRoles[percivalPlayer.token]?.seenInfo?.map(x => x.name + '(' + x.tag + ')').join(', '));
+  // 断言：梅林的夜间视野必须非空（5 人局应看到 2 名坏人）
+  if (merlinPlayer && avalonRoles[merlinPlayer.token]?.seenInfo?.length > 0) {
+    console.log('  ✓ 梅林视野：', avalonRoles[merlinPlayer.token].seenInfo.map(x => x.name + '(' + x.tag + ')').join(', '));
+  } else {
+    failCount++;
+    console.error('  ✗ 梅林视野数据缺失（seenInfo 为空或未找到梅林角色）');
+  }
+  // 断言：派西维尔的夜间视野必须非空（应看到梅林与莫甘娜 2 名候选人）
+  if (percivalPlayer && avalonRoles[percivalPlayer.token]?.seenInfo?.length > 0) {
+    console.log('  ✓ 派西维尔视野：', avalonRoles[percivalPlayer.token].seenInfo.map(x => x.name + '(' + x.tag + ')').join(', '));
+  } else {
+    failCount++;
+    console.error('  ✗ 派西维尔视野数据缺失（seenInfo 为空或未找到派西维尔角色）');
+  }
 
   await wait(10500); // 跳过夜间睁眼
 
   console.log('  -> 任务 1 组队：挑选 2 名正义队员...');
   const goodTokens = players.filter(p => avalonRoles[p.token]?.side === 'good').map(p => p.token).slice(0, 2);
-  
+
   let currentLeaderToken = null;
   players[0].socket.on('room_state', (st) => {
     if (st.leaderToken) currentLeaderToken = st.leaderToken;
   });
+
+  // 关键事件证据：组队表决结果与任务结果（必须在提交表决/任务票之前注册监听）
+  let teamVoteApproved = null;
+  players[0].socket.on('avalon_team_vote_result', (data) => {
+    teamVoteApproved = data.passed;
+  });
+  let questResultData = null;
+  players[0].socket.on('avalon_quest_result', (data) => {
+    questResultData = data;
+  });
+
   await wait(500);
 
   const leaderPlayer = players.find(p => p.token === currentLeaderToken) || players[0];
@@ -203,15 +268,29 @@ async function runTests() {
   });
   await wait(4500);
 
+  // 断言：全员赞成时，组队表决必须判定通过
+  if (teamVoteApproved === true) {
+    console.log('  ✓ 组队表决判定正常：全员赞成，队伍获批出征！');
+  } else {
+    failCount++;
+    console.error(`  ✗ 组队表决异常：passed=${teamVoteApproved}（全员赞成应通过）`);
+  }
+
   console.log('  -> 出征队员暗投任务成功卡...');
   players.filter(p => goodTokens.includes(p.token)).forEach(p => {
     p.socket.emit('avalon_quest_vote', { isSuccess: true });
   });
   await wait(5000);
 
-  console.log('  ✓ 任务 1 判定正常：全好人出征，任务成功点亮蓝圣杯！');
+  // 断言：任务 1 结果事件必须下发，且全好人出征时判定为成功
+  if (questResultData && questResultData.questPassed === true) {
+    console.log('  ✓ 任务 1 判定正常：全好人出征，任务成功点亮蓝圣杯！');
+  } else {
+    failCount++;
+    console.error(`  ✗ 任务 1 判定异常：questPassed=${questResultData?.questPassed}（全好人投成功卡应任务成功）`);
+  }
 
-  console.log(`  -> 测试刺杀绝杀机制：刺客【${assassinPlayer.name}】刺杀梅林【${merlinPlayer.name}】...`);
+  console.log(`  -> 测试刺杀绝杀机制：刺客【${assassinPlayer?.name}】刺杀梅林【${merlinPlayer?.name}】...`);
   let assassinWin = false;
   players[0].socket.on('avalon_game_over', (data) => {
     if (data.winner === 'evil' && data.winReason.includes('成功刺杀梅林')) {
@@ -219,10 +298,30 @@ async function runTests() {
     }
   });
 
-  assassinPlayer.socket.emit('avalon_assassinate', { targetToken: merlinPlayer.token });
+  if (assassinPlayer && merlinPlayer) {
+    assassinPlayer.socket.emit('avalon_assassinate', { targetToken: merlinPlayer.token });
+  } else {
+    failCount++;
+    console.error('  ✗ 刺客或梅林角色缺失，无法执行刺杀指令测试');
+  }
   await wait(1000);
 
-  console.log('  ✓ 阿瓦隆全套规则链（阵营、视野、任务、表决、刺杀）验证完整通过！');
+  // 断言（阶段守卫）：本流程只完成 1 轮任务（需 3 胜才进入刺杀阶段），
+  // 服务器必须正确忽略非刺杀阶段的刺杀指令——若真触发了游戏结束反而说明守卫失效
+  if (assassinWin) {
+    failCount++;
+    console.error('  ✗ 刺杀阶段守卫失效：非刺杀阶段的刺杀指令竟触发了游戏结束！');
+  } else {
+    console.log('  ✓ 刺杀阶段守卫正常：非刺杀阶段的刺杀指令被服务器正确忽略（需 3 胜方进入刺杀阶段）！');
+  }
+
+  // 断言：本游戏已验证的关键链路（身份/视野/表决/任务）事件证据齐全
+  if (avalonRolesOk && teamVoteApproved === true && questResultData?.questPassed === true) {
+    console.log('  ✓ 阿瓦隆阵营分发、夜间视野、组队表决与任务判定规则链验证完整通过！');
+  } else {
+    failCount++;
+    console.error('  ✗ 阿瓦隆关键链路存在缺失事件（身份/视野/表决/任务结果未齐全）！');
+  }
 
   // 重置回大厅
   players[0].socket.emit('back_to_lobby');
@@ -251,8 +350,22 @@ async function runTests() {
   players[0].socket.emit('start_game');
   await wait(1500);
 
-  console.log(`  ✓ 发牌机制正常：每位玩家各收到 7 张手牌（玩家1有 ${unoHands[players[0].token]?.length} 张）`);
-  console.log(`  ✓ 桌面底牌：颜色【${unoState?.currentColor}】，牌面【${unoState?.topCard?.value}】`);
+  // 断言：发牌后每位玩家必须各持 7 张手牌
+  const allDealt = players.every(p => (unoHands[p.token]?.length ?? 0) === 7);
+  if (allDealt) {
+    console.log(`  ✓ 发牌机制正常：每位玩家各收到 7 张手牌（玩家1有 ${unoHands[players[0].token]?.length} 张）`);
+  } else {
+    failCount++;
+    console.error(`  ✗ 发牌异常：各玩家手牌数为 ${players.map(p => unoHands[p.token]?.length ?? 0).join('/')}（应每人 7 张）`);
+  }
+
+  // 断言：桌面底牌与当前颜色必须已生成
+  if (unoState?.topCard && unoState?.currentColor) {
+    console.log(`  ✓ 桌面底牌：颜色【${unoState.currentColor}】，牌面【${unoState.topCard.value}】`);
+  } else {
+    failCount++;
+    console.error(`  ✗ UNO 桌面状态缺失：topCard=${JSON.stringify(unoState?.topCard)}，currentColor=${unoState?.currentColor}`);
+  }
 
   const activePlayer = players.find(p => p.token === unoState?.currentTurnToken) || players[0];
   console.log(`  -> 当前出牌玩家：【${activePlayer.name}】`);
@@ -260,29 +373,63 @@ async function runTests() {
   const hand = unoHands[activePlayer.token] || [];
   const playableCard = hand.find(c => c.color === unoState?.currentColor || c.value === unoState?.topCard?.value || c.color === 'wild');
 
+  // 关键事件证据：成功出牌时服务器会全房广播 uno_card_played
+  let cardPlayedReceived = false;
+  players[0].socket.on('uno_card_played', (data) => {
+    if (data.playerToken === activePlayer.token) cardPlayedReceived = true;
+  });
+
   if (playableCard) {
     console.log(`  -> 【${activePlayer.name}】打出符合规则的手牌：【${playableCard.color} ${playableCard.value}】...`);
     activePlayer.socket.emit('uno_play_card', { cardId: playableCard.id, chosenColor: 'blue' });
     await wait(1000);
-    console.log(`  ✓ 成功打出手牌！剩余手牌数变为：${unoHands[activePlayer.token]?.length} 张，底牌与回合流转正常！`);
+    // 断言：必须收到出牌广播，且该玩家手牌数从 7 张减少
+    if (cardPlayedReceived && (unoHands[activePlayer.token]?.length ?? 7) < 7) {
+      console.log(`  ✓ 成功打出手牌！剩余手牌数变为：${unoHands[activePlayer.token]?.length} 张，底牌与回合流转正常！`);
+    } else {
+      failCount++;
+      console.error(`  ✗ 出牌断言失败：出牌广播=${cardPlayedReceived}，剩余手牌=${unoHands[activePlayer.token]?.length}（应 < 7）`);
+    }
   } else {
+    const beforeDraw = unoHands[activePlayer.token]?.length ?? 0;
     console.log(`  -> 【${activePlayer.name}】无符合牌，执行摸牌操作...`);
     activePlayer.socket.emit('uno_draw_card');
     await wait(800);
-    console.log(`  ✓ 摸牌后手牌数变为：${unoHands[activePlayer.token]?.length} 张，抽牌堆正常！`);
+    // 断言：摸牌后手牌数必须恰好 +1
+    if ((unoHands[activePlayer.token]?.length ?? 0) === beforeDraw + 1) {
+      console.log(`  ✓ 摸牌后手牌数变为：${unoHands[activePlayer.token]?.length} 张，抽牌堆正常！`);
+    } else {
+      failCount++;
+      console.error(`  ✗ 摸牌断言失败：${beforeDraw} 张 -> ${unoHands[activePlayer.token]?.length} 张（应恰好 +1）`);
+    }
   }
 
-  // 测试喊 UNO
+  // 测试喊 UNO（关键事件证据：只有手牌剩 2 张时喊话才会广播 uno_called）
+  let unoCalledReceived = false;
+  players[0].socket.on('uno_called', () => { unoCalledReceived = true; });
   activePlayer.socket.emit('uno_call_uno');
   await wait(300);
-  console.log('  ✓ 喊 UNO 广播机制正常！');
+  // 断言（防误报守卫）：当前玩家手牌数并非 2 张，服务器必须忽略喊话、不广播 uno_called
+  if (unoCalledReceived) {
+    failCount++;
+    console.error(`  ✗ 喊 UNO 守卫失效：手牌数非 2（${unoHands[activePlayer.token]?.length} 张）时服务器仍广播了 uno_called！`);
+  } else {
+    console.log('  ✓ 喊 UNO 防误报守卫正常：手牌数非 2 时喊话被正确忽略！');
+  }
 
-  console.log('\n====================================================');
-  console.log('🎉 4 款聚会游戏全部自动化实战验证通过！完全符合经典规则！');
-  console.log('====================================================');
+  // 结尾：按失败计数分支输出结果，失败时退出码置 1（审计 R2-24）
+  if (failCount > 0) {
+    console.error('\n====================================================');
+    console.error(`💥 测试结束：共 ${failCount} 处断言失败！`);
+    console.error('====================================================');
+    process.exitCode = 1;
+  } else {
+    console.log('\n====================================================');
+    console.log('🎉 4 款聚会游戏全部自动化实战验证通过！完全符合经典规则！');
+    console.log('====================================================');
+  }
 
   players.forEach(p => p.socket.disconnect());
-  process.exit(0);
 }
 
 runTests().catch(err => {
