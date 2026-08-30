@@ -345,5 +345,6 @@ module.exports = {
   initRoomState,
   getPublicState,
   startGame,
-  submitAnswer
+  submitAnswer,
+  generateRoundData
 };

@@ -271,5 +271,6 @@ module.exports = {
   initRoomState,
   getPublicState,
   startGame,
-  submitAnswer
+  submitAnswer,
+  generateCubeGrid
 };

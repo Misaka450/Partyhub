@@ -158,10 +158,34 @@ function getPublicState(room) {
   };
 }
 
+// 玩家被移除后的善后钩子：清理离场玩家猜测映射，并在全员离开时清理定时器（防内存泄漏与幽灵计时）
+function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
+  if (room.status !== 'BC_PLAYING') return;
+  const count = room.players.length;
+  if (count === 0) {
+    clearInterval(room.timer);
+    room.timer = null;
+    return;
+  }
+
+  // 保持 playerGuesses 字典与存活玩家同步，清理已离场玩家的历史数据
+  const currentTokens = new Set(room.players.map(p => p.token));
+  if (room.playerGuesses) {
+    for (const token of Object.keys(room.playerGuesses)) {
+      if (!currentTokens.has(token)) {
+        delete room.playerGuesses[token];
+      }
+    }
+  }
+
+  broadcastRoom(room);
+}
+
 module.exports = {
   initRoomState,
   getPublicState,
   startGame,
   submitGuess,
-  evaluateGuess
+  evaluateGuess,
+  onPlayerRemoved
 };

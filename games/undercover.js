@@ -457,10 +457,51 @@ function getPublicState(room) {
   };
 }
 
+// 玩家被移除后的善后钩子：更新发言顺序/投票状态，并在胜负已分时自愈结算（防死锁）
+function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
+  if (room.status === 'LOBBY' || room.status === 'GAME_OVER') return;
+  const count = room.players.length;
+  if (count === 0) return;
+
+  // 1. 若处于发言阶段，且当前发言者离场，自动顺延到下一位有效玩家
+  if (room.status === 'UC_SPEAKING') {
+    const currentSpeakerToken = room.speechOrder[room.currentSpeakerIndex];
+    const stillExists = room.players.some(p => p.token === currentSpeakerToken && p.alive);
+    if (!stillExists) {
+      clearInterval(room.timer);
+      room.currentSpeakerIndex++;
+      nextSpeaker(room, io, broadcastRoom);
+    }
+  } else if (room.status === 'UC_VOTING') {
+    // 2. 若处于投票阶段，检查剩余存活玩家是否均已完成投票
+    const alivePlayers = room.players.filter(p => p.alive);
+    const allVoted = alivePlayers.length > 0 && alivePlayers.every(p => room.votes[p.token] !== undefined);
+    if (allVoted) {
+      clearInterval(room.timer);
+      tallyVotes(room, io, broadcastRoom);
+    }
+  }
+
+  // 3. 检查是否有关键玩家（如最后卧底）离场导致胜负提前决出
+  const alivePlayers = room.players.filter(p => p.alive);
+  const aliveSpies = alivePlayers.filter(p => p.role === 'undercover');
+  const aliveCivs = alivePlayers.filter(p => p.role === 'civilian');
+  const aliveBlanks = alivePlayers.filter(p => p.role === 'blank');
+
+  if (aliveSpies.length === 0 || aliveSpies.length >= (aliveCivs.length + aliveBlanks.length) || (alivePlayers.length <= 2 && aliveBlanks.length > 0)) {
+    clearInterval(room.timer);
+    clearTimeout(room.roundTimeout);
+    checkWinCondition(room, io, broadcastRoom);
+  } else {
+    broadcastRoom(room);
+  }
+}
+
 module.exports = {
   initRoomState,
   getPublicState,
   startGame,
   finishCurrentSpeech,
-  castVote
+  castVote,
+  onPlayerRemoved
 };

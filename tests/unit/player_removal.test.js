@@ -12,6 +12,8 @@ const avalon = require('../../games/avalon');
 const drawGuess = require('../../games/drawGuess');
 const perfectSlice = require('../../games/perfectSlice');
 const holdFive = require('../../games/holdFive');
+const undercover = require('../../games/undercover');
+const bullsAndCows = require('../../games/bullsAndCows');
 
 // 测试用假 io：吞掉全部 emit，只验证引擎状态机
 const fakeIo = { to: () => ({ emit: () => {} }) };
@@ -268,5 +270,63 @@ test('drawGuess.selectWord: 不在候选白名单内的词被拒绝', () => {
   // 非字符串（数字）同样拒绝
   drawGuess.selectWord(room, room.players[0].id, 123, fakeIo, fakeBroadcast);
   assert.strictEqual(room.status, 'SELECTING');
+  cleanupRoom(room);
+});
+
+// ===================== 谁是卧底：玩家离场自愈与胜负结算 =====================
+test('undercover.onPlayerRemoved: 当前发言者离场时自动顺延下一位', () => {
+  const room = mkRoom([mkPlayer('A', 0), mkPlayer('B', 1), mkPlayer('C', 2)], 'undercover');
+  undercover.initRoomState(room);
+  room.status = 'UC_SPEAKING';
+  room.speechOrder = ['token_A', 'token_B', 'token_C'];
+  room.currentSpeakerIndex = 0; // 当前轮到 A 发言
+  room.players.forEach(p => { p.role = 'civilian'; p.word = '苹果'; });
+  room.players[2].role = 'undercover';
+  room.players[2].word = '香蕉';
+
+  // A 离场
+  room.players.splice(0, 1);
+  undercover.onPlayerRemoved(room, 0, fakeIo, fakeBroadcast);
+
+  // 发言指针已自愈顺延，不再卡死在已离场的 A
+  assert.strictEqual(room.currentSpeakerIndex, 1);
+  cleanupRoom(room);
+});
+
+test('undercover.onPlayerRemoved: 唯一卧底离场后自动判定平民胜利', () => {
+  const room = mkRoom([mkPlayer('A', 0), mkPlayer('B', 1), mkPlayer('C', 2)], 'undercover');
+  undercover.initRoomState(room);
+  room.status = 'UC_SPEAKING';
+  room.speechOrder = ['token_A', 'token_B', 'token_C'];
+  room.currentSpeakerIndex = 0;
+  room.players[0].role = 'civilian';
+  room.players[1].role = 'civilian';
+  room.players[2].role = 'undercover';
+
+  // 卧底 C 离场
+  room.players.splice(2, 1);
+  undercover.onPlayerRemoved(room, 2, fakeIo, fakeBroadcast);
+
+  assert.strictEqual(room.status, 'GAME_OVER', '卧底全部离场后应提前结束游戏');
+  assert.strictEqual(room.winner, 'civilians', '获胜方应为平民');
+  cleanupRoom(room);
+});
+
+// ===================== 密码破解大师：玩家离场清理 =====================
+test('bullsAndCows.onPlayerRemoved: 离场玩家的猜测记录被清理', () => {
+  const room = mkRoom([mkPlayer('A', 0), mkPlayer('B', 1)], 'bulls-and-cows');
+  bullsAndCows.initRoomState(room);
+  room.status = 'BC_PLAYING';
+  room.playerGuesses = {
+    'token_A': [{ guess: '1234', a: 1, b: 1 }],
+    'token_B': [{ guess: '5678', a: 0, b: 2 }]
+  };
+
+  // A 离场
+  room.players.splice(0, 1);
+  bullsAndCows.onPlayerRemoved(room, 0, fakeIo, fakeBroadcast);
+
+  assert.strictEqual(room.playerGuesses['token_A'], undefined, '已离场玩家的历史记录应被移除');
+  assert.ok(room.playerGuesses['token_B'], '在场玩家的历史记录应保留');
   cleanupRoom(room);
 });

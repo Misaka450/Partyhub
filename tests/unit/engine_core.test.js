@@ -7,6 +7,8 @@ const { shuffle } = require('../../games/shuffle');
 const math24 = require('../../games/math24');
 const uno = require('../../games/uno');
 const bullsAndCows = require('../../games/bullsAndCows');
+const cubeCount = require('../../games/cubeCount');
+const flashCounter = require('../../games/flashCounter');
 
 // ===================== shuffle 公共洗牌工具 =====================
 test('shuffle: 打乱后元素集合与长度保持不变', () => {
@@ -82,4 +84,36 @@ test('evaluateGuess: 标准几A几B判定', () => {
   assert.deepStrictEqual(bullsAndCows.evaluateGuess('1234', '1234'), { a: 4, b: 0 });
   assert.deepStrictEqual(bullsAndCows.evaluateGuess('1234', '5678'), { a: 0, b: 0 });
   assert.deepStrictEqual(bullsAndCows.evaluateGuess('9876', '6789'), { a: 0, b: 4 });
+});
+
+// ===================== cubeCount: 3D几何体与选项生成 =====================
+test('cubeCount.generateCubeGrid: 生成的几何方块总数与网格实际高度之和完全一致', () => {
+  for (let r = 1; r <= 3; r++) {
+    const { grid, totalCubes, options } = cubeCount.generateCubeGrid(r);
+    assert.ok(totalCubes >= 6, `方块总数应至少为 6，实际为 ${totalCubes}`);
+    let sum = 0;
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        sum += grid[row][col];
+      }
+    }
+    assert.strictEqual(sum, totalCubes, '网格高度之和必须与 totalCubes 一致');
+    assert.ok(options.includes(totalCubes), '候选选项中必须包含真实正确答案');
+    assert.strictEqual(options.length, 4, '选项总数应为 4 个');
+  }
+});
+
+// ===================== flashCounter: 瞬间数羊与动物生成 =====================
+test('flashCounter.generateRoundData: 目标动物数量与跑道非重叠性校验', () => {
+  const room = { round: 1, maxRounds: 3 };
+  flashCounter.generateRoundData(room);
+
+  assert.ok(room.targetAnimal, '应成功选定目标动物');
+  assert.ok(room.targetCount >= 4, `目标动物数量应有效，实际 ${room.targetCount}`);
+  assert.ok(room.options.includes(room.targetCount), '选项中必须包含正确数量');
+  assert.ok(room.flyingItems.length >= room.targetCount, '飞行列表总数应包含目标与干扰动物');
+
+  // 验证目标动物数量是否与列表中的 isTarget 项吻合
+  const actualTargetItems = room.flyingItems.filter(item => item.isTarget);
+  assert.strictEqual(actualTargetItems.length, room.targetCount, '实际飞行的目标动物数量应与 targetCount 完全一致');
 });
