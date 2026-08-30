@@ -4939,6 +4939,551 @@ html, body {
 }
 
 /* ==========================================================================
+   16. 9款全新脑力系列小游戏专用样式 (Brain Games Suite)
+   ========================================================================== */
+
+/* 通用脑力游戏视窗 */
+.brain-game-arena {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px;
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+}
+
+/* 统一的 4 选项网格 */
+.brain-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 440px;
+}
+
+.brain-opt-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-main);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.brain-opt-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+  transform: translateY(-2px);
+}
+
+.brain-opt-btn:active {
+  transform: translateY(1px);
+}
+
+.brain-opt-btn.correct {
+  border-color: var(--success);
+  background: var(--success-subtle);
+  color: var(--success);
+}
+
+.brain-opt-btn.wrong {
+  border-color: var(--danger);
+  background: var(--danger-subtle);
+  color: var(--danger);
+}
+
+/* 反馈提示横幅 */
+.brain-feedback-badge {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  animation: popIn 0.2s ease-out;
+}
+
+/* 1. 颜色与文字大陷阱 */
+.stroop-instruction-badge {
+  padding: 4px 14px;
+  background: var(--warning-subtle);
+  border: 1.5px solid var(--warning);
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.stroop-word-card {
+  width: 100%;
+  max-width: 320px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-card);
+  border: 2.5px solid var(--border-strong);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+}
+
+.stroop-large-text {
+  font-size: 4.2rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 2. 谁是多胞胎 / 找不同 */
+.brain-prompt-banner {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-main);
+  text-align: center;
+}
+
+.twin-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.twin-char-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 6px;
+  background: var(--bg-card);
+  border: 2.5px solid var(--border);
+  border-radius: 16px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s ease;
+}
+
+.twin-char-card:hover {
+  border-color: var(--primary);
+  transform: scale(1.04);
+}
+
+.twin-char-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+}
+
+.twin-char-card.correct {
+  border-color: var(--success);
+  background: var(--success-subtle);
+  box-shadow: 0 0 12px var(--success);
+}
+
+.twin-avatar-face {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.twin-props-row {
+  display: flex;
+  gap: 4px;
+  font-size: 1rem;
+}
+
+/* 3. 聚光灯拼图 / 影子猜物 */
+.shadow-box-container {
+  width: 180px;
+  height: 180px;
+  background: #0B0F19;
+  border: 3px solid var(--border-strong);
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.shadow-emoji {
+  font-size: 5.5rem;
+  line-height: 1;
+  filter: brightness(0);
+  transition: filter 0.5s ease;
+}
+
+.shadow-emoji.revealed {
+  filter: brightness(1);
+}
+
+.spotlight-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle 35px at 50% 50%, transparent 80%, rgba(0, 0, 0, 0.95) 100%);
+  pointer-events: none;
+  animation: spotlightScan 4s ease-in-out infinite alternate;
+}
+
+@keyframes spotlightScan {
+  0% { transform: translate(-30px, -20px) scale(0.9); }
+  50% { transform: translate(30px, 25px) scale(1.2); }
+  100% { transform: translate(-20px, 30px) scale(1.5); }
+}
+
+/* 4. 谁不见了 / 偷吃怪 */
+.disappear-plate-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+  min-height: 140px;
+  padding: 16px;
+  background: radial-gradient(circle, var(--bg-card) 60%, var(--bg-sub) 100%);
+  border: 3px dashed var(--border-strong);
+  border-radius: 24px;
+}
+
+.disappear-food-item {
+  font-size: 2.8rem;
+  line-height: 1;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.disappear-food-item.eaten-fx {
+  animation: eatenZoom 0.4s ease forwards;
+}
+
+@keyframes eatenZoom {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(0); opacity: 0; }
+}
+
+/* 5. 西蒙节拍记忆 */
+.simon-disk-container {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 10px;
+  background: #111827;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.simon-btn {
+  border: none;
+  border-radius: 18px;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: all 0.15s ease;
+}
+
+.simon-btn:hover { opacity: 0.85; }
+.simon-btn.active, .simon-btn:active {
+  opacity: 1 !important;
+  transform: scale(0.96);
+  filter: brightness(1.6);
+  box-shadow: 0 0 20px currentColor;
+}
+
+.simon-red { background: #EF4444; color: #EF4444; border-top-left-radius: 90px; }
+.simon-green { background: #10B981; color: #10B981; border-top-right-radius: 90px; }
+.simon-blue { background: #3B82F6; color: #3B82F6; border-bottom-left-radius: 90px; }
+.simon-yellow { background: #F59E0B; color: #F59E0B; border-bottom-right-radius: 90px; }
+
+.simon-center-hub {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70px;
+  height: 70px;
+  background: #1F2937;
+  border: 3px solid #374151;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: #F9FAFB;
+}
+
+/* 6. 轨道小火车 */
+.train-board-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 210px;
+  height: 210px;
+  background: #334155;
+  padding: 8px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+}
+
+.train-cell {
+  background: #1E293B;
+  border: 1.5px solid #475569;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: #F8FAFC;
+}
+
+.train-cell.missing-spot {
+  background: var(--warning-subtle);
+  border: 2px dashed var(--warning);
+  color: var(--warning);
+  font-size: 1.5rem;
+  font-weight: 900;
+  animation: pulseWarning 1.2s infinite;
+}
+
+.train-options-dock {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.train-opt-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 1.5rem;
+  transition: all 0.12s ease;
+}
+
+.train-opt-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+}
+
+/* 7. 折纸打孔展开 */
+.hole-fold-info {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--text-main);
+  text-align: center;
+}
+
+.hole-folded-preview {
+  width: 100px;
+  height: 100px;
+  background: #FEF3C7;
+  border: 2.5px solid #D97706;
+  border-radius: 10px;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+}
+
+.punch-indicator-dot {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #DC2626;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px rgba(220, 38, 38, 0.6);
+}
+
+.hole-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.hole-opt-card {
+  padding: 8px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.12s ease;
+}
+
+.hole-opt-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+}
+
+.hole-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  width: 72px;
+  height: 72px;
+}
+
+.hole-mini-cell {
+  background: var(--bg-sub);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.hole-mini-cell.has-hole {
+  background: #DC2626;
+  border-color: #991B1B;
+}
+
+/* 8. 找零钱大师 */
+.cash-bill-receipt {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  max-width: 360px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.cash-due-highlight {
+  font-size: 1.3rem;
+  color: var(--primary);
+}
+
+.cash-tray-status {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.cash-chips-rack {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cash-chip-btn {
+  padding: 8px 14px;
+  background: var(--bg-card);
+  border: 2px solid var(--primary);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--primary);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.1s ease;
+}
+
+.cash-chip-btn:hover {
+  background: var(--primary);
+  color: #FFF;
+  transform: translateY(-2px);
+}
+
+.cash-action-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.cash-action-row button {
+  flex: 1;
+}
+
+/* 9. 盲猜谁最接近 */
+.number-trivia-card {
+  padding: 14px 18px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-sm);
+}
+
+.number-trivia-q {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.number-guess-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.number-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.number-input-group input {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 8px;
+}
+
+.number-unit-tag {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+
+.number-result-board {
+  width: 100%;
+  max-width: 440px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 2px solid var(--primary);
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+}
+
+/* ==========================================================================
    15. 通用隐藏工具类 (Utility: Hidden) —— 必须置于文件最末尾
    原因：本文件后半段有大量容器使用 display:flex !important（如 .lobby-card、
    .chat-section、.stage-section 等）。若 .hidden 定义在它们之前，同为

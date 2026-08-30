@@ -319,6 +319,96 @@
                     <div class="tile-meta">1-12人 · 随机3-10秒</div>
                   </div>
                 </div>
+                <div class="game-tile game-mode-card" data-game="stroop-trap" data-cat="puzzle">
+                  <div class="tile-icon-box bg-rose">🎯</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">颜色大陷阱</span>
+                      <span class="tile-badge badge-puzzle">脑力</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 斯特鲁普效应</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="twin-finder" data-cat="puzzle">
+                  <div class="tile-icon-box bg-cyan">👀</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">谁是多胞胎</span>
+                      <span class="tile-badge badge-puzzle">脑力</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 找不同/双胞胎</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="shadow-match" data-cat="puzzle">
+                  <div class="tile-icon-box bg-indigo">🔦</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">影子猜物</span>
+                      <span class="tile-badge badge-puzzle">脑力</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 聚光灯剪影</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="who-disappeared" data-cat="puzzle">
+                  <div class="tile-icon-box bg-amber">👾</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">偷吃怪谁没了</span>
+                      <span class="tile-badge badge-puzzle">脑力</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 短时记忆</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="simon-memory" data-cat="action">
+                  <div class="tile-icon-box bg-violet">🎶</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">西蒙节拍记忆</span>
+                      <span class="tile-badge badge-action">手速</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 序列节奏复现</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="train-route" data-cat="puzzle">
+                  <div class="tile-icon-box bg-emerald">🚂</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">轨道小火车</span>
+                      <span class="tile-badge badge-puzzle">脑力</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 空间路线拼图</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="hole-punch" data-cat="puzzle">
+                  <div class="tile-icon-box bg-blue">📄</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">折纸打孔展开</span>
+                      <span class="tile-badge badge-puzzle">脑力</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 对称镜像推理</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="change-master" data-cat="puzzle">
+                  <div class="tile-icon-box bg-teal">💵</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">找零钱大师</span>
+                      <span class="tile-badge badge-puzzle">心算</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 面额速凑</div>
+                  </div>
+                </div>
+                <div class="game-tile game-mode-card" data-game="number-guess" data-cat="party">
+                  <div class="tile-icon-box bg-orange">🔢</div>
+                  <div class="tile-content">
+                    <div class="tile-title-row">
+                      <span class="tile-title">盲猜谁最接近</span>
+                      <span class="tile-badge badge-party">聚会</span>
+                    </div>
+                    <div class="tile-meta">1-12人 · 常识估算</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1067,6 +1157,137 @@
               <div class="hold-score-time" id="hold-score-time">5.000s</div>
               <div class="hold-score-diff" id="hold-score-diff">误差 ±0.000s</div>
             </div>
+          </div>
+        </div>
+
+        <!-- 14. 【颜色大陷阱】舞台 -->
+        <div id="stage-stroop-trap" class="game-stage-container hidden">
+          <div class="brain-game-arena">
+            <div class="stroop-instruction-badge" id="stroop-instruction-badge">根据【文字颜色】选择</div>
+            <div class="stroop-word-card" id="stroop-word-card">
+              <span id="stroop-text-display" class="stroop-large-text">蓝</span>
+            </div>
+            <div class="brain-options-grid" id="stroop-options-grid"></div>
+            <div id="stroop-feedback-badge" class="brain-feedback-badge hidden"></div>
+          </div>
+        </div>
+
+        <!-- 15. 【谁是多胞胎 / 找不同】舞台 -->
+        <div id="stage-twin-finder" class="game-stage-container hidden">
+          <div class="brain-game-arena">
+            <div class="brain-prompt-banner" id="twin-prompt-banner">👀 找出图中长得【完全一模一样】的双胞胎！</div>
+            <div class="twin-cards-grid" id="twin-cards-grid"></div>
+            <div id="twin-feedback-badge" class="brain-feedback-badge hidden"></div>
+          </div>
+        </div>
+
+        <!-- 16. 【影子猜物 / 聚光灯拼图】舞台 -->
+        <div id="stage-shadow-match" class="game-stage-container hidden">
+          <div class="brain-game-arena">
+            <div class="shadow-box-container">
+              <div class="shadow-target-display" id="shadow-target-display">
+                <span class="shadow-emoji" id="shadow-emoji-item">🐱</span>
+                <div class="spotlight-overlay" id="spotlight-overlay"></div>
+              </div>
+            </div>
+            <div class="brain-options-grid" id="shadow-options-grid"></div>
+            <div id="shadow-feedback-badge" class="brain-feedback-badge hidden"></div>
+          </div>
+        </div>
+
+        <!-- 17. 【谁不见了 / 偷吃怪】舞台 -->
+        <div id="stage-who-disappeared" class="game-stage-container hidden">
+          <div class="brain-game-arena">
+            <div class="disappear-stage-header" id="disappear-stage-header">
+              <span class="disappear-status-tag" id="disappear-status-tag">👀 仔细记忆盘中食物</span>
+            </div>
+            <div class="disappear-plate-container" id="disappear-plate"></div>
+            <div class="brain-options-grid hidden" id="disappear-options-grid"></div>
+            <div id="disappear-feedback-badge" class="brain-feedback-badge hidden"></div>
+          </div>
+        </div>
+
+        <!-- 18. 【西蒙节拍记忆】舞台 -->
+        <div id="stage-simon-memory" class="game-stage-container hidden">
+          <div class="brain-game-arena">
+            <div class="simon-status-pill" id="simon-status-pill">🎶 观看发光节奏...</div>
+            <div class="simon-disk-container" id="simon-disk">
+              <button class="simon-btn simon-red" data-color="red"></button>
+              <button class="simon-btn simon-green" data-color="green"></button>
+              <button class="simon-btn simon-blue" data-color="blue"></button>
+              <button class="simon-btn simon-yellow" data-color="yellow"></button>
+              <div class="simon-center-hub">
+                <span id="simon-step-counter">0/3</span>
+              </div>
+            </div>
+            <div id="simon-feedback-badge" class="brain-feedback-badge hidden"></div>
+          </div>
+        </div>
+
+        <!-- 19. 【轨道小火车】舞台 -->
+        <div id="stage-train-route" class="game-stage-container hidden">
+          <div class="brain-game-arena">
+            <div class="train-route-header">
+              <span class="train-prompt-tag">🚂 帮小火车拼通通往终点的路线！</span>
+            </div>
+            <div class="train-board-grid" id="train-board-grid"></div>
+            <div class="train-options-dock" id="train-options-dock"></div>
+            <div id="train-feedback-badge" class="brain-feedback-badge hidden"></div>
+          </div>
+        </div>
+
+        <!-- 20. 【折纸打孔展开】舞台 -->
+        <div id="stage-hole-punch" class="game-stage-container hidden">
+          <div class="brain-game-arena">
+            <div class="hole-fold-info" id="hole-fold-info">1️⃣ 从左向右对折一次</div>
+            <div class="hole-folded-preview" id="hole-folded-preview">
+              <div class="punch-indicator-dot"></div>
+            </div>
+            <div class="hole-options-grid" id="hole-options-grid"></div>
+            <div id="hole-feedback-badge" class="brain-feedback-badge hidden"></div>
+          </div>
+        </div>
+
+        <!-- 21. 【找零钱大师】舞台 -->
+        <div id="stage-change-master" class="game-stage-container hidden">
+          <div class="brain-game-arena">
+            <div class="cash-bill-receipt" id="cash-bill-receipt">
+              <div class="receipt-row"><span>付款:</span> <b id="cash-paid-val">¥100</b></div>
+              <div class="receipt-row"><span>消费:</span> <b id="cash-cost-val">¥37</b></div>
+              <div class="receipt-due-row"><span>需找零:</span> <b class="cash-due-highlight" id="cash-due-val">¥63</b></div>
+            </div>
+            <div class="cash-tray-status">
+              <span>当前已选总计：</span><b id="cash-current-sum">¥0</b>
+            </div>
+            <div class="cash-chips-rack" id="cash-chips-rack">
+              <button class="cash-chip-btn" data-denom="50">¥50</button>
+              <button class="cash-chip-btn" data-denom="20">¥20</button>
+              <button class="cash-chip-btn" data-denom="10">¥10</button>
+              <button class="cash-chip-btn" data-denom="5">¥5</button>
+              <button class="cash-chip-btn" data-denom="1">¥1</button>
+            </div>
+            <div class="cash-action-row">
+              <button id="btn-cash-reset" class="btn btn-secondary">清空重选</button>
+              <button id="btn-cash-confirm" class="btn btn-primary btn-lg">确认找零交付</button>
+            </div>
+            <div id="cash-feedback-badge" class="brain-feedback-badge hidden"></div>
+          </div>
+        </div>
+
+        <!-- 22. 【盲猜谁最接近】舞台 -->
+        <div id="stage-number-guess" class="game-stage-container hidden">
+          <div class="brain-game-arena">
+            <div class="number-trivia-card" id="number-trivia-card">
+              <div class="number-trivia-q" id="number-trivia-q">国际象棋的标准棋盘上一共有多少个小方格？</div>
+            </div>
+            <form id="number-guess-form" class="number-guess-form">
+              <div class="number-input-group">
+                <input type="number" id="number-guess-input" placeholder="输入你的估算数字" required autocomplete="off">
+                <span class="number-unit-tag" id="number-unit-tag">个</span>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-number-guess-submit">提交估算</button>
+            </form>
+            <div id="number-result-board" class="number-result-board hidden"></div>
           </div>
         </div>
       </section>
