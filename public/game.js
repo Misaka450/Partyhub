@@ -1340,7 +1340,9 @@ const settingElementIds = [
   'cc-rounds', 'cc-diff',
   'wb-lives', 'wb-time',
   'ps-rounds', 'ps-tolerance',
-  'hf-rounds', 'hf-target'
+  'hf-rounds', 'hf-target',
+  'st-rounds', 'tf-rounds', 'sm-rounds', 'wd-rounds',
+  'simon-rounds', 'tr-rounds', 'hp-rounds', 'cm-rounds', 'ng-rounds'
 ];
 
 function collectCurrentRoomSettings() {
@@ -1352,6 +1354,15 @@ function collectCurrentRoomSettings() {
   else if (currentGameType === 'perfect-slice') maxRounds = parseInt(document.getElementById('ps-rounds')?.value || 3);
   else if (currentGameType === 'hold-five') maxRounds = parseInt(document.getElementById('hf-rounds')?.value || 3);
   else if (currentGameType === 'bulls-and-cows') maxRounds = parseInt(document.getElementById('bc-rounds')?.value || 8);
+  else if (currentGameType === 'stroop-trap') maxRounds = parseInt(document.getElementById('st-rounds')?.value || 3);
+  else if (currentGameType === 'twin-finder') maxRounds = parseInt(document.getElementById('tf-rounds')?.value || 3);
+  else if (currentGameType === 'shadow-match') maxRounds = parseInt(document.getElementById('sm-rounds')?.value || 3);
+  else if (currentGameType === 'who-disappeared') maxRounds = parseInt(document.getElementById('wd-rounds')?.value || 3);
+  else if (currentGameType === 'simon-memory') maxRounds = parseInt(document.getElementById('simon-rounds')?.value || 3);
+  else if (currentGameType === 'train-route') maxRounds = parseInt(document.getElementById('tr-rounds')?.value || 3);
+  else if (currentGameType === 'hole-punch') maxRounds = parseInt(document.getElementById('hp-rounds')?.value || 3);
+  else if (currentGameType === 'change-master') maxRounds = parseInt(document.getElementById('cm-rounds')?.value || 3);
+  else if (currentGameType === 'number-guess') maxRounds = parseInt(document.getElementById('ng-rounds')?.value || 3);
 
   return {
     maxRounds,
@@ -2770,6 +2781,25 @@ function resetAllGameStages() {
 
   // 8. 你画我猜
   if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 9. 9款脑力小游戏重置
+  if (stroopFeedbackBadge) stroopFeedbackBadge.classList.add('hidden');
+  if (twinFeedbackBadge) twinFeedbackBadge.classList.add('hidden');
+  if (shadowFeedbackBadge) shadowFeedbackBadge.classList.add('hidden');
+  if (disappearFeedbackBadge) disappearFeedbackBadge.classList.add('hidden');
+  if (simonFeedbackBadge) simonFeedbackBadge.classList.add('hidden');
+  if (trainFeedbackBadge) trainFeedbackBadge.classList.add('hidden');
+  if (holeFeedbackBadge) holeFeedbackBadge.classList.add('hidden');
+  if (cashFeedbackBadge) cashFeedbackBadge.classList.add('hidden');
+  if (numberResultBoard) numberResultBoard.classList.add('hidden');
+  if (numberGuessInput) {
+    numberGuessInput.value = '';
+    numberGuessInput.disabled = false;
+  }
+  if (btnNumberGuessSubmit) btnNumberGuessSubmit.disabled = false;
+  selectedCashCounts = {};
+  updateCashDisplay();
+  simonInputActive = false;
 }
 
 socket.on('bc_game_start', () => {
