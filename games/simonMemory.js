@@ -236,6 +236,7 @@ function endRound(room, io, broadcastRoom) {
 
   clearTimeout(room.roundTimeout);
   room.roundTimeout = setTimeout(() => {
+    if (room.gameType !== 'simon-memory' || room.status !== 'SIMON_ROUND_RESULT') return;
     if (room.round < room.maxRounds) {
       room.round += 1;
       startRound(room, io, broadcastRoom);
@@ -253,9 +254,12 @@ function finishGame(room, io, broadcastRoom) {
   const sorted = [...room.players].sort((a, b) => (b.score || 0) - (a.score || 0));
   const winner = sorted[0] || null;
 
-  io.to(room.id).emit('game_over', {
-    winner: winner ? { name: winner.name, avatar: winner.avatar, score: winner.score } : null,
-    leaderboard: sorted.map(p => ({ name: p.name, avatar: p.avatar, score: p.score }))
+  io.to(room.id).emit('simon_game_over', {
+    podium: sorted.slice(0, 3).map(p => ({
+      name: p.name,
+      avatar: p.avatar,
+      score: p.score
+    }))
   });
 
   broadcastRoom(room);

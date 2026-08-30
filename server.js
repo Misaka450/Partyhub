@@ -166,6 +166,7 @@ function resetToLobby(room) {
   room.players.forEach(p => {
     p.isReady = false;
     p.alive = true;
+    p.score = 0;
   });
   const engine = GAME_ENGINES[room.gameType] || drawGuessEngine;
   safeEngineCall(engine.initRoomState, room);
