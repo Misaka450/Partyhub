@@ -342,6 +342,41 @@ const reactionContainer = document.getElementById('reaction-container');
 const confettiCanvas = document.getElementById('confetti-canvas');
 const confettiCtx = confettiCanvas.getContext('2d');
 
+// 实时语音回调绑定 (WebRTC 声浪与状态同步)
+if (window.voiceManager) {
+  window.voiceManager.onSpeakingChange = (token, isSpeaking, volume) => {
+    // 1. 阿瓦隆麦序声浪可视化
+    if (currentGameType === 'avalon' && currentRoomState && currentRoomState.status === 'AVALON_SPEECH') {
+      if (currentRoomState.currentSpeakerToken === token) {
+        const waveBars = document.querySelectorAll('#av-voice-waves span');
+        waveBars.forEach((span, idx) => {
+          if (isSpeaking) {
+            const factor = [0.45, 0.85, 1.0, 0.7, 0.5][idx] || 0.6;
+            const dynamicHeight = Math.max(20, Math.min(100, (volume * 1.3) * factor));
+            span.style.height = `${dynamicHeight}%`;
+            span.style.background = 'var(--primary)';
+          } else {
+            span.style.height = '20%';
+            span.style.background = 'rgba(255,255,255,0.2)';
+          }
+        });
+      }
+    }
+
+    // 2. 玩家席位卡片与侧边栏高亮动效
+    document.querySelectorAll(`.p-card[data-token="${token}"], .av-p-card[data-token="${token}"], .player-item[data-token="${token}"]`).forEach(el => {
+      el.classList.toggle('is-speaking', isSpeaking);
+    });
+  };
+
+  window.voiceManager.onStatusChange = (isMicEnabled, hasPermission) => {
+    if (btnAvMicToggle && currentRoomState && currentRoomState.status === 'AVALON_SPEECH' && currentRoomState.currentSpeakerToken === myPlayerToken) {
+      btnAvMicToggle.textContent = isMicEnabled ? '🔴 闭麦' : '🎤 开麦发言';
+      btnAvMicToggle.className = isMicEnabled ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-primary';
+    }
+  };
+}
+
 let isChatCollapsed = window.innerWidth < 768;
 let unreadMessageCount = 0;
 
@@ -999,6 +1034,9 @@ function resetRoomLocalState() {
   myUndercoverRole = null;
   myAvalonRole = null;
   myUnoHand = [];
+  if (window.voiceManager) {
+    window.voiceManager.destroy();
+  }
   if (typeof chatMessages !== 'undefined' && chatMessages) {
     chatMessages.innerHTML = '<div class="chat-system-msg">🎉 欢迎加入！和朋友输入相同房间号即可一起开黑～</div>';
   }
@@ -1465,6 +1503,9 @@ if (btnHeroShare) btnHeroShare.addEventListener('click', copyInviteLink);
 socket.on('room_state', (state) => {
   currentRoomState = state;
   currentGameType = state.gameType || 'draw-guess';
+  if (window.voiceManager && state.id && myPlayerToken) {
+    window.voiceManager.init(socket, myPlayerToken, state.id);
+  }
   updateGameStageView(currentGameType);
 
   const me = state.players.find(p => p.token === myPlayerToken || p.id === socket.id);
@@ -2064,12 +2105,21 @@ function renderAvalonState(state) {
 
     const isCurrentSpeaker = (state.currentSpeakerToken === myPlayerToken);
     btnAvFinishSpeech.classList.toggle('hidden', !isCurrentSpeaker);
+    btnAvMicToggle.classList.toggle('hidden', !isCurrentSpeaker);
+
     if (isCurrentSpeaker) {
-      avSpeechTip.textContent = '🎤 轮到你发言！阐述你的推论或分析，发言完毕点击【结束发言】';
+      const isMicOn = window.voiceManager && window.voiceManager.isMicEnabled;
+      btnAvMicToggle.textContent = isMicOn ? '🔴 闭麦' : '🎤 开麦发言';
+      btnAvMicToggle.className = isMicOn ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-primary';
+      avSpeechTip.textContent = isMicOn ? '🎤 麦克风已开启，请陈述观点（完毕点击【结束发言】）' : '🎤 轮到你发言！请点击【开麦发言】阐述观点';
       avSpeechTip.style.color = '#60A5FA';
     } else {
       avSpeechTip.textContent = `👂 正在倾听【${state.currentSpeakerName}】发言... (${state.timeLeft}s)`;
       avSpeechTip.style.color = '#94A3B8';
+      // 麦序管控：非发言人强制静音，杜绝插麦抢麦
+      if (window.voiceManager && window.voiceManager.isMicEnabled) {
+        window.voiceManager.setMute(true);
+      }
     }
     avBoardStatus.textContent = `🎙️ 全员轮流发言中 (当前麦序: ${state.currentSpeakerName})`;
   } else {
@@ -2166,15 +2216,23 @@ btnSubmitTeam.addEventListener('click', () => {
 
 btnAvFinishSpeech?.addEventListener('click', () => {
   socket.emit('avalon_finish_speech');
+  if (window.voiceManager && window.voiceManager.isMicEnabled) {
+    window.voiceManager.setMute(true);
+  }
   playSound('pop');
 });
 
-let isAvMicOn = false;
-btnAvMicToggle?.addEventListener('click', () => {
-  isAvMicOn = !isAvMicOn;
-  btnAvMicToggle.textContent = isAvMicOn ? '🔴 闭麦' : '🎤 开麦';
-  btnAvMicToggle.className = isAvMicOn ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-secondary';
-  showToast(isAvMicOn ? '麦克风已开启' : '麦克风已静音', isAvMicOn ? '🎤' : '🔇');
+btnAvMicToggle?.addEventListener('click', async () => {
+  if (!window.voiceManager) return;
+  try {
+    const isEnabled = await window.voiceManager.toggleMic();
+    btnAvMicToggle.textContent = isEnabled ? '🔴 闭麦' : '🎤 开麦发言';
+    btnAvMicToggle.className = isEnabled ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-primary';
+    showToast(isEnabled ? '麦克风已开启，请开始发言 🎤' : '麦克风已静音 🔇', isEnabled ? '🎤' : '🔇');
+  } catch (err) {
+    console.warn('麦克风开启异常:', err);
+    showToast('无法启动麦克风：请检查浏览器麦克风授权与 HTTPS 环境 ⚠️', '⚠️');
+  }
 });
 
 document.getElementById('btn-team-approve')?.addEventListener('click', () => {

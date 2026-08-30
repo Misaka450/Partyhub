@@ -559,6 +559,7 @@ io.on('connection', (socket) => {
     if (targetIndex >= 0 && room.players[targetIndex].token !== player.token) {
       const target = room.players[targetIndex];
       io.to(target.id).emit('kicked');
+      io.to(room.id).emit('voice_peer_leave', { playerToken: target.token });
       // 先通知引擎修正回合指针（被踢者可能是当前回合玩家，审计 R2-02），再移出席位
       room.players.splice(targetIndex, 1);
       notifyPlayerRemoved(room, targetIndex);
@@ -801,12 +802,45 @@ io.on('connection', (socket) => {
     safeEngineCall(holdFiveEngine.submitHoldTime, room, currentPlayerToken, elapsedMs, io, broadcastRoom);
   });
 
+  // =====================【实时语音 WebRTC 信令中继】=====================
+  socket.on('voice_signal', ({ toToken, signal }) => {
+    if (!currentRoomId || !currentPlayerToken || typeof toToken !== 'string' || !signal) return;
+    const room = rooms.get(currentRoomId);
+    if (!room) return;
+    const targetPlayer = room.players.find(p => p.token === toToken);
+    if (!targetPlayer) return;
+    const targetSocket = io.sockets.sockets.get(targetPlayer.id);
+    if (targetSocket && targetSocket.connected) {
+      targetSocket.emit('voice_signal', {
+        fromToken: currentPlayerToken,
+        signal
+      });
+    }
+  });
+
+  socket.on('voice_status', ({ isMuted, isSpeaking }) => {
+    if (!currentRoomId || !currentPlayerToken) return;
+    socket.to(currentRoomId).emit('voice_status_update', {
+      playerToken: currentPlayerToken,
+      isMuted: !!isMuted,
+      isSpeaking: !!isSpeaking
+    });
+  });
+
+  socket.on('voice_join_mesh', () => {
+    if (!currentRoomId || !currentPlayerToken) return;
+    socket.to(currentRoomId).emit('voice_peer_joined', {
+      playerToken: currentPlayerToken
+    });
+  });
+
   // 玩家主动退出房间
   socket.on('leave_room', () => {
     if (!currentRoomId) return;
     const room = rooms.get(currentRoomId);
     if (!room) return;
 
+    socket.to(currentRoomId).emit('voice_peer_leave', { playerToken: currentPlayerToken });
     socket.leave(currentRoomId);
 
     const idx = room.players.findIndex(p => p.token === currentPlayerToken);
@@ -852,6 +886,7 @@ io.on('connection', (socket) => {
         const idx = room.players.findIndex(p => p.token === player.token);
         if (idx !== -1) {
           const removed = room.players.splice(idx, 1)[0];
+          io.to(room.id).emit('voice_peer_leave', { playerToken: removed.token });
           // 通知引擎修正回合指针（掉线超时被移除的玩家可能是当前回合玩家，审计 R2-02）
           notifyPlayerRemoved(room, idx);
           io.to(room.id).emit('system_message', `🚪 【${removed.name}】离开了房间`);

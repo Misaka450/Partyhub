@@ -3374,22 +3374,23 @@ html, body {
 .av-speaker-tag { font-size: 0.65rem; font-weight: 700; color: var(--primary); flex-shrink: 0; }
 .av-speech-status-bar { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
 .av-speech-tip { font-size: 0.7rem; color: var(--text-muted); }
-/* 声波跳动动画 */
-.av-voice-waves { display: flex; align-items: flex-end; gap: 2px; height: 12px; }
+/* 声波跳动动画与动态电平 */
+.av-voice-waves { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
 .av-voice-waves span {
   width: 2.5px;
-  background: var(--primary);
+  height: 20%;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
-  animation: voiceWave 0.9s ease-in-out infinite;
+  transition: height 0.08s ease, background 0.15s ease;
 }
-.av-voice-waves span:nth-child(1) { height: 40%; animation-delay: 0s; }
-.av-voice-waves span:nth-child(2) { height: 75%; animation-delay: 0.12s; }
-.av-voice-waves span:nth-child(3) { height: 100%; animation-delay: 0.24s; }
-.av-voice-waves span:nth-child(4) { height: 65%; animation-delay: 0.36s; }
-.av-voice-waves span:nth-child(5) { height: 35%; animation-delay: 0.48s; }
-@keyframes voiceWave {
-  0%, 100% { transform: scaleY(0.4); }
-  50% { transform: scaleY(1); }
+
+/* 全局开麦说话高亮动效 */
+.p-card.is-speaking,
+.av-p-card.is-speaking,
+.player-item.is-speaking {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 12px var(--primary-glow) !important;
+  transform: translateY(-1px);
 }
 .av-speaker-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
