@@ -1,23 +1,27 @@
 # 🎮 PartyHub (聚会游戏大厅)
 
-一款专为聚会、团建、派对设计的 **全功能多人实时在线网页小游戏聚合平台**。基于 Node.js + Express + Socket.IO 构建，采用极简现代工业级暗色 UI 设计，全端（PC / 平板 / 手机移动端）完美自适应，支持多人实时房间对战、房主控制、战报结算与即时重置。
+一款专为聚会、团建、派对设计的 **全功能多人实时在线网页小游戏聚合平台**。基于 Node.js + Express + Socket.IO 构建，采用极简现代工业级暗色 UI 设计，全端（PC / 平板 / 手机移动端）完美自适应，支持多人实时房间对战、房主控制、WebRTC 实时语音连麦、战报结算与即时重置。
 
 ---
 
 ## ✨ 核心特性
 
-- **🕹️ 12 款热门聚会小游戏集成**：一站式聚合，涵盖反应类、益智类、阵营推理类、竞速手速类与社交互动类游戏。
+- **🕹️ 21 款热门聚会与脑力小游戏一站式聚合**：涵盖反应类、益智类、阵营推理类、竞速手速类、几何空间类与记忆挑战类。
+- **🎙️ WebRTC 实时语音连麦**：集成 P2P Mesh 语音、硬件级回声消除与降噪、声浪可视化，支持通过 Coturn TURN 穿透对称 NAT 与 4G/5G 移动网络。
 - **⚡ 实时低延迟同步**：基于 WebSocket (Socket.IO) 双向通信，支持 0ms 本地乐观 UI 响应与后台唤醒保活重连。
+- **🛡️ 工业级安全防护**：集成 Helmet 安全响应头、HTTP 请求防刷限流、24点安全表达式求值器、XSS 全方位转义与房间人数/房间总量上限控制。
 - **📱 移动端与桌面端全自适应**：
   - 顶栏极简紧凑单行玩家席位（1行4列流式布局，不挤占游戏画布）。
-  - 底部 3.5:6.5 手柄式实体双操作按键与全屏磨砂遮罩弹窗。
+  - 底部手柄式实体双操作按键与全屏磨砂遮罩弹窗。
   - 针对 iOS Safari / Android Chrome 虚拟键盘弹出视口补偿。
 - **👑 房主特权与房间生命周期**：支持一键切游、移交房主、踢出玩家、房间全员重置大厅、全员结算战报。
-- **🐳 Docker 一键开箱即用**：轻量化容器打包，支持一键部署与 Nginx 反向代理。
+- **🐳 Docker 一键开箱即用**：采用非 root 安全用户打包，内置 Coturn TURN 中继服务，一键启动。
 
 ---
 
-## 🎯 包含游戏列表
+## 🎯 包含游戏列表 (共 21 款)
+
+### 经典聚会游戏 (12 款)
 
 | 序号 | 游戏名称 | 类型 | 玩法简介 |
 | :--- | :--- | :--- | :--- |
@@ -33,6 +37,20 @@
 | 10 | **🍕 极限切披萨 (Perfect Slice)** | 几何直觉 | 划线切割动态形状，仪表盘实时评定切片比例精准度 |
 | 11 | **🧊 空间数方块 (Cube Count)** | 空间几何 | 3D 轴测等轴几何体生成，透视与盲区遮挡多维视角速算 |
 | 12 | **⚡ 闪电数数 (Flash Counter)** | 极速反应 | 瞬时闪烁 Emoji 阵列，在极短时间内准确统计目标元素数量 |
+
+### 脑力与观察挑战游戏 (9 款)
+
+| 序号 | 游戏名称 | 类型 | 玩法简介 |
+| :--- | :--- | :--- | :--- |
+| 13 | **🎯 颜色大陷阱 (Stroop Trap)** | 认知冲突 | 克服文字颜色与字义的斯特鲁普冲突，极速抢答正确答案 |
+| 14 | **👀 谁是多胞胎 (Twin Finder)** | 视觉敏锐 | 在海量可爱萌宠中快速找出属性完全一致的双胞胎或独一无二者 |
+| 15 | **🔦 影子猜物 (Shadow Match)** | 剪影辨析 | 聚光灯扫过黑暗轮廓，在最模糊的剪影阶段猜出真实物体 |
+| 16 | **🍪 谁不见了 (Who Disappeared)** | 瞬时记忆 | 记住丰盛餐盘，在偷吃怪吃掉其中一件食物后迅速指出缺失项 |
+| 17 | **🎵 西蒙记忆 (Simon Memory)** | 声光节拍 | 观察越来越长的四色声光节奏序列，按顺序完整复现 |
+| 18 | **🚂 轨道连连通 (Train Route)** | 拓扑寻路 | 观察混乱轨道，选择最正确的拼图让小火车顺利开往终点站 |
+| 19 | **📄 折纸打孔展开 (Hole Punch)** | 空间折叠 | 模拟纸张多次对称折叠打孔，在脑海中还原完全展开后的孔位分布 |
+| 20 | **💰 找零大师 (Change Master)** | 算术模拟 | 面对顾客的大额钞票与刁钻账单，以最快速度清点出正确零钱组合 |
+| 21 | **🎯 盲猜数量 (Number Guess)** | 估算直觉 | 面对密集的聚集物或常识谜题，估算数值最接近者获胜 |
 
 ---
 
@@ -53,14 +71,15 @@ npm start
 # 服务默认运行在 http://localhost:8080
 ```
 
-### 方式二：Docker / Docker Compose 部署
+### 方式二：Docker / Docker Compose 部署（推荐，含 Coturn 语音中继）
 
 ```bash
-# 启动容器
+# 1. 打开 docker-compose.yml 将 TURN_URL 中的 YOUR_SERVER_IP 修改为云服务器公网 IP
+# 2. 启动应用与 Coturn 语音服务
 docker compose up -d
 
-# 查看运行日志
-docker compose logs -f
+# 3. 查看运行状态
+docker compose ps
 ```
 
 ---
@@ -68,10 +87,10 @@ docker compose logs -f
 ## 🛠️ 技术栈
 
 - **Runtime**: Node.js
-- **Backend**: Express, Socket.IO
-- **Frontend**: Vanilla ES6+ JavaScript, CSS3 Variables, HTML5 Canvas
-- **Deployment**: Docker, Docker Compose, Nginx Reverse Proxy
-- **Testing**: Headless Chromium + Chrome DevTools Protocol (CDP) 逐帧联测
+- **Backend**: Express, Socket.IO, Helmet, express-rate-limit
+- **Frontend**: Vanilla ES6+ JavaScript, CSS3 Variables, HTML5 Canvas, Web Audio API, WebRTC
+- **Deployment**: Docker (非 root 安全容器), Docker Compose, Coturn (STUN/TURN 中继)
+- **Testing**: Node.js 内置 `node:test` 单元测试套件
 
 ---
 

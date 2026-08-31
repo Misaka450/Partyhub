@@ -1122,6 +1122,11 @@ socket.on('joined_successfully', (data) => {
   myPlayerId = data.playerId;
   isHost = !!data.isHost;
 
+  // 动态同步服务端下发的 STUN/TURN 语音服务器配置
+  if (data.iceServers && window.voiceManager) {
+    window.voiceManager.setIceServers(data.iceServers);
+  }
+
   // 以服务端下发的 token 为准并持久化（双写 sessionStorage + localStorage，标签页隔离，审计 R2-16）
   if (data.playerToken) {
     myPlayerToken = data.playerToken;

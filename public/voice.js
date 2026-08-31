@@ -34,10 +34,26 @@ class VoiceManager {
     };
   }
 
-  init(socket, myToken, roomId) {
+  /**
+   * 动态设置 ICE / STUN / TURN 服务器列表
+   * 当从服务端拉取到自建 TURN 服务器（coturn）配置时更新，确保在移动4G/5G或对称NAT下通话顺畅
+   * @param {Array} iceServers 服务器配置数组
+   */
+  setIceServers(iceServers) {
+    if (Array.isArray(iceServers) && iceServers.length > 0) {
+      this.rtcConfig.iceServers = iceServers;
+      console.log('🎙️ [VoiceManager] 已动态更新 ICE/TURN 服务器配置:', iceServers);
+    }
+  }
+
+  init(socket, myToken, roomId, customIceServers) {
     this.socket = socket;
     this.myToken = myToken;
     this.roomId = roomId;
+
+    if (customIceServers) {
+      this.setIceServers(customIceServers);
+    }
 
     this.setupSocketListeners();
   }

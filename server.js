@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const drawGuessEngine = require('./games/drawGuess');
 const undercoverEngine = require('./games/undercover');
@@ -26,6 +28,24 @@ const changeMasterEngine = require('./games/changeMaster');
 const numberGuessEngine = require('./games/numberGuess');
 
 const app = express();
+
+// ===== 安全增强中间件 =====
+// 1. Helmet：自动配置 HTTP 安全响应头（防点击劫持、防嗅探、启用 HSTS 等）
+app.use(helmet({
+  contentSecurityPolicy: false, // 禁用默认严格 CSP 以兼容动态内联样式与 WebRTC 媒体流
+  crossOriginEmbedderPolicy: false
+}));
+
+// 2. express-rate-limit：HTTP 请求防刷限流（15 分钟内最多 600 次请求，防御恶意扫描与 DoS）
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: '请求过于频繁，请稍后再试！'
+});
+app.use(limiter);
+
 const server = http.createServer(app);
 // CORS：默认允许所有来源（聚会场景常通过分享链接/局域网 IP 直接访问）。
 // 若部署到固定域名，可用环境变量 CORS_ORIGIN 收紧为逗号分隔的域名白名单。
@@ -62,9 +82,44 @@ function clamp01(v) {
   return Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0;
 }
 
+/**
+ * 获取 WebRTC 的 ICE/STUN/TURN 服务器配置
+ * 默认包含 Google / Cloudflare 的公开免费 STUN 服务器；
+ * 若在环境变量中配置了 TURN 服务器（例如部署在自己云服务器上的 coturn），则合并加入，
+ * 解决移动端4G/5G或对称 NAT 复杂网络环境下两个玩家无法直接建立 P2P 语音连接的问题。
+ */
+function getIceServers() {
+  const iceServers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:1337' }
+  ];
+
+  // 支持通过环境变量 TURN_URL 或 TURN_URLS（逗号分隔）配置自建或第三方 TURN 中继服务
+  const turnUrls = process.env.TURN_URLS || process.env.TURN_URL;
+  if (turnUrls) {
+    const urls = turnUrls.split(',').map(u => u.trim()).filter(Boolean);
+    const turnConfig = {
+      urls: urls,
+      username: process.env.TURN_USERNAME || '',
+      credential: process.env.TURN_CREDENTIAL || process.env.TURN_PASSWORD || ''
+    };
+    iceServers.push(turnConfig);
+  }
+
+  return iceServers;
+}
+
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 提供 ICE/TURN 服务器配置接口，供前端语音模块随时拉取
+app.get('/api/ice-servers', (req, res) => {
+  res.json({ iceServers: getIceServers() });
+});
+
 const rooms = new Map();
+const MAX_ROOMS = 500; // 全局最大房间数量上限，防止恶意刷房耗尽服务器内存
 
 const GAME_ENGINES = {
   'draw-guess': drawGuessEngine,
@@ -205,6 +260,12 @@ io.on('connection', (socket) => {
 
     let room = rooms.get(roomId);
     if (!room) {
+      if (rooms.size >= MAX_ROOMS) {
+        socket.emit('join_error', { reason: '当前服务器房间数已达上限（最多 500 间），请稍后再试！' });
+        socket.leave(roomId);
+        currentRoomId = null;
+        return;
+      }
       room = createRoom(roomId);
       rooms.set(roomId, room);
     }
@@ -318,7 +379,8 @@ io.on('connection', (socket) => {
       gameType: room.gameType,
       playerId: socket.id,
       playerToken: player.token,
-      isHost: player.isHost
+      isHost: player.isHost,
+      iceServers: getIceServers()
     });
 
     if (room.gameType === 'draw-guess' && room.drawHistory && room.drawHistory.length > 0) {
@@ -1012,6 +1074,25 @@ io.on('connection', (socket) => {
     }
   });
 });
+
+// ===== 优雅关停（Graceful Shutdown）=====
+// 收到 SIGTERM/SIGINT 退出信号时，清理定时器并通知客户端，避免硬杀导致异常
+function gracefulShutdown(signal) {
+  console.log(`\n🛑 收到 ${signal} 信号，正在优雅关闭服务...`);
+  io.emit('system_message', '⚠️ 服务正在维护重启，请稍后重新进入！');
+  for (const [, room] of rooms.entries()) {
+    clearInterval(room.timer);
+    clearTimeout(room.roundTimeout);
+  }
+  server.close(() => {
+    console.log('✅ 服务已平稳关闭。');
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 5000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🎮 聚会游戏聚合大厅服务运行在 http://0.0.0.0:${PORT}`);

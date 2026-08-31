@@ -1,11 +1,45 @@
 services:
-  draw-guess:
+  # =========================================================================
+  # 🎮 PartyHub 聚会游戏大厅主服务
+  # =========================================================================
+  partyhub:
     build: .
-    container_name: draw-guess-game
+    container_name: partyhub-app
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:8080"
+      # 映射到宿主机 8080 端口（前端访问 http://服务器IP:8080）
+      - "8080:8080"
     environment:
       - PORT=8080
-    volumes:
-      - ./:/app
+      - CORS_ORIGIN=*
+      # 若在同一台服务器启用了下面的 coturn 服务，请将 YOUR_SERVER_IP 替换为您云服务器的公网 IP
+      - TURN_URL=turn:YOUR_SERVER_IP:3478
+      - TURN_USERNAME=partyhub
+      - TURN_CREDENTIAL=partyhub_secret_2026
+    depends_on:
+      - coturn
+
+  # =========================================================================
+  # 🎙️ Coturn 高性能 WebRTC STUN/TURN 语音中继服务
+  # 用于在复杂网络（如手机4G/5G、校园网、公司内网对称NAT）下中继玩家之间的语音数据
+  # =========================================================================
+  coturn:
+    image: coturn/coturn:latest
+    container_name: partyhub-coturn
+    restart: unless-stopped
+    # 开放 STUN/TURN 监听端口与 UDP 媒体转发端口范围
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "49152-49200:49152-49200/udp"
+    command:
+      - "-n"
+      - "--log-file=stdout"
+      - "--min-port=49152"
+      - "--max-port=49200"
+      - "--listening-port=3478"
+      - "--listening-ip=0.0.0.0"
+      - "--fingerprint"
+      - "--lt-cred-mech"
+      - "--realm=partyhub.local"
+      - "--user=partyhub:partyhub_secret_2026"
