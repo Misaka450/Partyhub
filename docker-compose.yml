@@ -3,17 +3,19 @@ services:
   # 🎮 PartyHub 聚会游戏大厅主服务
   # =========================================================================
   partyhub:
-    build: .
-    container_name: partyhub-app
+    image: node:22-alpine
+    container_name: draw-guess-game
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: node server.js
     restart: unless-stopped
     ports:
-      # 映射到宿主机 8080 端口（前端访问 http://服务器IP:8080）
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
       - PORT=8080
       - CORS_ORIGIN=*
-      # 若在同一台服务器启用了下面的 coturn 服务，请将 YOUR_SERVER_IP 替换为您云服务器的公网 IP
-      - TURN_URL=turn:YOUR_SERVER_IP:3478
+      - TURN_URL=turn:134.185.118.48:3478
       - TURN_USERNAME=partyhub
       - TURN_CREDENTIAL=partyhub_secret_2026
     depends_on:
@@ -27,11 +29,7 @@ services:
     image: coturn/coturn:latest
     container_name: partyhub-coturn
     restart: unless-stopped
-    # 开放 STUN/TURN 监听端口与 UDP 媒体转发端口范围
-    ports:
-      - "3478:3478/tcp"
-      - "3478:3478/udp"
-      - "49152-49200:49152-49200/udp"
+    network_mode: host
     command:
       - "-n"
       - "--log-file=stdout"
@@ -39,6 +37,7 @@ services:
       - "--max-port=49200"
       - "--listening-port=3478"
       - "--listening-ip=0.0.0.0"
+      - "--external-ip=134.185.118.48"
       - "--fingerprint"
       - "--lt-cred-mech"
       - "--realm=partyhub.local"

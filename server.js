@@ -119,7 +119,7 @@ app.get('/api/ice-servers', (req, res) => {
 });
 
 const rooms = new Map();
-const MAX_ROOMS = 500; // 全局最大房间数量上限，防止恶意刷房耗尽服务器内存
+const MAX_ROOMS = 100; // 全局最大房间数量上限，防止恶意刷房耗尽服务器内存
 
 const GAME_ENGINES = {
   'draw-guess': drawGuessEngine,
