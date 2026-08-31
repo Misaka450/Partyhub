@@ -305,6 +305,8 @@ const ucWordText = document.getElementById('uc-word-text');
 const ucSpeakerSpotlight = document.getElementById('uc-speaker-spotlight');
 const ucSpeakerAvatar = document.getElementById('uc-speaker-avatar');
 const ucSpeakerName = document.getElementById('uc-speaker-name');
+const ucSpeechTip = document.getElementById('uc-speech-tip');
+const btnUcMicToggle = document.getElementById('btn-uc-mic-toggle');
 const btnFinishSpeech = document.getElementById('btn-finish-speech');
 const ucPlayerGrid = document.getElementById('uc-player-grid');
 const ucStageDesc = document.getElementById('uc-stage-desc');
@@ -372,8 +374,30 @@ if (window.voiceManager) {
       }
     }
 
-    // 2. 玩家席位卡片与侧边栏高亮动效
-    document.querySelectorAll(`.p-card[data-token="${token}"], .av-p-card[data-token="${token}"], .player-item[data-token="${token}"]`).forEach(el => {
+    // 2. 谁是卧底麦序声浪可视化
+    if (currentGameType === 'undercover' && currentRoomState && currentRoomState.status === 'UC_SPEAKING') {
+      if (currentRoomState.currentSpeakerToken === token) {
+        const ucWaves = document.querySelectorAll('#uc-voice-waves span');
+        ucWaves.forEach((span, idx) => {
+          if (isSpeaking) {
+            const factor = [0.45, 0.85, 1.0, 0.7, 0.5][idx] || 0.6;
+            const dynamicHeight = Math.max(20, Math.min(100, (volume * 1.3) * factor));
+            span.style.height = `${dynamicHeight}%`;
+            span.style.background = 'var(--primary)';
+          } else {
+            span.style.height = '20%';
+            span.style.background = 'rgba(255,255,255,0.2)';
+          }
+        });
+        if (ucSpeechTip) {
+          ucSpeechTip.textContent = isSpeaking ? '正在语音发言...' : '轮到发言中...';
+          ucSpeechTip.style.color = isSpeaking ? 'var(--primary)' : 'var(--text-muted)';
+        }
+      }
+    }
+
+    // 3. 玩家席位卡片与侧边栏高亮动效
+    document.querySelectorAll(`.p-card[data-token="${token}"], .av-p-card[data-token="${token}"], .uc-player-card[data-token="${token}"], .player-item[data-token="${token}"]`).forEach(el => {
       el.classList.toggle('is-speaking', isSpeaking);
     });
   };
@@ -382,6 +406,10 @@ if (window.voiceManager) {
     if (btnAvMicToggle && currentRoomState && currentRoomState.status === 'AVALON_SPEECH' && currentRoomState.currentSpeakerToken === myPlayerToken) {
       btnAvMicToggle.textContent = isMicEnabled ? '🔴 闭麦' : '🎤 开麦发言';
       btnAvMicToggle.className = isMicEnabled ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-primary';
+    }
+    if (btnUcMicToggle && currentRoomState && currentRoomState.status === 'UC_SPEAKING' && currentRoomState.currentSpeakerToken === myPlayerToken) {
+      btnUcMicToggle.textContent = isMicEnabled ? '🔴 闭麦' : '🎤 开麦发言';
+      btnUcMicToggle.className = isMicEnabled ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-primary';
     }
   };
 }
@@ -563,7 +591,15 @@ function showGameOverModal({
   }
 
   if (gameoverBody) gameoverBody.innerHTML = html;
+  
+  // 结算动作区控制 (房主显示再来一局/换个游戏，非房主仅显示返回大厅)
+  const hostActions = document.getElementById('gameover-host-actions');
+  if (hostActions) {
+    hostActions.classList.toggle('hidden', !isHost);
+  }
+
   if (gameoverModal) gameoverModal.classList.add('active');
+  triggerVibration('correct');
 }
 
 // =====================【高高清 DPR 响应式画布通用初始化】=====================
@@ -756,11 +792,35 @@ function initAudio() {
 document.addEventListener('touchstart', initAudio, { once: true, passive: true });
 document.addEventListener('click', initAudio, { once: true, passive: true });
 
+let isVibrateEnabled = safeGetItem('partyhub_vibrate', 'true') !== 'false';
+const btnToggleVibrate = document.getElementById('btn-toggle-vibrate');
+
+function updateVibrateBtnState() {
+  if (!btnToggleVibrate) return;
+  btnToggleVibrate.classList.toggle('muted', !isVibrateEnabled);
+  btnToggleVibrate.title = isVibrateEnabled ? '触觉震动开关 (已开启)' : '触觉震动开关 (已关闭)';
+}
+if (btnToggleVibrate) {
+  updateVibrateBtnState();
+  btnToggleVibrate.addEventListener('click', () => {
+    isVibrateEnabled = !isVibrateEnabled;
+    safeSetItem('partyhub_vibrate', isVibrateEnabled ? 'true' : 'false');
+    updateVibrateBtnState();
+    if (isVibrateEnabled) {
+      triggerVibration('pop');
+      showToast('触觉震动已开启 📳', '⚡');
+    } else {
+      showToast('触觉震动已关闭 📴', '🔇');
+    }
+  });
+}
+
 function triggerVibration(type = 'tick') {
-  if (!navigator.vibrate) return;
+  if (!isVibrateEnabled || !navigator.vibrate) return;
   try {
     if (type === 'tick') navigator.vibrate(12);
     else if (type === 'pop') navigator.vibrate(18);
+    else if (type === 'urgent') navigator.vibrate(28);
     else if (type === 'correct') navigator.vibrate([35, 50, 35]);
     else if (type === 'boom') navigator.vibrate([100, 40, 220]);
     else if (type === 'error') navigator.vibrate([60, 40, 60]);
@@ -958,6 +1018,70 @@ document.querySelectorAll('.quick-room-btn').forEach(btn => {
       triggerVibration('tick');
     }
   });
+});
+
+// Deep Link 房间号智能识别与自动载入 (URL ?room=888 或 ?r=888)
+try {
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomParam = urlParams.get('room') || urlParams.get('r');
+  if (roomParam && roomIdInput) {
+    roomIdInput.value = roomParam;
+    setTimeout(() => {
+      if (playerNameInput && !playerNameInput.value) {
+        playerNameInput.focus();
+      }
+    }, 150);
+  }
+} catch (e) {}
+
+// 房间专属二维码弹窗逻辑 (QRCode Modal)
+const qrModal = document.getElementById('qr-modal');
+const qrModalRoomId = document.getElementById('qr-modal-room-id');
+const qrCodeCanvas = document.getElementById('qr-code-canvas');
+const btnCloseQrModal = document.getElementById('btn-close-qr-modal');
+const qrModalBackdrop = document.getElementById('qr-modal-backdrop');
+const btnQrCopyLink = document.getElementById('btn-qr-copy-link');
+const btnHeaderQr = document.getElementById('btn-header-qr');
+const btnLobbyQr = document.getElementById('btn-lobby-qr');
+
+function showQrModal() {
+  if (!qrModal) return;
+  const targetRoom = currentRoomId || roomIdInput?.value || '888';
+  if (qrModalRoomId) qrModalRoomId.textContent = `#${targetRoom}`;
+  const joinUrl = `${window.location.origin}/?room=${encodeURIComponent(targetRoom)}`;
+  
+  if (qrCodeCanvas && window.QRCode) {
+    window.QRCode.toCanvas(qrCodeCanvas, joinUrl, {
+      width: 200,
+      margin: 2,
+      color: { dark: '#0F131C', light: '#FFFFFF' }
+    }, (err) => {
+      if (err) console.error('QRCode error:', err);
+    });
+  }
+  qrModal.classList.add('active');
+  playSound('pop');
+  triggerVibration('pop');
+}
+
+btnHeaderQr?.addEventListener('click', showQrModal);
+btnLobbyQr?.addEventListener('click', showQrModal);
+btnCloseQrModal?.addEventListener('click', () => qrModal?.classList.remove('active'));
+qrModalBackdrop?.addEventListener('click', () => qrModal?.classList.remove('active'));
+btnQrCopyLink?.addEventListener('click', () => {
+  const targetRoom = currentRoomId || roomIdInput?.value || '888';
+  const joinUrl = `${window.location.origin}/?room=${encodeURIComponent(targetRoom)}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(joinUrl).then(() => {
+      showToast('房间链接已复制！发送给好友即可免输房号加入 📋', '✨');
+      playSound('pop');
+      triggerVibration('pop');
+    }).catch(() => {
+      showToast(`直达链接: ${joinUrl}`, '🔗');
+    });
+  } else {
+    showToast(`直达链接: ${joinUrl}`, '🔗');
+  }
 });
 
 // 登录加入房间
@@ -1180,6 +1304,98 @@ document.querySelectorAll('.cat-pill, .category-tab').forEach(tab => {
     triggerVibration('tick');
   });
 });
+
+// 游戏人数规格配置表
+const GAME_CAPACITY = {
+  'draw-guess': { min: 2, max: 12, name: '你画我猜' },
+  'undercover': { min: 3, max: 12, name: '谁是卧底' },
+  'avalon': { min: 5, max: 10, name: '阿瓦隆' },
+  'uno': { min: 2, max: 8, name: 'UNO 优诺' },
+  'flash-counter': { min: 2, max: 12, name: '瞬间数羊' },
+  'bomb-roulette': { min: 2, max: 8, name: '拆弹轮盘' },
+  'bulls-and-cows': { min: 1, max: 8, name: '几A几B' },
+  'math-24': { min: 1, max: 8, name: '决战 24 点' },
+  'cube-count': { min: 1, max: 8, name: '3D 数独块' },
+  'word-bomb': { min: 2, max: 10, name: '词汇炸弹' },
+  'perfect-slice': { min: 1, max: 8, name: '完美切分' },
+  'hold-five': { min: 1, max: 8, name: '盲压挑战' },
+  'stroop-trap': { min: 1, max: 8, name: '色彩陷阱' },
+  'twin-finder': { min: 1, max: 8, name: '寻找孪生' },
+  'shadow-match': { min: 1, max: 8, name: '剪影匹配' },
+  'who-disappeared': { min: 1, max: 8, name: '消失的角色' },
+  'simon-memory': { min: 1, max: 8, name: '节拍记忆' },
+  'train-route': { min: 1, max: 8, name: '轨道拼装' },
+  'hole-punch': { min: 1, max: 8, name: '折纸打孔' },
+  'change-master': { min: 1, max: 8, name: '找零大师' },
+  'number-guess': { min: 1, max: 12, name: '盲猜谁接近' }
+};
+
+function updateGameCapacityBadges(playerCount = 1) {
+  document.querySelectorAll('.game-tile').forEach(tile => {
+    const gType = tile.dataset.game;
+    const cap = GAME_CAPACITY[gType];
+    if (!cap) return;
+    let badge = tile.querySelector('.tile-capacity-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'tile-capacity-badge';
+      const content = tile.querySelector('.tile-content');
+      if (content) content.appendChild(badge);
+    }
+    if (playerCount < cap.min) {
+      badge.className = 'tile-capacity-badge badge-capacity-warn';
+      badge.textContent = `⚠️ 差 ${cap.min - playerCount} 人 (需${cap.min}人+)`;
+    } else {
+      badge.className = 'tile-capacity-badge badge-capacity-ok';
+      badge.textContent = `✓ 人数充足 (${cap.min}-${cap.max}人)`;
+    }
+  });
+}
+
+// 房主「🎲 盲盒抽选」随机挑选小游戏
+const btnRandomPickGame = document.getElementById('btn-random-pick-game');
+if (btnRandomPickGame) {
+  btnRandomPickGame.addEventListener('click', () => {
+    if (!isHost) {
+      showToast('只有房主可以进行游戏盲盒抽选 👑', '🎲');
+      return;
+    }
+    const visibleTiles = Array.from(document.querySelectorAll('.game-tile:not(.tab-hidden)'));
+    if (!visibleTiles.length) return;
+
+    const pCount = currentRoomState?.players?.length || 1;
+    const qualifiedTiles = visibleTiles.filter(t => {
+      const cap = GAME_CAPACITY[t.dataset.game];
+      return cap && pCount >= cap.min && pCount <= cap.max;
+    });
+    const candidates = qualifiedTiles.length ? qualifiedTiles : visibleTiles;
+
+    btnRandomPickGame.disabled = true;
+    let step = 0;
+    const maxSteps = 10;
+    const interval = setInterval(() => {
+      visibleTiles.forEach(t => t.classList.remove('active'));
+      const rIdx = Math.floor(Math.random() * candidates.length);
+      candidates[rIdx].classList.add('active');
+      playSound('tick');
+      triggerVibration('tick');
+      step++;
+      if (step >= maxSteps) {
+        clearInterval(interval);
+        btnRandomPickGame.disabled = false;
+        const finalTile = candidates[Math.floor(Math.random() * candidates.length)];
+        const targetGame = finalTile.dataset.game;
+        updateGameStageView(targetGame);
+        if (!socket.connected) socket.connect();
+        socket.emit('switch_game', { gameType: targetGame });
+        finalTile.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        showToast(`🎲 盲盒抽选结果：【${GAME_CAPACITY[targetGame]?.name || targetGame}】！`, '🎉');
+        playSound('win');
+        triggerVibration('correct');
+      }
+    }, 90);
+  });
+}
 
 // 模式切换与配置监听 (0ms 极速乐观响应 + 可靠网络同步)
 document.querySelectorAll('.game-tile, .game-mode-card').forEach(card => {
@@ -1433,6 +1649,45 @@ btnToggleReady.addEventListener('click', debounceClick(() => {
 btnBackLobby?.addEventListener('click', () => {
   document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
   socket.emit('back_to_lobby');
+  playSound('tick');
+  triggerVibration('tick');
+});
+
+// 结算弹窗房主快捷动作
+const btnGameoverRematch = document.getElementById('btn-gameover-rematch');
+const btnGameoverRandom = document.getElementById('btn-gameover-random');
+
+btnGameoverRematch?.addEventListener('click', () => {
+  document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+  if (isHost) {
+    if (!socket.connected) socket.connect();
+    socket.emit('update_room_settings', collectCurrentRoomSettings());
+    socket.emit('start_game');
+    showToast('正在再来一局... 🔄', '🚀');
+    playSound('start');
+    triggerVibration('pop');
+  } else {
+    socket.emit('back_to_lobby');
+  }
+});
+
+btnGameoverRandom?.addEventListener('click', () => {
+  document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+  if (isHost) {
+    const allGames = Object.keys(GAME_CAPACITY);
+    const pCount = currentRoomState?.players?.length || 1;
+    const valid = allGames.filter(g => pCount >= GAME_CAPACITY[g].min && g !== currentGameType);
+    const nextGame = valid.length ? valid[Math.floor(Math.random() * valid.length)] : allGames[Math.floor(Math.random() * allGames.length)];
+    updateGameStageView(nextGame);
+    if (!socket.connected) socket.connect();
+    socket.emit('switch_game', { gameType: nextGame });
+    socket.emit('back_to_lobby');
+    showToast(`🎲 换个游戏：【${GAME_CAPACITY[nextGame]?.name || nextGame}】！`, '✨');
+    playSound('card');
+    triggerVibration('pop');
+  } else {
+    socket.emit('back_to_lobby');
+  }
 });
 
 
@@ -1618,8 +1873,15 @@ socket.on('room_state', (state) => {
     displayRoundTag?.classList.remove('hidden');
     if (state.timeLeft !== undefined && displayTime) {
       displayTime.textContent = state.timeLeft;
-      if (state.timeLeft <= 10) timerBox?.classList.add('warning');
-      else timerBox?.classList.remove('warning');
+      if (state.timeLeft <= 5 && state.timeLeft > 0) {
+        timerBox?.classList.remove('warning');
+        timerBox?.classList.add('urgent');
+      } else if (state.timeLeft <= 10 && state.timeLeft > 0) {
+        timerBox?.classList.remove('urgent');
+        timerBox?.classList.add('warning');
+      } else {
+        timerBox?.classList.remove('warning', 'urgent');
+      }
     }
     if (isHost) btnHeaderLobby?.classList.remove('hidden');
     else btnHeaderLobby?.classList.add('hidden');
@@ -1677,6 +1939,7 @@ function renderPlayerList(players) {
 
   if (heroRoomId && currentRoomId) heroRoomId.textContent = currentRoomId;
   if (heroPlayerBadge) heroPlayerBadge.textContent = `${players.length} 人已入席`;
+  updateGameCapacityBadges(players.length);
 
   if (lobbySeatsGrid) {
     lobbySeatsGrid.innerHTML = '';
@@ -2034,7 +2297,18 @@ socket.on('uc_secret_role', (data) => {
 });
 
 btnFinishSpeech.addEventListener('click', () => {
+  if (window.voiceManager && window.voiceManager.isMicEnabled) {
+    window.voiceManager.toggleMic().catch(() => {});
+  }
   socket.emit('uc_finish_speech');
+});
+
+btnUcMicToggle?.addEventListener('click', async () => {
+  if (window.voiceManager) {
+    const isEnabled = await window.voiceManager.toggleMic();
+    btnUcMicToggle.textContent = isEnabled ? '🔴 闭麦' : '🎤 开麦发言';
+    btnUcMicToggle.className = isEnabled ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-primary';
+  }
 });
 
 function renderUndercoverState(state) {
@@ -2043,10 +2317,26 @@ function renderUndercoverState(state) {
 
   const isMySpeechTurn = (state.currentSpeakerToken === myPlayerToken && state.status === 'UC_SPEAKING');
   btnFinishSpeech.classList.toggle('hidden', !isMySpeechTurn);
+  if (btnUcMicToggle) {
+    btnUcMicToggle.classList.toggle('hidden', !isMySpeechTurn);
+    if (isMySpeechTurn && window.voiceManager) {
+      const isMicOn = window.voiceManager.isMicEnabled;
+      btnUcMicToggle.textContent = isMicOn ? '🔴 闭麦' : '🎤 开麦发言';
+      btnUcMicToggle.className = isMicOn ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-primary';
+    }
+  }
 
   if (state.currentSpeakerName) {
     ucSpeakerName.textContent = state.currentSpeakerName;
     ucSpeakerAvatar.textContent = state.players.find(p => p.token === state.currentSpeakerToken)?.avatar || '🎤';
+  }
+
+  if (ucSpeechTip) {
+    if (state.status === 'UC_SPEAKING') {
+      ucSpeechTip.textContent = isMySpeechTurn ? '轮到你发言（可开麦或打字）' : '正在发言中...';
+    } else {
+      ucSpeechTip.textContent = '等待进入下一阶段';
+    }
   }
 
   ucStageDesc.textContent = state.status === 'UC_SPEAKING' ? '🎤 玩家轮流发言中' : (state.status === 'UC_VOTING' ? '🗳️ 请点击卡片投出卧底' : '📊 结算中');
@@ -3636,8 +3926,15 @@ socket.on('timer_tick', (data) => {
   if (modalTimer) modalTimer.textContent = t;
 
   if (timerBox) {
-    if (t <= 10 && t > 0) timerBox.classList.add('warning');
-    else timerBox.classList.remove('warning');
+    if (t <= 5 && t > 0) {
+      timerBox.classList.remove('warning');
+      timerBox.classList.add('urgent');
+    } else if (t <= 10 && t > 0) {
+      timerBox.classList.remove('urgent');
+      timerBox.classList.add('warning');
+    } else {
+      timerBox.classList.remove('warning', 'urgent');
+    }
   }
 
   // 同步刷新次级提示状态栏中的倒计时数字

@@ -45,8 +45,8 @@
             <span class="pass-chip-meta">ARCADE // PASS</span>
             <span class="pass-chip-id">ONLINE</span>
           </div>
-          <h1 class="pass-main-title">聚会游戏大厅</h1>
-          <p class="pass-sub-desc">12 款主机级联机小游戏 · 即开即玩</p>
+          <h1 class="pass-main-title">Party Hub · 聚会大厅</h1>
+          <p class="pass-sub-desc">随时随地，拉上好友即刻开黑</p>
         </div>
 
         <!-- 玩家形象与昵称卡槽 (水平双栏并排) -->
@@ -80,6 +80,10 @@
             <button type="button" class="quick-room-btn" data-room="888">888</button>
             <button type="button" class="quick-room-btn" data-room="666">666</button>
             <button type="button" class="quick-room-btn" data-room="123">123</button>
+          </div>
+          <div class="room-slogan-tip">
+            <span>✨</span>
+            <span>输入相同房间号，即可跨设备同屏联机</span>
           </div>
         </div>
 
@@ -119,11 +123,17 @@
           <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           <span id="display-time">60</span>s
         </div>
+        <button id="btn-toggle-vibrate" class="icon-btn active" title="触觉震动开关 (已开启)">
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><path d="M22 8a3 3 0 0 1 0 8M2 8a3 3 0 0 0 0 8"/></svg>
+        </button>
         <button id="btn-toggle-sound" class="icon-btn" title="声音开关">
           <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
         </button>
         <button id="btn-toggle-theme" class="icon-btn" title="切换深浅主题">
           <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button id="btn-header-qr" class="icon-btn" title="房间二维码">
+          <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         </button>
         <button id="btn-share" class="btn btn-sm btn-subtle">邀请</button>
       </div>
@@ -189,11 +199,17 @@
                   <span>🎮 挑选游戏 (12款聚会游戏)</span>
                   <span class="count-hint" id="lobby-count">1人就绪</span>
                 </div>
-                <div class="category-nav">
-                  <button type="button" class="cat-pill active" data-category="all">全部</button>
-                  <button type="button" class="cat-pill" data-category="party">经典</button>
-                  <button type="button" class="cat-pill" data-category="action">手速</button>
-                  <button type="button" class="cat-pill" data-category="puzzle">益智</button>
+                <div class="category-nav-group">
+                  <div class="category-nav">
+                    <button type="button" class="cat-pill active" data-category="all">全部</button>
+                    <button type="button" class="cat-pill" data-category="party">经典</button>
+                    <button type="button" class="cat-pill" data-category="action">手速</button>
+                    <button type="button" class="cat-pill" data-category="puzzle">益智</button>
+                  </div>
+                  <button type="button" id="btn-random-pick-game" class="btn-random-pick" title="随缘抽取一款游戏">
+                    <span>🎲</span>
+                    <span>盲盒抽选</span>
+                  </button>
                 </div>
               </div>
 
@@ -913,6 +929,10 @@
 
             <!-- 掌机级主副操作卡槽 (Gamepad Action Dock) -->
             <div class="arcade-action-dock">
+              <button id="btn-lobby-qr" type="button" class="btn-dock-icon" title="房间二维码 (扫码免输房号进房)">
+                <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                <span>二维码</span>
+              </button>
               <button id="btn-lobby-share" type="button" class="btn-dock-sub" title="复制房间邀请链接">
                 <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 <span>邀请好友</span>
@@ -1005,8 +1025,17 @@
             <div class="speaker-details">
               <div class="speaker-title">当前发言</div>
               <div class="speaker-name" id="uc-speaker-name">玩家名</div>
+              <div class="uc-speech-status-bar">
+                <div class="av-voice-waves" id="uc-voice-waves">
+                  <span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <span class="uc-speech-tip" id="uc-speech-tip">正在发言中...</span>
+              </div>
             </div>
-            <button id="btn-finish-speech" class="btn btn-sm btn-primary hidden">发言完毕 ✓</button>
+            <div class="uc-speaker-actions">
+              <button id="btn-uc-mic-toggle" class="btn btn-sm btn-secondary hidden">🎤 开麦</button>
+              <button id="btn-finish-speech" class="btn btn-sm btn-primary hidden">发言完毕 ✓</button>
+            </div>
           </div>
           <div class="uc-grid-container">
             <div class="stage-sub-header"><span id="uc-stage-desc">发言阶段</span></div>
@@ -1572,13 +1601,50 @@
     </div>
   </div>
 
+  <!-- 游戏结算弹窗 (带领奖台、再来一局、随机换游戏与返回大厅) -->
   <div id="gameover-modal" class="modal">
+    <div class="modal-backdrop" id="gameover-modal-backdrop"></div>
     <div class="modal-content gameover-content">
       <h2 id="gameover-title">游戏结束</h2>
       <p id="gameover-desc" class="gameover-desc"></p>
       <div id="gameover-body" class="gameover-body"></div>
-      <div class="modal-footer-btn">
-        <button id="btn-back-lobby" class="btn btn-primary btn-block">返回大厅</button>
+      <div class="modal-footer-btn gameover-actions-dock">
+        <div class="gameover-host-actions" id="gameover-host-actions">
+          <button id="btn-gameover-rematch" class="btn btn-primary btn-arcade-rematch" type="button">
+            <span class="btn-glyph">🔄</span>
+            <span>再来一局</span>
+          </button>
+          <button id="btn-gameover-random" class="btn btn-secondary btn-arcade-random-next" type="button">
+            <span class="btn-glyph">🎲</span>
+            <span>换个游戏</span>
+          </button>
+        </div>
+        <button id="btn-back-lobby" class="btn btn-subtle btn-block" type="button">返回大厅</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 房间专属二维码扫码进房弹窗 -->
+  <div id="qr-modal" class="modal">
+    <div class="modal-backdrop" id="qr-modal-backdrop"></div>
+    <div class="modal-content qr-modal-content">
+      <div class="qr-modal-header">
+        <div class="qr-modal-title">
+          <span>📱 扫码极速进房</span>
+          <span class="qr-room-tag" id="qr-modal-room-id">#888</span>
+        </div>
+        <button id="btn-close-qr-modal" class="btn-close-modal" type="button">✕</button>
+      </div>
+      <div class="qr-code-body">
+        <div class="qr-canvas-box">
+          <canvas id="qr-code-canvas"></canvas>
+        </div>
+        <p class="qr-tip-text">✨ 微信 / 手机相机扫一扫，免输房号秒加入</p>
+      </div>
+      <div class="qr-modal-footer">
+        <button id="btn-qr-copy-link" class="btn btn-primary btn-block" type="button">
+          <span>📋 复制房间直达链接</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1602,6 +1668,7 @@
     </div>
   </div>
 
+  <script src="/qrcode.min.js"></script>
   <script src="/voice.js"></script>
   <script src="/game.js"></script>
 </body>
