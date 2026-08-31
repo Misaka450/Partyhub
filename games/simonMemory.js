@@ -236,7 +236,7 @@ function endRound(room, io, broadcastRoom) {
 
   clearTimeout(room.roundTimeout);
   room.roundTimeout = setTimeout(() => {
-    if (room.gameType !== 'simon-memory' || room.status !== 'SIMON_ROUND_RESULT') return;
+    if (room.gameType !== 'simon-memory' || room.status !== 'SIMON_RESULT') return;
     if (room.round < room.maxRounds) {
       room.round += 1;
       startRound(room, io, broadcastRoom);
@@ -289,7 +289,13 @@ function onPlayerRemoved(room, player, io, broadcastRoom) {
   }
 }
 
+
+function getPublicState(room) {
+  return {};
+}
+
 module.exports = {
+  getPublicState,
   generateSequence,
   initRoomState,
   startGame,

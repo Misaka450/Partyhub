@@ -323,7 +323,13 @@ function onPlayerRemoved(room, player, io, broadcastRoom) {
   }
 }
 
+
+function getPublicState(room) {
+  return {};
+}
+
 module.exports = {
+  getPublicState,
   generateTrackPuzzle,
   initRoomState,
   startGame,

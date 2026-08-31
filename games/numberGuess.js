@@ -241,7 +241,7 @@ function endRound(room, io, broadcastRoom) {
   clearInterval(room.timer);
   room.timer = null;
 
-  room.status = 'NUMBER_RESULT';
+  room.status = 'NUMBER_ROUND_RESULT';
 
   const truth = room.currentTrivia ? room.currentTrivia.answer : 0;
   const submissions = room.players.map(p => ({
@@ -332,7 +332,13 @@ function onPlayerRemoved(room, player, io, broadcastRoom) {
   }
 }
 
+
+function getPublicState(room) {
+  return {};
+}
+
 module.exports = {
+  getPublicState,
   pickTrivia,
   evaluateGuesses,
   initRoomState,

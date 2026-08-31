@@ -216,7 +216,7 @@ function endRound(room, io, broadcastRoom) {
 
   clearTimeout(room.roundTimeout);
   room.roundTimeout = setTimeout(() => {
-    if (room.gameType !== 'change-master' || room.status !== 'CHANGE_RESULT') return;
+    if (room.gameType !== 'change-master' || room.status !== 'CASH_RESULT') return;
     if (room.round < room.maxRounds) {
       room.round += 1;
       startRound(room, io, broadcastRoom);
@@ -266,7 +266,13 @@ function onPlayerRemoved(room, player, io, broadcastRoom) {
   }
 }
 
+
+function getPublicState(room) {
+  return {};
+}
+
 module.exports = {
+  getPublicState,
   generateBill,
   validateChange,
   initRoomState,

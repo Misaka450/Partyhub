@@ -68,6 +68,7 @@ process.on('unhandledRejection', (reason) => {
 
 // 安全调用游戏引擎：把引擎可能抛出的异常包住，避免单个异常直接压垮服务器进程
 function safeEngineCall(engineFn, ...args) {
+  if (typeof engineFn !== 'function') return null;
   try {
     return engineFn(...args);
   } catch (err) {
