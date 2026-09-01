@@ -1,114 +1,252 @@
 // ===================================================
 // 游戏：折纸打孔展开图 (Hole Punch Folding)
-// 玩法机制：空间折叠与镜像还原！
-// 一张正方形纸张（4x4 网格），经历折叠（如向右折、向下折）后在特定位置打孔。
-// 问：完全展开后，纸张上的所有孔洞位置应该呈什么图案？
+// 玩法机制：高阶空间折叠与几何镜像变换系统！
+// 一张正方形纸张（4x4 网格），经历单向对折、双向直角对折、45° 对角线对折或多重折叠，
+// 在折叠后有效区域打孔，由逆序矩阵反射变换精确计算展开后的孔洞拓扑网格！
 // ===================================================
 
 const { shuffle } = require('./shuffle');
 
+// 基础单步空间折叠变换定义
+const FOLD_OPERATIONS = {
+  FOLD_RIGHT: {
+    desc: '从左向右对折',
+    region: (r, c) => c >= 2,
+    unfold: (pts) => {
+      const res = [];
+      for (const p of pts) {
+        res.push(p);
+        res.push({ r: p.r, c: 3 - p.c });
+      }
+      return res;
+    }
+  },
+  FOLD_LEFT: {
+    desc: '从右向左对折',
+    region: (r, c) => c <= 1,
+    unfold: (pts) => {
+      const res = [];
+      for (const p of pts) {
+        res.push(p);
+        res.push({ r: p.r, c: 3 - p.c });
+      }
+      return res;
+    }
+  },
+  FOLD_DOWN: {
+    desc: '从上向下对折',
+    region: (r, c) => r >= 2,
+    unfold: (pts) => {
+      const res = [];
+      for (const p of pts) {
+        res.push(p);
+        res.push({ r: 3 - p.r, c: p.c });
+      }
+      return res;
+    }
+  },
+  FOLD_UP: {
+    desc: '从下向上对折',
+    region: (r, c) => r <= 1,
+    unfold: (pts) => {
+      const res = [];
+      for (const p of pts) {
+        res.push(p);
+        res.push({ r: 3 - p.r, c: p.c });
+      }
+      return res;
+    }
+  },
+  DIAG_MAIN_UPPER: {
+    desc: '沿主对角线对折 (左下折入右上)',
+    region: (r, c) => c >= r,
+    unfold: (pts) => {
+      const res = [];
+      for (const p of pts) {
+        res.push(p);
+        if (p.r !== p.c) res.push({ r: p.c, c: p.r });
+      }
+      return res;
+    }
+  },
+  DIAG_ANTI_LOWER: {
+    desc: '沿反对角线对折 (左上折入右下)',
+    region: (r, c) => (r + c) >= 3,
+    unfold: (pts) => {
+      const res = [];
+      for (const p of pts) {
+        res.push(p);
+        const mirrorR = 3 - p.c;
+        const mirrorC = 3 - p.r;
+        if (mirrorR !== p.r || mirrorC !== p.c) {
+          res.push({ r: mirrorR, c: mirrorC });
+        }
+      }
+      return res;
+    }
+  }
+};
+
+function gridToString(grid) {
+  return grid.map(row => row.join('')).join('\n');
+}
+
+function cloneGrid(g) {
+  return g.map(row => [...row]);
+}
+
+function rotate90(grid) {
+  const res = [
+    [0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]
+  ];
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      res[c][3 - r] = grid[r][c];
+    }
+  }
+  return res;
+}
+
 /**
- * 纯函数：生成一道折纸打孔题目与选项
+ * 纯函数：程序化生成一道折纸打孔题目与选项
  * @param {number} round 当前轮次
  */
 function generateFoldingPuzzle(round = 1) {
-  // 折叠步骤描述
-  // 步骤 1：折叠方式 1（'RIGHT': 从左向右折; 'DOWN': 从上向下折）
-  // 步骤 2：折叠方式 2
-  const foldTypes = ['RIGHT_THEN_DOWN', 'DOWN_THEN_RIGHT', 'FOLD_RIGHT', 'FOLD_DOWN'];
-  const foldType = round === 1 
-    ? (Math.random() < 0.5 ? 'FOLD_RIGHT' : 'FOLD_DOWN') 
-    : foldTypes[Math.floor(Math.random() * foldTypes.length)];
-
-  let foldDescription = '';
-  // 4x4 网格矩阵初始化（0 代表无孔，1 代表有孔）
-  const correctGrid = [
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-    [0, 0, 0, 0],
-    [0, 0, 0, 0]
+  const FOLD_RECIPES = [
+    // 轮次 1：单次直对折
+    { steps: ['FOLD_RIGHT'], name: '1️⃣ 从左向右对折一次' },
+    { steps: ['FOLD_DOWN'], name: '1️⃣ 从上向下对折一次' },
+    { steps: ['FOLD_LEFT'], name: '1️⃣ 从右向左对折一次' },
+    { steps: ['FOLD_UP'], name: '1️⃣ 从下向上对折一次' },
+    // 轮次 2：双向直角对折
+    { steps: ['FOLD_RIGHT', 'FOLD_DOWN'], name: '1️⃣ 从左向右对折 ➔ 2️⃣ 从上向下对折' },
+    { steps: ['FOLD_DOWN', 'FOLD_RIGHT'], name: '1️⃣ 从上向下对折 ➔ 2️⃣ 从左向右对折' },
+    { steps: ['FOLD_LEFT', 'FOLD_DOWN'], name: '1️⃣ 从右向左对折 ➔ 2️⃣ 从上向下对折' },
+    { steps: ['FOLD_RIGHT', 'FOLD_UP'], name: '1️⃣ 从左向右对折 ➔ 2️⃣ 从下向上对折' },
+    // 轮次 3 及更高：对角线折叠与复合折叠
+    { steps: ['DIAG_MAIN_UPPER'], name: '1️⃣ 沿主对角线对折 (左下折入右上)' },
+    { steps: ['DIAG_ANTI_LOWER'], name: '1️⃣ 沿反对角线对折 (左上折入右下)' },
+    { steps: ['FOLD_RIGHT', 'DIAG_ANTI_LOWER'], name: '1️⃣ 从左向右对折 ➔ 2️⃣ 沿角对折' }
   ];
 
-  // 打孔点（在最终折叠后的有效象限中打 1 个孔）
-  let holeR = 0;
-  let holeC = 0;
-
-  if (foldType === 'FOLD_RIGHT') {
-    foldDescription = '1️⃣ 从左向右对折一次';
-    holeR = Math.floor(Math.random() * 4);
-    holeC = 2 + Math.floor(Math.random() * 2); // 右半边 [2..3]
-    // 展开：水平镜像 (3 - holeC)
-    correctGrid[holeR][holeC] = 1;
-    correctGrid[holeR][3 - holeC] = 1;
-  } else if (foldType === 'FOLD_DOWN') {
-    foldDescription = '1️⃣ 从上向下对折一次';
-    holeR = 2 + Math.floor(Math.random() * 2); // 下半边 [2..3]
-    holeC = Math.floor(Math.random() * 4);
-    // 展开：垂直镜像 (3 - holeR)
-    correctGrid[holeR][holeC] = 1;
-    correctGrid[3 - holeR][holeC] = 1;
-  } else if (foldType === 'RIGHT_THEN_DOWN') {
-    foldDescription = '1️⃣ 从左向右对折 ➔ 2️⃣ 从上向下对折';
-    holeR = 2 + Math.floor(Math.random() * 2); // 下半边
-    holeC = 2 + Math.floor(Math.random() * 2); // 右半边
-    // 4 点全对称展开
-    correctGrid[holeR][holeC] = 1;
-    correctGrid[holeR][3 - holeC] = 1;
-    correctGrid[3 - holeR][holeC] = 1;
-    correctGrid[3 - holeR][3 - holeC] = 1;
+  let recipe;
+  if (round === 1) {
+    recipe = FOLD_RECIPES[Math.floor(Math.random() * 4)];
+  } else if (round === 2) {
+    recipe = FOLD_RECIPES[4 + Math.floor(Math.random() * 4)];
   } else {
-    // DOWN_THEN_RIGHT
-    foldDescription = '1️⃣ 从上向下对折 ➔ 2️⃣ 从左向右对折';
-    holeR = 2 + Math.floor(Math.random() * 2);
-    holeC = 2 + Math.floor(Math.random() * 2);
-    correctGrid[holeR][holeC] = 1;
-    correctGrid[holeR][3 - holeC] = 1;
-    correctGrid[3 - holeR][holeC] = 1;
-    correctGrid[3 - holeR][3 - holeC] = 1;
+    recipe = FOLD_RECIPES[Math.floor(Math.random() * FOLD_RECIPES.length)];
   }
 
-  // 辅助函数：克隆网格
-  const cloneGrid = (g) => g.map(row => [...row]);
+  // 寻找折叠完成后的有效重叠区域
+  const validCells = [];
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      let ok = true;
+      for (const stepKey of recipe.steps) {
+        if (!FOLD_OPERATIONS[stepKey].region(r, c)) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) validCells.push({ r, c });
+    }
+  }
 
-  // 生成 3 个干扰网格
-  // 干扰项 1：点位平移
-  const dist1 = cloneGrid(correctGrid);
-  dist1[0][0] = dist1[0][0] ? 0 : 1;
-  dist1[3][3] = dist1[3][3] ? 0 : 1;
+  const punchPos = validCells[Math.floor(Math.random() * validCells.length)] || { r: 2, c: 2 };
 
-  // 干扰项 2：中心对称错误
-  const dist2 = [
-    [0, 0, 0, 0],
-    [0, 1, 1, 0],
-    [0, 1, 1, 0],
-    [0, 0, 0, 0]
+  // 展开计算（反向逆序 unfold）
+  let currentPoints = [{ r: punchPos.r, c: punchPos.c }];
+  for (let i = recipe.steps.length - 1; i >= 0; i--) {
+    const op = FOLD_OPERATIONS[recipe.steps[i]];
+    currentPoints = op.unfold(currentPoints);
+  }
+
+  // 生成正解网格
+  const correctGrid = [
+    [0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]
   ];
+  for (const p of currentPoints) {
+    if (p.r >= 0 && p.r < 4 && p.c >= 0 && p.c < 4) {
+      correctGrid[p.r][p.c] = 1;
+    }
+  }
 
-  // 干扰项 3：缺少对称镜像点
-  const dist3 = cloneGrid(correctGrid);
-  dist3[holeR][holeC] = 1;
-  if (foldType.includes('RIGHT')) dist3[holeR][3 - holeC] = 0;
+  // 构造智能高迷惑性干扰项
+  const distractors = [];
+  const correctStr = gridToString(correctGrid);
+  const usedStrings = new Set([correctStr]);
 
-  // 构造候选项
+  // 干扰项 1：旋转 90 度
+  const rot1 = rotate90(correctGrid);
+  const rot1Str = gridToString(rot1);
+  if (!usedStrings.has(rot1Str)) {
+    distractors.push(rot1);
+    usedStrings.add(rot1Str);
+  }
+
+  // 干扰项 2：对角线或行列互换（误判折叠轴）
+  const transposed = [
+    [0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]
+  ];
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      transposed[r][c] = correctGrid[c][r];
+    }
+  }
+  const transStr = gridToString(transposed);
+  if (!usedStrings.has(transStr)) {
+    distractors.push(transposed);
+    usedStrings.add(transStr);
+  }
+
+  // 干扰项 3：遗漏部分展开镜像（少孔）
+  const missingHoles = cloneGrid(correctGrid);
+  missingHoles[punchPos.r][punchPos.c] = 1;
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if (missingHoles[r][c] && Math.random() < 0.5) {
+        missingHoles[r][c] = 0;
+      }
+    }
+  }
+  missingHoles[punchPos.r][punchPos.c] = 1;
+  const missStr = gridToString(missingHoles);
+  if (!usedStrings.has(missStr)) {
+    distractors.push(missingHoles);
+    usedStrings.add(missStr);
+  }
+
+  // 兜底补齐 3 个唯一干扰项
+  while (distractors.length < 3) {
+    const fake = cloneGrid(correctGrid);
+    const randR = Math.floor(Math.random() * 4);
+    const randC = Math.floor(Math.random() * 4);
+    fake[randR][randC] = fake[randR][randC] ? 0 : 1;
+    const fakeStr = gridToString(fake);
+    if (!usedStrings.has(fakeStr)) {
+      distractors.push(fake);
+      usedStrings.add(fakeStr);
+    }
+  }
+
   const candidates = [
-    { id: 'correct', grid: correctGrid },
-    { id: 'dist_1', grid: dist1 },
-    { id: 'dist_2', grid: dist2 },
-    { id: 'dist_3', grid: dist3 }
+    { id: 'correct', grid: correctGrid, isCorrect: true },
+    ...distractors.slice(0, 3).map((g, idx) => ({ id: `dist_${idx}`, grid: g, isCorrect: false }))
   ];
 
   const shuffledOptions = shuffle(candidates).map((opt, idx) => ({
     optionId: `opt_${idx}`,
     grid: opt.grid,
-    isCorrect: opt.id === 'correct'
+    isCorrect: opt.isCorrect
   }));
 
   const correctOption = shuffledOptions.find(o => o.isCorrect);
 
   return {
-    foldType,
-    foldDescription,
-    punchPos: { r: holeR, c: holeC },
+    foldType: recipe.steps.join('_'),
+    foldDescription: recipe.name,
+    punchPos,
     correctOptionId: correctOption.optionId,
     options: shuffledOptions.map(o => ({ optionId: o.optionId, grid: o.grid }))
   };
@@ -164,7 +302,7 @@ function startRound(room, io, broadcastRoom) {
   room.currentPuzzle = puzzle;
   room.playerAnswers = {};
   room.status = 'HOLE_ANSWER';
-  room.timeLeft = 8; // 8秒抢答
+  room.timeLeft = 8;
   room.roundStartTime = Date.now();
 
   broadcastRoom(room);
@@ -172,6 +310,7 @@ function startRound(room, io, broadcastRoom) {
   io.to(room.id).emit('hole_new_puzzle', {
     round: room.round,
     maxRounds: room.maxRounds,
+    foldType: puzzle.foldType,
     foldDescription: puzzle.foldDescription,
     punchPos: puzzle.punchPos,
     options: puzzle.options,
@@ -193,39 +332,42 @@ function startRound(room, io, broadcastRoom) {
 }
 
 /**
- * 玩家提交选择
+ * 提交孔洞选择答案
  */
 function submitAnswer(room, player, optionId, io, broadcastRoom) {
   if (room.gameType !== 'hole-punch' || room.status !== 'HOLE_ANSWER') return;
-  if (!room.currentPuzzle) return;
   if (room.playerAnswers[player.token]) return;
 
-  const timeUsed = (Date.now() - room.roundStartTime) / 1000;
-  const isCorrect = optionId === room.currentPuzzle.correctOptionId;
+  const puzzle = room.currentPuzzle;
+  if (!puzzle) return;
 
+  const isCorrect = optionId === puzzle.correctOptionId;
+  const timeUsed = (Date.now() - room.roundStartTime) / 1000;
   let scoreGain = 0;
+
   if (isCorrect) {
-    const speedBonus = Math.max(0, Math.round((8 - timeUsed) * 8));
-    scoreGain = 100 + speedBonus;
-    player.score = (player.score || 0) + scoreGain;
+    scoreGain = Math.max(10, Math.round(100 - timeUsed * 10));
+    player.score += scoreGain;
   }
 
   room.playerAnswers[player.token] = {
-    optionId,
+    playerId: player.id,
+    playerName: player.name,
     isCorrect,
-    timeUsed: parseFloat(timeUsed.toFixed(2)),
-    scoreGain
+    scoreGain,
+    optionId,
+    timeUsed
   };
 
   io.to(player.id).emit('hole_answer_feedback', {
     isCorrect,
     scoreGain,
-    correctOptionId: room.currentPuzzle.correctOptionId
+    correctOptionId: puzzle.correctOptionId
   });
 
-  const activePlayers = room.players.filter(p => !p.offlineTimer);
-  const allAnswered = activePlayers.every(p => !!room.playerAnswers[p.token]);
-  if (allAnswered) {
+  const activePlayers = room.players.filter(p => p.alive !== false);
+  const answerCount = Object.keys(room.playerAnswers).length;
+  if (answerCount >= activePlayers.length) {
     clearInterval(room.timer);
     room.timer = null;
     endRound(room, io, broadcastRoom);
@@ -233,105 +375,96 @@ function submitAnswer(room, player, optionId, io, broadcastRoom) {
 }
 
 /**
- * 结算本轮
+ * 结束本轮并展示结果
  */
 function endRound(room, io, broadcastRoom) {
   if (room.gameType !== 'hole-punch') return;
   clearInterval(room.timer);
   room.timer = null;
+  clearTimeout(room.roundTimeout);
+  room.roundTimeout = null;
 
   room.status = 'HOLE_RESULT';
+  const puzzle = room.currentPuzzle;
 
-  const roundResults = room.players.map(p => {
+  const results = room.players.map(p => {
     const ans = room.playerAnswers[p.token];
     return {
-      playerId: p.id,
-      playerToken: p.token,
+      id: p.id,
       name: p.name,
       avatar: p.avatar,
-      score: p.score,
-      answered: !!ans,
-      isCorrect: ans ? ans.isCorrect : false,
-      timeUsed: ans ? ans.timeUsed : null,
-      scoreGain: ans ? ans.scoreGain : 0,
-      optionId: ans ? ans.optionId : null
+      isCorrect: !!ans?.isCorrect,
+      scoreGain: ans?.scoreGain || 0,
+      totalScore: p.score
     };
-  });
+  }).sort((a, b) => b.scoreGain - a.scoreGain);
+
+  broadcastRoom(room);
 
   io.to(room.id).emit('hole_round_result', {
     round: room.round,
     maxRounds: room.maxRounds,
-    correctOptionId: room.currentPuzzle ? room.currentPuzzle.correctOptionId : null,
-    results: roundResults
+    correctOptionId: puzzle.correctOptionId,
+    results
   });
 
-  broadcastRoom(room);
-
-  clearTimeout(room.roundTimeout);
   room.roundTimeout = setTimeout(() => {
-    if (room.gameType !== 'hole-punch' || room.status !== 'HOLE_RESULT') return;
+    if (room.gameType !== 'hole-punch' || (room.status !== 'HOLE_RESULT' && room.status !== 'HOLE_ROUND_RESULT')) return;
     if (room.round < room.maxRounds) {
       room.round += 1;
       startRound(room, io, broadcastRoom);
     } else {
-      finishGame(room, io, broadcastRoom);
+      endGame(room, io, broadcastRoom);
     }
   }, 3500);
 }
 
 /**
- * 游戏结束
+ * 游戏终局
  */
-function finishGame(room, io, broadcastRoom) {
+function endGame(room, io, broadcastRoom) {
+  if (room.gameType !== 'hole-punch') return;
+  clearInterval(room.timer);
+  room.timer = null;
+  clearTimeout(room.roundTimeout);
+  room.roundTimeout = null;
+
   room.status = 'GAME_OVER';
-  const sorted = [...room.players].sort((a, b) => (b.score || 0) - (a.score || 0));
-  const winner = sorted[0] || null;
+  const ranked = [...room.players].sort((a, b) => b.score - a.score);
+
+  broadcastRoom(room);
 
   io.to(room.id).emit('hole_game_over', {
-    podium: sorted.slice(0, 3).map(p => ({
+    scores: ranked.map(p => ({
+      id: p.id,
       name: p.name,
       avatar: p.avatar,
       score: p.score
     }))
   });
 
-  broadcastRoom(room);
+  io.to(room.id).emit('system_message', `🏆 折纸打孔全赛程结束！恭喜 ${ranked[0]?.name || '胜者'} 夺得空间几何大师！`);
 }
 
-/**
- * 离线保护
- */
-function onPlayerRemoved(room, player, io, broadcastRoom) {
+function onPlayerRemoved(room, removedPlayer, io, broadcastRoom) {
   if (room.gameType !== 'hole-punch') return;
+  delete room.playerAnswers[removedPlayer.token];
   if (room.status === 'HOLE_ANSWER') {
-    const activePlayers = room.players.filter(p => !p.offlineTimer);
-    if (activePlayers.length === 0) {
+    const activePlayers = room.players.filter(p => p.alive !== false);
+    const answerCount = Object.keys(room.playerAnswers).length;
+    if (activePlayers.length > 0 && answerCount >= activePlayers.length) {
       clearInterval(room.timer);
-      clearTimeout(room.roundTimeout);
-      initRoomState(room);
-      return;
-    }
-    const allAnswered = activePlayers.every(p => !!room.playerAnswers[p.token]);
-    if (allAnswered) {
-      clearInterval(room.timer);
+      room.timer = null;
       endRound(room, io, broadcastRoom);
     }
   }
 }
 
-
-function getPublicState(room) {
-  return {};
-}
-
 module.exports = {
-  getPublicState,
   generateFoldingPuzzle,
   initRoomState,
   startGame,
-  startRound,
   submitAnswer,
-  endRound,
-  finishGame,
+  finishGame: endGame,
   onPlayerRemoved
 };

@@ -1,76 +1,1507 @@
 [
-  { "civ": "牛奶", "spy": "豆浆", "cat": "food" },
-  { "civ": "可乐", "spy": "雪碧", "cat": "food" },
-  { "civ": "汉堡", "spy": "肉夹馍", "cat": "food" },
-  { "civ": "火锅", "spy": "麻辣烫", "cat": "food" },
-  { "civ": "水饺", "spy": "馄饨", "cat": "food" },
-  { "civ": "泡面", "spy": "螺蛳粉", "cat": "food" },
-  { "civ": "薯片", "spy": "虾条", "cat": "food" },
-  { "civ": "冰淇淋", "spy": "雪糕", "cat": "food" },
-  { "civ": "珍珠奶茶", "spy": "果茶", "cat": "food" },
-  { "civ": "肯德基", "spy": "麦当劳", "cat": "food" },
-  { "civ": "烤肉", "spy": "烤串", "cat": "food" },
-  { "civ": "煎饼果子", "spy": "手抓饼", "cat": "food" },
-  { "civ": "草莓", "spy": "樱桃", "cat": "food" },
-  { "civ": "橙子", "spy": "柚子", "cat": "food" },
-  { "civ": "苹果", "spy": "梨子", "cat": "food" },
-  { "civ": "西瓜", "spy": "哈密瓜", "cat": "food" },
-  { "civ": "米饭", "spy": "面条", "cat": "food" },
-  { "civ": "包子", "spy": "烧麦", "cat": "food" },
-  { "civ": "酸奶", "spy": "纯牛奶", "cat": "food" },
-  { "civ": "蛋挞", "spy": "泡芙", "cat": "food" },
-
-  { "civ": "微信", "spy": "QQ", "cat": "daily" },
-  { "civ": "手机", "spy": "平板电脑", "cat": "daily" },
-  { "civ": "耳机", "spy": "音箱", "cat": "daily" },
-  { "civ": "雨伞", "spy": "雨衣", "cat": "daily" },
-  { "civ": "眼镜", "spy": "隐形眼镜", "cat": "daily" },
-  { "civ": "拖鞋", "spy": "凉鞋", "cat": "daily" },
-  { "civ": "毛巾", "spy": "浴巾", "cat": "daily" },
-  { "civ": "牙刷", "spy": "电动牙刷", "cat": "daily" },
-  { "civ": "洗发水", "spy": "沐浴露", "cat": "daily" },
-  { "civ": "手表", "spy": "手环", "cat": "daily" },
-  { "civ": "台灯", "spy": "手电筒", "cat": "daily" },
-  { "civ": "被子", "spy": "毛毯", "cat": "daily" },
-  { "civ": "键盘", "spy": "打字机", "cat": "daily" },
-  { "civ": "眉毛", "spy": "胡子", "cat": "daily" },
-  { "civ": "双胞胎", "spy": "龙凤胎", "cat": "daily" },
-  { "civ": "自行车", "spy": "电动车", "cat": "daily" },
-  { "civ": "地铁", "spy": "轻轨", "cat": "daily" },
-  { "civ": "高铁", "spy": "飞机", "cat": "daily" },
-  { "civ": "电影院", "spy": "剧场", "cat": "daily" },
-  { "civ": "图书馆", "spy": "书店", "cat": "daily" },
-
-  { "civ": "小狗", "spy": "小猫", "cat": "animal" },
-  { "civ": "老虎", "spy": "狮子", "cat": "animal" },
-  { "civ": "熊猫", "spy": "考拉", "cat": "animal" },
-  { "civ": "海豚", "spy": "鲸鱼", "cat": "animal" },
-  { "civ": "鸭子", "spy": "鹅", "cat": "animal" },
-  { "civ": "兔子", "spy": "仓鼠", "cat": "animal" },
-  { "civ": "蝴蝶", "spy": "蜜蜂", "cat": "animal" },
-  { "civ": "青蛙", "spy": "蟾蜍", "cat": "animal" },
-  { "civ": "老鹰", "spy": "秃鹫", "cat": "animal" },
-  { "civ": "狼", "spy": "狐狸", "cat": "animal" },
-
-  { "civ": "孙悟空", "spy": "猪八戒", "cat": "pop" },
-  { "civ": "奥特曼", "spy": "铠甲勇士", "cat": "pop" },
-  { "civ": "名侦探柯南", "spy": "福尔摩斯", "cat": "pop" },
-  { "civ": "哆啦A梦", "spy": "大雄", "cat": "pop" },
-  { "civ": "蜘蛛侠", "spy": "蝙蝠侠", "cat": "pop" },
-  { "civ": "王者荣耀", "spy": "英雄联盟", "cat": "pop" },
-  { "civ": "周杰伦", "spy": "林俊杰", "cat": "pop" },
-  { "civ": "王菲", "spy": "那英", "cat": "pop" },
-  { "civ": "沈腾", "spy": "贾玲", "cat": "pop" },
-  { "civ": "原神", "spy": "崩坏星穹铁道", "cat": "pop" },
-
-  { "civ": "降落伞", "spy": "潜水艇", "cat": "funny" },
-  { "civ": "红娘", "spy": "月老", "cat": "funny" },
-  { "civ": "相亲", "spy": "约会", "cat": "funny" },
-  { "civ": "情书", "spy": "肉麻话", "cat": "funny" },
-  { "civ": "初恋", "spy": "前任", "cat": "funny" },
-  { "civ": "保安", "spy": "保镖", "cat": "funny" },
-  { "civ": "护士", "spy": "医生", "cat": "funny" },
-  { "civ": "班主任", "spy": "辅导员", "cat": "funny" },
-  { "civ": "富二代", "spy": "拆迁户", "cat": "funny" },
-  { "civ": "学霸", "spy": "学神", "cat": "funny" }
+  {
+    "civ": "牛奶",
+    "spy": "豆浆",
+    "cat": "food"
+  },
+  {
+    "civ": "可乐",
+    "spy": "雪碧",
+    "cat": "food"
+  },
+  {
+    "civ": "汉堡",
+    "spy": "肉夹馍",
+    "cat": "food"
+  },
+  {
+    "civ": "火锅",
+    "spy": "麻辣烫",
+    "cat": "food"
+  },
+  {
+    "civ": "水饺",
+    "spy": "馄饨",
+    "cat": "food"
+  },
+  {
+    "civ": "泡面",
+    "spy": "螺蛳粉",
+    "cat": "food"
+  },
+  {
+    "civ": "薯片",
+    "spy": "虾条",
+    "cat": "food"
+  },
+  {
+    "civ": "冰淇淋",
+    "spy": "雪糕",
+    "cat": "food"
+  },
+  {
+    "civ": "珍珠奶茶",
+    "spy": "果茶",
+    "cat": "food"
+  },
+  {
+    "civ": "肯德基",
+    "spy": "麦当劳",
+    "cat": "food"
+  },
+  {
+    "civ": "烤肉",
+    "spy": "烤串",
+    "cat": "food"
+  },
+  {
+    "civ": "煎饼果子",
+    "spy": "手抓饼",
+    "cat": "food"
+  },
+  {
+    "civ": "草莓",
+    "spy": "樱桃",
+    "cat": "food"
+  },
+  {
+    "civ": "橙子",
+    "spy": "柚子",
+    "cat": "food"
+  },
+  {
+    "civ": "苹果",
+    "spy": "梨子",
+    "cat": "food"
+  },
+  {
+    "civ": "西瓜",
+    "spy": "哈密瓜",
+    "cat": "food"
+  },
+  {
+    "civ": "米饭",
+    "spy": "面条",
+    "cat": "food"
+  },
+  {
+    "civ": "包子",
+    "spy": "烧麦",
+    "cat": "food"
+  },
+  {
+    "civ": "酸奶",
+    "spy": "纯牛奶",
+    "cat": "food"
+  },
+  {
+    "civ": "蛋挞",
+    "spy": "泡芙",
+    "cat": "food"
+  },
+  {
+    "civ": "微信",
+    "spy": "QQ",
+    "cat": "daily"
+  },
+  {
+    "civ": "手机",
+    "spy": "平板电脑",
+    "cat": "daily"
+  },
+  {
+    "civ": "耳机",
+    "spy": "音箱",
+    "cat": "daily"
+  },
+  {
+    "civ": "雨伞",
+    "spy": "雨衣",
+    "cat": "daily"
+  },
+  {
+    "civ": "眼镜",
+    "spy": "隐形眼镜",
+    "cat": "daily"
+  },
+  {
+    "civ": "拖鞋",
+    "spy": "凉鞋",
+    "cat": "daily"
+  },
+  {
+    "civ": "毛巾",
+    "spy": "浴巾",
+    "cat": "daily"
+  },
+  {
+    "civ": "牙刷",
+    "spy": "电动牙刷",
+    "cat": "daily"
+  },
+  {
+    "civ": "洗发水",
+    "spy": "沐浴露",
+    "cat": "daily"
+  },
+  {
+    "civ": "手表",
+    "spy": "手环",
+    "cat": "daily"
+  },
+  {
+    "civ": "台灯",
+    "spy": "手电筒",
+    "cat": "daily"
+  },
+  {
+    "civ": "被子",
+    "spy": "毛毯",
+    "cat": "daily"
+  },
+  {
+    "civ": "键盘",
+    "spy": "打字机",
+    "cat": "daily"
+  },
+  {
+    "civ": "眉毛",
+    "spy": "胡子",
+    "cat": "daily"
+  },
+  {
+    "civ": "双胞胎",
+    "spy": "龙凤胎",
+    "cat": "daily"
+  },
+  {
+    "civ": "自行车",
+    "spy": "电动车",
+    "cat": "daily"
+  },
+  {
+    "civ": "地铁",
+    "spy": "轻轨",
+    "cat": "daily"
+  },
+  {
+    "civ": "高铁",
+    "spy": "飞机",
+    "cat": "daily"
+  },
+  {
+    "civ": "电影院",
+    "spy": "剧场",
+    "cat": "daily"
+  },
+  {
+    "civ": "图书馆",
+    "spy": "书店",
+    "cat": "daily"
+  },
+  {
+    "civ": "小狗",
+    "spy": "小猫",
+    "cat": "animal"
+  },
+  {
+    "civ": "老虎",
+    "spy": "狮子",
+    "cat": "animal"
+  },
+  {
+    "civ": "熊猫",
+    "spy": "考拉",
+    "cat": "animal"
+  },
+  {
+    "civ": "海豚",
+    "spy": "鲸鱼",
+    "cat": "animal"
+  },
+  {
+    "civ": "鸭子",
+    "spy": "鹅",
+    "cat": "animal"
+  },
+  {
+    "civ": "兔子",
+    "spy": "仓鼠",
+    "cat": "animal"
+  },
+  {
+    "civ": "蝴蝶",
+    "spy": "蜜蜂",
+    "cat": "animal"
+  },
+  {
+    "civ": "青蛙",
+    "spy": "蟾蜍",
+    "cat": "animal"
+  },
+  {
+    "civ": "老鹰",
+    "spy": "秃鹫",
+    "cat": "animal"
+  },
+  {
+    "civ": "狼",
+    "spy": "狐狸",
+    "cat": "animal"
+  },
+  {
+    "civ": "孙悟空",
+    "spy": "猪八戒",
+    "cat": "pop"
+  },
+  {
+    "civ": "奥特曼",
+    "spy": "铠甲勇士",
+    "cat": "pop"
+  },
+  {
+    "civ": "名侦探柯南",
+    "spy": "福尔摩斯",
+    "cat": "pop"
+  },
+  {
+    "civ": "哆啦A梦",
+    "spy": "大雄",
+    "cat": "pop"
+  },
+  {
+    "civ": "蜘蛛侠",
+    "spy": "蝙蝠侠",
+    "cat": "pop"
+  },
+  {
+    "civ": "王者荣耀",
+    "spy": "英雄联盟",
+    "cat": "pop"
+  },
+  {
+    "civ": "周杰伦",
+    "spy": "林俊杰",
+    "cat": "pop"
+  },
+  {
+    "civ": "王菲",
+    "spy": "那英",
+    "cat": "pop"
+  },
+  {
+    "civ": "沈腾",
+    "spy": "贾玲",
+    "cat": "pop"
+  },
+  {
+    "civ": "原神",
+    "spy": "崩坏星穹铁道",
+    "cat": "pop"
+  },
+  {
+    "civ": "降落伞",
+    "spy": "潜水艇",
+    "cat": "funny"
+  },
+  {
+    "civ": "红娘",
+    "spy": "月老",
+    "cat": "funny"
+  },
+  {
+    "civ": "相亲",
+    "spy": "约会",
+    "cat": "funny"
+  },
+  {
+    "civ": "情书",
+    "spy": "肉麻话",
+    "cat": "funny"
+  },
+  {
+    "civ": "初恋",
+    "spy": "前任",
+    "cat": "funny"
+  },
+  {
+    "civ": "保安",
+    "spy": "保镖",
+    "cat": "funny"
+  },
+  {
+    "civ": "护士",
+    "spy": "医生",
+    "cat": "funny"
+  },
+  {
+    "civ": "班主任",
+    "spy": "辅导员",
+    "cat": "funny"
+  },
+  {
+    "civ": "富二代",
+    "spy": "拆迁户",
+    "cat": "funny"
+  },
+  {
+    "civ": "学霸",
+    "spy": "学神",
+    "cat": "funny"
+  },
+  {
+    "civ": "煎饼果子",
+    "spy": "鸡蛋灌饼",
+    "cat": "food"
+  },
+  {
+    "civ": "麻辣烫",
+    "spy": "冒菜",
+    "cat": "food"
+  },
+  {
+    "civ": "串串香",
+    "spy": "钵钵鸡",
+    "cat": "food"
+  },
+  {
+    "civ": "烧烤",
+    "spy": "铁板烧",
+    "cat": "food"
+  },
+  {
+    "civ": "兰州拉面",
+    "spy": "河南烩面",
+    "cat": "food"
+  },
+  {
+    "civ": "刀削面",
+    "spy": "手擀面",
+    "cat": "food"
+  },
+  {
+    "civ": "云吞面",
+    "spy": "车仔面",
+    "cat": "food"
+  },
+  {
+    "civ": "螺蛳粉",
+    "spy": "酸辣粉",
+    "cat": "food"
+  },
+  {
+    "civ": "桂林米粉",
+    "spy": "云南米线",
+    "cat": "food"
+  },
+  {
+    "civ": "北京烤鸭",
+    "spy": "广式烧鹅",
+    "cat": "food"
+  },
+  {
+    "civ": "手扒肉",
+    "spy": "烤全羊",
+    "cat": "food"
+  },
+  {
+    "civ": "大闸蟹",
+    "spy": "帝王蟹",
+    "cat": "food"
+  },
+  {
+    "civ": "小龙虾",
+    "spy": "皮皮虾",
+    "cat": "food"
+  },
+  {
+    "civ": "三文鱼",
+    "spy": "金枪鱼",
+    "cat": "food"
+  },
+  {
+    "civ": "八爪鱼",
+    "spy": "鱿鱼",
+    "cat": "food"
+  },
+  {
+    "civ": "寿司",
+    "spy": "紫菜包饭",
+    "cat": "food"
+  },
+  {
+    "civ": "披萨",
+    "spy": "烤馕",
+    "cat": "food"
+  },
+  {
+    "civ": "提拉米苏",
+    "spy": "黑森林蛋糕",
+    "cat": "food"
+  },
+  {
+    "civ": "泡芙",
+    "spy": "雪媚娘",
+    "cat": "food"
+  },
+  {
+    "civ": "马卡龙",
+    "spy": "马芬蛋糕",
+    "cat": "food"
+  },
+  {
+    "civ": "双皮奶",
+    "spy": "姜撞奶",
+    "cat": "food"
+  },
+  {
+    "civ": "杨枝甘露",
+    "spy": "清补凉",
+    "cat": "food"
+  },
+  {
+    "civ": "珍珠奶茶",
+    "spy": "烧仙草",
+    "cat": "food"
+  },
+  {
+    "civ": "美式咖啡",
+    "spy": "浓缩咖啡",
+    "cat": "food"
+  },
+  {
+    "civ": "拿铁",
+    "spy": "卡布奇诺",
+    "cat": "food"
+  },
+  {
+    "civ": "绿茶",
+    "spy": "乌龙茶",
+    "cat": "food"
+  },
+  {
+    "civ": "红茶",
+    "spy": "普洱茶",
+    "cat": "food"
+  },
+  {
+    "civ": "葡萄酒",
+    "spy": "香槟",
+    "cat": "food"
+  },
+  {
+    "civ": "白酒",
+    "spy": "伏特加",
+    "cat": "food"
+  },
+  {
+    "civ": "威士忌",
+    "spy": "白兰地",
+    "cat": "food"
+  },
+  {
+    "civ": "芒果",
+    "spy": "木瓜",
+    "cat": "food"
+  },
+  {
+    "civ": "榴莲",
+    "spy": "菠萝蜜",
+    "cat": "food"
+  },
+  {
+    "civ": "荔枝",
+    "spy": "桂圆",
+    "cat": "food"
+  },
+  {
+    "civ": "车厘子",
+    "spy": "大红樱桃",
+    "cat": "food"
+  },
+  {
+    "civ": "奇异果",
+    "spy": "猕猴桃",
+    "cat": "food"
+  },
+  {
+    "civ": "蓝莓",
+    "spy": "桑葚",
+    "cat": "food"
+  },
+  {
+    "civ": "红薯",
+    "spy": "紫薯",
+    "cat": "food"
+  },
+  {
+    "civ": "土豆",
+    "spy": "芋头",
+    "cat": "food"
+  },
+  {
+    "civ": "生菜",
+    "spy": "油麦菜",
+    "cat": "food"
+  },
+  {
+    "civ": "菠菜",
+    "spy": "空心菜",
+    "cat": "food"
+  },
+  {
+    "civ": "淘宝",
+    "spy": "京东",
+    "cat": "daily"
+  },
+  {
+    "civ": "美团",
+    "spy": "饿了么",
+    "cat": "daily"
+  },
+  {
+    "civ": "抖音",
+    "spy": "快手",
+    "cat": "daily"
+  },
+  {
+    "civ": "B站",
+    "spy": "优酷",
+    "cat": "daily"
+  },
+  {
+    "civ": "微博",
+    "spy": "贴吧",
+    "cat": "daily"
+  },
+  {
+    "civ": "知乎",
+    "spy": "小红书",
+    "cat": "daily"
+  },
+  {
+    "civ": "百度地图",
+    "spy": "高德地图",
+    "cat": "daily"
+  },
+  {
+    "civ": "网易云音乐",
+    "spy": "QQ音乐",
+    "cat": "daily"
+  },
+  {
+    "civ": "蓝牙耳机",
+    "spy": "有线耳机",
+    "cat": "daily"
+  },
+  {
+    "civ": "头戴式耳机",
+    "spy": "入耳式耳机",
+    "cat": "daily"
+  },
+  {
+    "civ": "机械键盘",
+    "spy": "薄膜键盘",
+    "cat": "daily"
+  },
+  {
+    "civ": "激光鼠标",
+    "spy": "光电鼠标",
+    "cat": "daily"
+  },
+  {
+    "civ": "台式电脑",
+    "spy": "一体机",
+    "cat": "daily"
+  },
+  {
+    "civ": "笔记本电脑",
+    "spy": "轻薄本",
+    "cat": "daily"
+  },
+  {
+    "civ": "充电宝",
+    "spy": "无线充电板",
+    "cat": "daily"
+  },
+  {
+    "civ": "路由器",
+    "spy": "光猫",
+    "cat": "daily"
+  },
+  {
+    "civ": "加湿器",
+    "spy": "雾化器",
+    "cat": "daily"
+  },
+  {
+    "civ": "除湿机",
+    "spy": "烘干机",
+    "cat": "daily"
+  },
+  {
+    "civ": "吸尘器",
+    "spy": "扫地机",
+    "cat": "daily"
+  },
+  {
+    "civ": "微波炉",
+    "spy": "光波炉",
+    "cat": "daily"
+  },
+  {
+    "civ": "电磁炉",
+    "spy": "电陶炉",
+    "cat": "daily"
+  },
+  {
+    "civ": "空气炸锅",
+    "spy": "电烤箱",
+    "cat": "daily"
+  },
+  {
+    "civ": "电饭煲",
+    "spy": "高压锅",
+    "cat": "daily"
+  },
+  {
+    "civ": "保温杯",
+    "spy": "焖烧杯",
+    "cat": "daily"
+  },
+  {
+    "civ": "运动手环",
+    "spy": "智能手表",
+    "cat": "daily"
+  },
+  {
+    "civ": "石英表",
+    "spy": "机械表",
+    "cat": "daily"
+  },
+  {
+    "civ": "墨镜",
+    "spy": "变色镜",
+    "cat": "daily"
+  },
+  {
+    "civ": "近视镜",
+    "spy": "老花镜",
+    "cat": "daily"
+  },
+  {
+    "civ": "洗面奶",
+    "spy": "洁面慕斯",
+    "cat": "daily"
+  },
+  {
+    "civ": "护手霜",
+    "spy": "身体乳",
+    "cat": "daily"
+  },
+  {
+    "civ": "防晒霜",
+    "spy": "隔离霜",
+    "cat": "daily"
+  },
+  {
+    "civ": "唇膏",
+    "spy": "口红",
+    "cat": "daily"
+  },
+  {
+    "civ": "指甲刀",
+    "spy": "修眉剪",
+    "cat": "daily"
+  },
+  {
+    "civ": "梳子",
+    "spy": "气垫梳",
+    "cat": "daily"
+  },
+  {
+    "civ": "电动牙刷",
+    "spy": "冲牙器",
+    "cat": "daily"
+  },
+  {
+    "civ": "棉签",
+    "spy": "挖耳勺",
+    "cat": "daily"
+  },
+  {
+    "civ": "纸巾",
+    "spy": "湿厕纸",
+    "cat": "daily"
+  },
+  {
+    "civ": "拖把",
+    "spy": "抹布",
+    "cat": "daily"
+  },
+  {
+    "civ": "羽绒服",
+    "spy": "棉服",
+    "cat": "daily"
+  },
+  {
+    "civ": "风衣",
+    "spy": "大衣",
+    "cat": "daily"
+  },
+  {
+    "civ": "牛仔裤",
+    "spy": "工装裤",
+    "cat": "daily"
+  },
+  {
+    "civ": "运动鞋",
+    "spy": "帆布鞋",
+    "cat": "daily"
+  },
+  {
+    "civ": "高跟鞋",
+    "spy": "厚底鞋",
+    "cat": "daily"
+  },
+  {
+    "civ": "斑马",
+    "spy": "斑马线",
+    "cat": "animal"
+  },
+  {
+    "civ": "金丝猴",
+    "spy": "长臂猿",
+    "cat": "animal"
+  },
+  {
+    "civ": "猩猩",
+    "spy": "狒狒",
+    "cat": "animal"
+  },
+  {
+    "civ": "狐狸",
+    "spy": "狼",
+    "cat": "animal"
+  },
+  {
+    "civ": "柴犬",
+    "spy": "秋田犬",
+    "cat": "animal"
+  },
+  {
+    "civ": "金毛",
+    "spy": "拉布拉多",
+    "cat": "animal"
+  },
+  {
+    "civ": "哈士奇",
+    "spy": "阿拉斯加",
+    "cat": "animal"
+  },
+  {
+    "civ": "波斯猫",
+    "spy": "布偶猫",
+    "cat": "animal"
+  },
+  {
+    "civ": "海豚",
+    "spy": "虎鲸",
+    "cat": "animal"
+  },
+  {
+    "civ": "企鹅",
+    "spy": "海鹦",
+    "cat": "animal"
+  },
+  {
+    "civ": "鸵鸟",
+    "spy": "鸸鹋",
+    "cat": "animal"
+  },
+  {
+    "civ": "天鹅",
+    "spy": "大雁",
+    "cat": "animal"
+  },
+  {
+    "civ": "野鸭",
+    "spy": "鸳鸯",
+    "cat": "animal"
+  },
+  {
+    "civ": "麻雀",
+    "spy": "燕子",
+    "cat": "animal"
+  },
+  {
+    "civ": "老鹰",
+    "spy": "猎鹰",
+    "cat": "animal"
+  },
+  {
+    "civ": "蜜蜂",
+    "spy": "黄蜂",
+    "cat": "animal"
+  },
+  {
+    "civ": "蝴蝶",
+    "spy": "飞蛾",
+    "cat": "animal"
+  },
+  {
+    "civ": "蜻蜓",
+    "spy": "豆娘",
+    "cat": "animal"
+  },
+  {
+    "civ": "蜥蜴",
+    "spy": "变色龙",
+    "cat": "animal"
+  },
+  {
+    "civ": "乌龟",
+    "spy": "甲鱼",
+    "cat": "animal"
+  },
+  {
+    "civ": "鳄鱼",
+    "spy": "巨蜥",
+    "cat": "animal"
+  },
+  {
+    "civ": "孙悟空",
+    "spy": "六耳猕猴",
+    "cat": "pop"
+  },
+  {
+    "civ": "猪八戒",
+    "spy": "沙僧",
+    "cat": "pop"
+  },
+  {
+    "civ": "哪吒",
+    "spy": "红孩儿",
+    "cat": "pop"
+  },
+  {
+    "civ": "二郎神",
+    "spy": "托塔天王",
+    "cat": "pop"
+  },
+  {
+    "civ": "鲁智深",
+    "spy": "武松",
+    "cat": "pop"
+  },
+  {
+    "civ": "李逵",
+    "spy": "张飞",
+    "cat": "pop"
+  },
+  {
+    "civ": "诸葛亮",
+    "spy": "周瑜",
+    "cat": "pop"
+  },
+  {
+    "civ": "曹操",
+    "spy": "刘备",
+    "cat": "pop"
+  },
+  {
+    "civ": "关羽",
+    "spy": "赵云",
+    "cat": "pop"
+  },
+  {
+    "civ": "贾宝玉",
+    "spy": "甄宝玉",
+    "cat": "pop"
+  },
+  {
+    "civ": "林黛玉",
+    "spy": "薛宝钗",
+    "cat": "pop"
+  },
+  {
+    "civ": "钢铁侠",
+    "spy": "蝙蝠侠",
+    "cat": "pop"
+  },
+  {
+    "civ": "蜘蛛侠",
+    "spy": "蚁人",
+    "cat": "pop"
+  },
+  {
+    "civ": "绿巨人",
+    "spy": "灭霸",
+    "cat": "pop"
+  },
+  {
+    "civ": "雷神",
+    "spy": "洛基",
+    "cat": "pop"
+  },
+  {
+    "civ": "美国队长",
+    "spy": "冬兵",
+    "cat": "pop"
+  },
+  {
+    "civ": "超人",
+    "spy": "海王",
+    "cat": "pop"
+  },
+  {
+    "civ": "哈利波特",
+    "spy": "罗恩",
+    "cat": "pop"
+  },
+  {
+    "civ": "伏地魔",
+    "spy": "格林德沃",
+    "cat": "pop"
+  },
+  {
+    "civ": "路飞",
+    "spy": "艾斯",
+    "cat": "pop"
+  },
+  {
+    "civ": "索隆",
+    "spy": "山治",
+    "cat": "pop"
+  },
+  {
+    "civ": "鸣人",
+    "spy": "佐助",
+    "cat": "pop"
+  },
+  {
+    "civ": "卡卡西",
+    "spy": "自来也",
+    "cat": "pop"
+  },
+  {
+    "civ": "工藤新一",
+    "spy": "服部平次",
+    "cat": "pop"
+  },
+  {
+    "civ": "怪盗基德",
+    "spy": "鲁邦三世",
+    "cat": "pop"
+  },
+  {
+    "civ": "炭治郎",
+    "spy": "善逸",
+    "cat": "pop"
+  },
+  {
+    "civ": "五条悟",
+    "spy": "夏油杰",
+    "cat": "pop"
+  },
+  {
+    "civ": "利威尔",
+    "spy": "艾伦",
+    "cat": "pop"
+  },
+  {
+    "civ": "前男友",
+    "spy": "前夫",
+    "cat": "funny"
+  },
+  {
+    "civ": "初恋",
+    "spy": "暗恋",
+    "cat": "funny"
+  },
+  {
+    "civ": "相亲",
+    "spy": "面基",
+    "cat": "funny"
+  },
+  {
+    "civ": "加班",
+    "spy": "值班",
+    "cat": "funny"
+  },
+  {
+    "civ": "月光族",
+    "spy": "啃老族",
+    "cat": "funny"
+  },
+  {
+    "civ": "凡尔赛",
+    "spy": "打脸",
+    "cat": "funny"
+  },
+  {
+    "civ": "摸鱼",
+    "spy": "划水",
+    "cat": "funny"
+  },
+  {
+    "civ": "内卷",
+    "spy": "躺平",
+    "cat": "funny"
+  },
+  {
+    "civ": "社恐",
+    "spy": "自闭",
+    "cat": "funny"
+  },
+  {
+    "civ": "社牛",
+    "spy": "话痨",
+    "cat": "funny"
+  },
+  {
+    "civ": "秃头",
+    "spy": "地中海",
+    "cat": "funny"
+  },
+  {
+    "civ": "假发",
+    "spy": "植发",
+    "cat": "funny"
+  },
+  {
+    "civ": "打呼噜",
+    "spy": "磨牙",
+    "cat": "funny"
+  },
+  {
+    "civ": "梦游",
+    "spy": "说梦话",
+    "cat": "funny"
+  },
+  {
+    "civ": "发胖",
+    "spy": "水肿",
+    "cat": "funny"
+  },
+  {
+    "civ": "健身",
+    "spy": "减肥",
+    "cat": "funny"
+  },
+  {
+    "civ": "买彩票",
+    "spy": "炒股",
+    "cat": "funny"
+  },
+  {
+    "civ": "锦鲤",
+    "spy": "锦旗",
+    "cat": "funny"
+  },
+  {
+    "civ": "保温杯里泡枸杞",
+    "spy": "熬夜敷面膜",
+    "cat": "funny"
+  },
+  {
+    "civ": "假笑",
+    "spy": "冷笑",
+    "cat": "funny"
+  },
+  {
+    "civ": "真心话",
+    "spy": "大冒险",
+    "cat": "funny"
+  },
+  {
+    "civ": "剧本杀",
+    "spy": "密室逃脱",
+    "cat": "funny"
+  },
+  {
+    "civ": "狼人杀",
+    "spy": "谁是卧底",
+    "cat": "funny"
+  },
+  {
+    "civ": "麻将",
+    "spy": "扑克牌",
+    "cat": "funny"
+  },
+  {
+    "civ": "斗地主",
+    "spy": "升级",
+    "cat": "funny"
+  },
+  {
+    "civ": "盲盒",
+    "spy": "扭蛋",
+    "cat": "funny"
+  },
+  {
+    "civ": "抓娃娃",
+    "spy": "套圈",
+    "cat": "funny"
+  },
+  {
+    "civ": "过山车",
+    "spy": "跳楼机",
+    "cat": "funny"
+  },
+  {
+    "civ": "摩天轮",
+    "spy": "旋转木马",
+    "cat": "funny"
+  },
+  {
+    "civ": "海盗船",
+    "spy": "大摆锤",
+    "cat": "funny"
+  },
+  {
+    "civ": "鬼屋",
+    "spy": "迷宫",
+    "cat": "funny"
+  },
+  {
+    "civ": "蹦极",
+    "spy": "跳伞",
+    "cat": "funny"
+  },
+  {
+    "civ": "漂流",
+    "spy": "冲浪",
+    "cat": "funny"
+  },
+  {
+    "civ": "滑雪",
+    "spy": "滑冰",
+    "cat": "funny"
+  },
+  {
+    "civ": "潜水",
+    "spy": "浮潜",
+    "cat": "funny"
+  },
+  {
+    "civ": "露营",
+    "spy": "野餐",
+    "cat": "funny"
+  },
+  {
+    "civ": "烧烤派对",
+    "spy": "火锅聚会",
+    "cat": "funny"
+  },
+  {
+    "civ": "KTV",
+    "spy": "酒吧",
+    "cat": "funny"
+  },
+  {
+    "civ": "夜市",
+    "spy": "步行街",
+    "cat": "daily"
+  },
+  {
+    "civ": "电影院",
+    "spy": "大剧院",
+    "cat": "daily"
+  },
+  {
+    "civ": "水上乐园",
+    "spy": "海洋馆",
+    "cat": "daily"
+  },
+  {
+    "civ": "动物园",
+    "spy": "植物园",
+    "cat": "daily"
+  },
+  {
+    "civ": "游乐场",
+    "spy": "嘉年华",
+    "cat": "daily"
+  },
+  {
+    "civ": "太阳",
+    "spy": "月亮",
+    "cat": "daily"
+  },
+  {
+    "civ": "暴雨",
+    "spy": "大雪",
+    "cat": "daily"
+  },
+  {
+    "civ": "微风",
+    "spy": "台风",
+    "cat": "daily"
+  },
+  {
+    "civ": "闪电",
+    "spy": "打雷",
+    "cat": "daily"
+  },
+  {
+    "civ": "彩虹",
+    "spy": "极光",
+    "cat": "daily"
+  },
+  {
+    "civ": "流星",
+    "spy": "彗星",
+    "cat": "daily"
+  },
+  {
+    "civ": "瀑布",
+    "spy": "喷泉",
+    "cat": "daily"
+  },
+  {
+    "civ": "沙漠",
+    "spy": "戈壁",
+    "cat": "daily"
+  },
+  {
+    "civ": "森林",
+    "spy": "草原",
+    "cat": "daily"
+  },
+  {
+    "civ": "雪山",
+    "spy": "冰川",
+    "cat": "daily"
+  },
+  {
+    "civ": "火山",
+    "spy": "温泉",
+    "cat": "daily"
+  },
+  {
+    "civ": "海啸",
+    "spy": "地震",
+    "cat": "daily"
+  },
+  {
+    "civ": "水龙头",
+    "spy": "花洒",
+    "cat": "daily"
+  },
+  {
+    "civ": "洗手液",
+    "spy": "肥皂",
+    "cat": "daily"
+  },
+  {
+    "civ": "洗衣粉",
+    "spy": "洗衣液",
+    "cat": "daily"
+  },
+  {
+    "civ": "柔顺剂",
+    "spy": "消毒液",
+    "cat": "daily"
+  },
+  {
+    "civ": "吸水抹布",
+    "spy": "纸巾",
+    "cat": "daily"
+  },
+  {
+    "civ": "扫把",
+    "spy": "簸箕",
+    "cat": "daily"
+  },
+  {
+    "civ": "作业",
+    "spy": "试卷",
+    "cat": "daily"
+  },
+  {
+    "civ": "班长",
+    "spy": "学习委员",
+    "cat": "daily"
+  },
+  {
+    "civ": "老师",
+    "spy": "教授",
+    "cat": "daily"
+  },
+  {
+    "civ": "期中考试",
+    "spy": "期末考试",
+    "cat": "daily"
+  },
+  {
+    "civ": "毕业典礼",
+    "spy": "开学典礼",
+    "cat": "daily"
+  },
+  {
+    "civ": "早自习",
+    "spy": "晚自习",
+    "cat": "daily"
+  },
+  {
+    "civ": "黑板",
+    "spy": "电子白板",
+    "cat": "daily"
+  },
+  {
+    "civ": "粉笔",
+    "spy": "水彩笔",
+    "cat": "daily"
+  },
+  {
+    "civ": "老板",
+    "spy": "主管",
+    "cat": "daily"
+  },
+  {
+    "civ": "HR",
+    "spy": "猎头",
+    "cat": "daily"
+  },
+  {
+    "civ": "年终奖",
+    "spy": "分红",
+    "cat": "daily"
+  },
+  {
+    "civ": "全勤奖",
+    "spy": "绩效奖",
+    "cat": "daily"
+  },
+  {
+    "civ": "工牌",
+    "spy": "名片",
+    "cat": "daily"
+  },
+  {
+    "civ": "打卡机",
+    "spy": "钉钉",
+    "cat": "daily"
+  },
+  {
+    "civ": "开会",
+    "spy": "头脑风暴",
+    "cat": "daily"
+  },
+  {
+    "civ": "述职",
+    "spy": "答辩",
+    "cat": "daily"
+  },
+  {
+    "civ": "出差",
+    "spy": "旅游",
+    "cat": "daily"
+  },
+  {
+    "civ": "年假",
+    "spy": "调休",
+    "cat": "daily"
+  },
+  {
+    "civ": "带薪休假",
+    "spy": "产假",
+    "cat": "daily"
+  },
+  {
+    "civ": "实习生",
+    "spy": "应届生",
+    "cat": "daily"
+  },
+  {
+    "civ": "原神",
+    "spy": "崩坏：星穹铁道",
+    "cat": "pop"
+  },
+  {
+    "civ": "和平精英",
+    "spy": "绝地求生",
+    "cat": "pop"
+  },
+  {
+    "civ": "我的世界",
+    "spy": "迷你世界",
+    "cat": "pop"
+  },
+  {
+    "civ": "泰拉瑞亚",
+    "spy": "饥荒",
+    "cat": "pop"
+  },
+  {
+    "civ": "黑神话：悟空",
+    "spy": "艾尔登法环",
+    "cat": "pop"
+  },
+  {
+    "civ": "塞尔达传说",
+    "spy": "超级马里奥",
+    "cat": "pop"
+  },
+  {
+    "civ": "精灵宝可梦",
+    "spy": "数码宝贝",
+    "cat": "pop"
+  },
+  {
+    "civ": "名侦探柯南",
+    "spy": "金田一",
+    "cat": "pop"
+  },
+  {
+    "civ": "进击的巨人",
+    "spy": "鬼灭之刃",
+    "cat": "pop"
+  },
+  {
+    "civ": "咒术回战",
+    "spy": "火影忍者",
+    "cat": "pop"
+  },
+  {
+    "civ": "海贼王",
+    "spy": "死神",
+    "cat": "pop"
+  },
+  {
+    "civ": "JOJO的奇妙冒险",
+    "spy": "猎人",
+    "cat": "pop"
+  },
+  {
+    "civ": "千与千寻",
+    "spy": "龙猫",
+    "cat": "pop"
+  },
+  {
+    "civ": "天空之城",
+    "spy": "哈尔的移动城堡",
+    "cat": "pop"
+  },
+  {
+    "civ": "流浪地球",
+    "spy": "星际穿越",
+    "cat": "pop"
+  },
+  {
+    "civ": "三体",
+    "spy": "银河帝国",
+    "cat": "pop"
+  },
+  {
+    "civ": "阿凡达",
+    "spy": "指环王",
+    "cat": "pop"
+  },
+  {
+    "civ": "复仇者联盟",
+    "spy": "正义联盟",
+    "cat": "pop"
+  }
 ]
