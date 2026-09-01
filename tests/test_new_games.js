@@ -83,10 +83,12 @@ async function runNewGamesTests() {
 
   console.log('  -> 房主启动《瞬间数羊》...');
   players[0].socket.emit('start_game');
-  await wait(3500); // 准备 + 飞掠中
 
-  console.log('  -> 动物飞掠完毕，收到竞猜题目与 4 个选项...');
-  await wait(4500); // 到达 guessing 阶段
+  console.log('  -> 动物飞掠中，等待竞猜题目与 4 个选项...');
+  const flashStartWait = Date.now();
+  while (options.length === 0 && Date.now() - flashStartWait < 15000) {
+    await wait(250);
+  }
 
   if (options.length === 4) {
     console.log(`  ✓ 选项生成正常: [${options.join(', ')}]`);

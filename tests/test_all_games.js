@@ -134,6 +134,19 @@ async function runTests() {
     });
   });
 
+  // 自动推进发言麦序
+  let ucVotingReached = false;
+  players[0].socket.on('room_state', (st) => {
+    if (st.status === 'UC_VOTING') ucVotingReached = true;
+  });
+  players.forEach(p => {
+    p.socket.on('uc_speaker_turn', (data) => {
+      if (data.speakerToken === p.token) {
+        setTimeout(() => p.socket.emit('uc_finish_speech'), 100);
+      }
+    });
+  });
+
   console.log('  -> 房主启动《谁是卧底》...');
   players[0].socket.emit('start_game');
   await wait(1500);
@@ -153,14 +166,11 @@ async function runTests() {
   const civPlayers = players.filter(p => rolesReceived[p.token]?.role === 'civilian');
   console.log(`  -> 查明卧底为：【${spyPlayer?.name}】（词语：${rolesReceived[spyPlayer?.token]?.word}），平民词语：${rolesReceived[civPlayers[0]?.token]?.word}`);
 
-  await wait(8500); // 等待准备倒计时结束
-
-  console.log('  -> 模拟玩家依次发言完毕...');
-  for (const p of players) {
-    p.socket.emit('uc_finish_speech');
-    await wait(200);
+  console.log('  -> 等待准备阶段结束并自动依次发言...');
+  const waitVotingStart = Date.now();
+  while (!ucVotingReached && Date.now() - waitVotingStart < 25000) {
+    await wait(250);
   }
-  await wait(1000);
 
   console.log(`  -> 投票阶段：全员投票淘汰卧底【${spyPlayer?.name}】...`);
   let ucGameOver = false;
@@ -192,6 +202,9 @@ async function runTests() {
   // ----------------------------------------------------
   console.log('\n--- 👑 测试 3: 《阿瓦隆》夜间视野、组队表决、暗投远征与刺客绝杀 ---');
   players[0].socket.emit('switch_game', { gameType: 'avalon' });
+  await wait(300);
+  // 设为线下自由讨论模式（无需麦序轮候），加速自动化测试
+  players[0].socket.emit('update_room_settings', { speechMode: 'offline' });
   await wait(300);
 
   const avalonRoles = {};
@@ -266,7 +279,11 @@ async function runTests() {
   players.forEach(p => {
     p.socket.emit('avalon_team_vote', { approve: true });
   });
-  await wait(4500);
+  
+  const waitVoteApprove = Date.now();
+  while (teamVoteApproved === null && Date.now() - waitVoteApprove < 10000) {
+    await wait(250);
+  }
 
   // 断言：全员赞成时，组队表决必须判定通过
   if (teamVoteApproved === true) {
@@ -276,11 +293,25 @@ async function runTests() {
     console.error(`  ✗ 组队表决异常：passed=${teamVoteApproved}（全员赞成应通过）`);
   }
 
+  console.log('  -> 等待任务远征投票阶段开启...');
+  let questVotePhase = false;
+  players[0].socket.on('room_state', (st) => {
+    if (st.status === 'AVALON_QUEST_VOTE') questVotePhase = true;
+  });
+  const waitQuestPhase = Date.now();
+  while (!questVotePhase && Date.now() - waitQuestPhase < 8000) {
+    await wait(250);
+  }
+
   console.log('  -> 出征队员暗投任务成功卡...');
   players.filter(p => goodTokens.includes(p.token)).forEach(p => {
     p.socket.emit('avalon_quest_vote', { isSuccess: true });
   });
-  await wait(5000);
+
+  const waitQuestResult = Date.now();
+  while (!questResultData && Date.now() - waitQuestResult < 8000) {
+    await wait(250);
+  }
 
   // 断言：任务 1 结果事件必须下发，且全好人出征时判定为成功
   if (questResultData && questResultData.questPassed === true) {
