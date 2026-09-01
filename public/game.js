@@ -1646,7 +1646,7 @@ btnBackLobby?.addEventListener('click', () => {
 const btnGameoverRematch = document.getElementById('btn-gameover-rematch');
 const btnGameoverRandom = document.getElementById('btn-gameover-random');
 
-btnGameoverRematch?.addEventListener('click', () => {
+btnGameoverRematch?.addEventListener('click', debounceClick(() => {
   document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
   if (isHost) {
     if (!socket.connected) socket.connect();
@@ -1658,7 +1658,7 @@ btnGameoverRematch?.addEventListener('click', () => {
   } else {
     socket.emit('back_to_lobby');
   }
-});
+}));
 
 btnGameoverRandom?.addEventListener('click', () => {
   document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
@@ -1794,6 +1794,7 @@ if (btnHeroShare) btnHeroShare.addEventListener('click', copyInviteLink);
 
 // 核心状态同步处理
 socket.on('room_state', (state) => {
+  const prevStatus = currentRoomState?.status;
   currentRoomState = state;
   currentGameType = state.gameType || 'draw-guess';
   if (window.voiceManager && state.id && myPlayerToken) {
@@ -1857,6 +1858,14 @@ socket.on('room_state', (state) => {
     }
     resetAllGameStages();
   } else {
+    // 游戏中：自动关闭所有残留弹窗（包括上一局结算弹窗），确保全体玩家无遮挡同步进入新一局
+    if (state.status !== 'GAME_OVER') {
+      document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+    }
+    // 若从 GAME_OVER 直接开启新的一局（再来一局），全量重置客户端各游戏舞台
+    if (prevStatus === 'GAME_OVER' && state.status !== 'GAME_OVER') {
+      resetAllGameStages();
+    }
     lobbyCard.classList.add('hidden');
     timerBox?.classList.remove('hidden');
     displayRoundTag?.classList.remove('hidden');

@@ -520,7 +520,7 @@ io.on('connection', (socket) => {
     const room = rooms.get(currentRoomId);
     if (!room) return;
     const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player || !player.isHost || room.status !== 'LOBBY') return;
+    if (!player || !player.isHost || (room.status !== 'LOBBY' && room.status !== 'GAME_OVER')) return;
     if (!settings || typeof settings !== 'object') return;
 
     // 只合并白名单字段，并对数值/类型做校验，防止客户端任意覆写 room 属性
@@ -552,12 +552,29 @@ io.on('connection', (socket) => {
     broadcastRoom(room);
   });
 
-  // 房主启动游戏
+  // 房主启动游戏 (支持从 LOBBY 启动，及从 GAME_OVER 结算弹窗一键开启「再来一局」)
   socket.on('start_game', () => {
     const room = rooms.get(currentRoomId);
     if (!room) return;
     const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player || !player.isHost || room.status !== 'LOBBY') return;
+    if (!player || !player.isHost || (room.status !== 'LOBBY' && room.status !== 'GAME_OVER')) return;
+
+    // 若从上一局结算状态 (GAME_OVER) 触发再来一局，彻底重置旧状态、旧得分与各引擎上下文
+    if (room.status === 'GAME_OVER') {
+      clearInterval(room.timer);
+      room.timer = null;
+      clearTimeout(room.roundTimeout);
+      room.roundTimeout = null;
+      room.status = 'LOBBY';
+      room.players.forEach(p => {
+        p.isReady = false;
+        p.alive = true;
+        p.score = 0;
+      });
+      const engine = GAME_ENGINES[room.gameType] || drawGuessEngine;
+      safeEngineCall(engine.initRoomState, room);
+      io.to(room.id).emit('system_message', '🔄 房主开启了新的一局！');
+    }
 
     if (room.gameType === 'draw-guess') {
       room.currentDrawerIndex = 0;
@@ -565,6 +582,10 @@ io.on('connection', (socket) => {
       safeEngineCall(drawGuessEngine.startTurn, room, io, broadcastRoom);
     } else if (GAME_ENGINES[room.gameType]) {
       safeEngineCall(GAME_ENGINES[room.gameType].startGame, room, io, broadcastRoom);
+    }
+
+    if (room.status === 'LOBBY') {
+      broadcastRoom(room);
     }
   });
 
