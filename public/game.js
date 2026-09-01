@@ -252,7 +252,6 @@ let usedM24CardIndices = new Set();
 // 3D 几何数方块 DOM
 const cubeCanvas = document.getElementById('cube-canvas');
 const cubeCtx = cubeCanvas ? cubeCanvas.getContext('2d') : null;
-const cubeOverlayCard = document.getElementById('cube-overlay-card');
 const cubeOptionsGrid = document.getElementById('cube-options-grid');
 const cubeDirectForm = document.getElementById('cube-direct-form');
 const cubeDirectInput = document.getElementById('cube-direct-input');
@@ -694,21 +693,6 @@ const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.get('room')) {
   roomIdInput.value = urlParams.get('room');
 }
-
-// 头像选择
-selectedAvatarEl.addEventListener('click', () => {
-  avatarPicker.classList.toggle('hidden');
-});
-
-document.querySelectorAll('.avatar-item').forEach(item => {
-  item.addEventListener('click', () => {
-    myAvatar = item.dataset.avatar;
-    selectedAvatarEl.textContent = myAvatar;
-    safeSetItem('dg_player_avatar', myAvatar);
-    avatarPicker.classList.add('hidden');
-  });
-});
-
 
 // 头像弹窗管理
 const avatarModal = document.getElementById('avatar-modal');

@@ -304,7 +304,7 @@ function handleCardEffect(room, card, io, broadcastRoom) {
 
 function advanceTurn(room, steps = 1) {
   const count = room.players.length;
-  room.currentTurnIndex = (room.currentTurnIndex + (room.direction * steps) + count * 10) % count;
+  room.currentTurnIndex = (((room.currentTurnIndex + (room.direction * steps)) % count) + count) % count;
 }
 
 function drawCardsForPlayer(room, player, count) {

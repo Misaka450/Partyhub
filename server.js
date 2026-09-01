@@ -77,6 +77,15 @@ function safeEngineCall(engineFn, ...args) {
   }
 }
 
+// 统一提取房间与调用玩家上下文辅助函数，消除 40+ 处的重复校验模板
+function getRoomAndPlayer(roomId, playerToken) {
+  if (!roomId || !playerToken) return { room: null, player: null };
+  const room = rooms.get(roomId);
+  if (!room) return { room: null, player: null };
+  const player = room.players.find(p => p.token === playerToken);
+  return { room, player };
+}
+
 // 把任意数值夹到 [0, 1] 区间（画笔坐标等归一化字段专用），非法输入返回 0
 function clamp01(v) {
   const n = Number(v);
@@ -262,7 +271,7 @@ io.on('connection', (socket) => {
     let room = rooms.get(roomId);
     if (!room) {
       if (rooms.size >= MAX_ROOMS) {
-        socket.emit('join_error', { reason: '当前服务器房间数已达上限（最多 500 间），请稍后再试！' });
+        socket.emit('join_error', { reason: `当前服务器房间数已达上限（最多 ${MAX_ROOMS} 间），请稍后再试！` });
         socket.leave(roomId);
         currentRoomId = null;
         return;
@@ -468,7 +477,16 @@ io.on('connection', (socket) => {
       'cube-count': '🧊 瞬间几何数方块',
       'word-bomb': '💣 成语/词汇炸弹',
       'perfect-slice': '🍕 切披萨 50:50',
-      'hold-five': '⏱️ 盲压挑战 (随机时间)'
+      'hold-five': '⏱️ 盲压挑战 (随机时间)',
+      'stroop-trap': '🎯 颜色与文字陷阱',
+      'twin-finder': '👀 谁是多胞胎',
+      'shadow-match': '🔦 影子猜物',
+      'who-disappeared': '👾 谁不见了/偷吃怪',
+      'simon-memory': '🎶 西蒙节拍记忆',
+      'train-route': '🚂 轨道小火车',
+      'hole-punch': '📄 折纸打孔展开',
+      'change-master': '💵 找零大师',
+      'number-guess': '🔢 盲猜数量最接近'
     };
 
     io.to(room.id).emit('system_message', `🎮 房主将游戏切换为【${gameNames[gameType] || gameType}】！`);
@@ -886,82 +904,64 @@ io.on('connection', (socket) => {
 
   // 1. 颜色与文字大陷阱
   socket.on('stroop_submit_answer', ({ answerId }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'stroop-trap') return;
-    const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player) return;
+    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
+    if (!room || !player || room.gameType !== 'stroop-trap') return;
     safeEngineCall(stroopTrapEngine.submitAnswer, room, player, answerId, io, broadcastRoom);
   });
 
   // 2. 谁是多胞胎 / 找不同
   socket.on('twin_submit_answer', ({ selectedIndex }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'twin-finder') return;
-    const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player) return;
+    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
+    if (!room || !player || room.gameType !== 'twin-finder') return;
     safeEngineCall(twinFinderEngine.submitAnswer, room, player, selectedIndex, io, broadcastRoom);
   });
 
   // 3. 聚光灯拼图 / 影子猜物
   socket.on('shadow_submit_answer', ({ answerId }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'shadow-match') return;
-    const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player) return;
+    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
+    if (!room || !player || room.gameType !== 'shadow-match') return;
     safeEngineCall(shadowMatchEngine.submitAnswer, room, player, answerId, io, broadcastRoom);
   });
 
   // 4. 谁不见了 / 偷吃怪
   socket.on('disappear_submit_answer', ({ answerId }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'who-disappeared') return;
-    const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player) return;
+    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
+    if (!room || !player || room.gameType !== 'who-disappeared') return;
     safeEngineCall(whoDisappearedEngine.submitAnswer, room, player, answerId, io, broadcastRoom);
   });
 
   // 5. 西蒙说 / 节拍记忆
   socket.on('simon_submit_step', ({ color }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'simon-memory') return;
-    const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player) return;
+    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
+    if (!room || !player || room.gameType !== 'simon-memory') return;
     safeEngineCall(simonMemoryEngine.submitStep, room, player, color, io, broadcastRoom);
   });
 
   // 7. 轨道连连通 / 小火车快跑
   socket.on('train_submit_answer', ({ trackId }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'train-route') return;
-    const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player) return;
+    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
+    if (!room || !player || room.gameType !== 'train-route') return;
     safeEngineCall(trainRouteEngine.submitAnswer, room, player, trackId, io, broadcastRoom);
   });
 
   // 9. 折纸打孔展开图
   socket.on('hole_submit_answer', ({ optionId }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'hole-punch') return;
-    const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player) return;
+    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
+    if (!room || !player || room.gameType !== 'hole-punch') return;
     safeEngineCall(holePunchEngine.submitAnswer, room, player, optionId, io, broadcastRoom);
   });
 
   // 11. 找零钱大师
   socket.on('change_submit_counts', ({ counts }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'change-master') return;
-    const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player) return;
+    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
+    if (!room || !player || room.gameType !== 'change-master') return;
     safeEngineCall(changeMasterEngine.submitChange, room, player, counts, io, broadcastRoom);
   });
 
   // 14. 盲猜数量 / 谁最接近
   socket.on('number_submit_guess', ({ guess }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'number-guess') return;
-    const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player) return;
+    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
+    if (!room || !player || room.gameType !== 'number-guess') return;
     safeEngineCall(numberGuessEngine.submitGuess, room, player, guess, io, broadcastRoom);
   });
 

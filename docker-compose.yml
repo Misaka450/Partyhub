@@ -14,10 +14,10 @@ services:
       - "127.0.0.1:8080:8080"
     environment:
       - PORT=8080
-      - CORS_ORIGIN=*
-      - TURN_URL=turn:134.185.118.48:3478
-      - TURN_USERNAME=partyhub
-      - TURN_CREDENTIAL=partyhub_secret_2026
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - TURN_URL=${TURN_URL:-turn:127.0.0.1:3478}
+      - TURN_USERNAME=${TURN_USERNAME:-partyhub}
+      - TURN_CREDENTIAL=${TURN_CREDENTIAL:-partyhub_secret_default}
     depends_on:
       - coturn
 
@@ -37,8 +37,8 @@ services:
       - "--max-port=49200"
       - "--listening-port=3478"
       - "--listening-ip=0.0.0.0"
-      - "--external-ip=134.185.118.48"
+      - "--external-ip=${COTURN_EXTERNAL_IP:-127.0.0.1}"
       - "--fingerprint"
       - "--lt-cred-mech"
       - "--realm=partyhub.local"
-      - "--user=partyhub:partyhub_secret_2026"
+      - "--user=${TURN_USERNAME:-partyhub}:${TURN_CREDENTIAL:-partyhub_secret_default}"
