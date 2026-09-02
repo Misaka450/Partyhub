@@ -4267,18 +4267,36 @@ html, body {
   gap: 8px;
   position: relative;
 }
-.slice-header-info { flex-shrink: 0; text-align: center; }
+.slice-header-info {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  pointer-events: none;
+  width: auto;
+  max-width: 90%;
+  text-align: center;
+}
 .slice-cut-prompt {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
-  background: var(--bg-card);
-  border: 1.5px solid var(--border);
+  padding: 6px 14px;
+  background: rgba(18, 20, 29, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid var(--border-strong);
   border-radius: 999px;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 800;
   color: var(--text-main);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+[data-theme="light"] .slice-cut-prompt {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 .cut-icon-dot {
   width: 8px; height: 8px;
