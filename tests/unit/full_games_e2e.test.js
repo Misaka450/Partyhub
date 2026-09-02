@@ -139,8 +139,11 @@ test('Full Lifecycle: 色彩陷阱 (stroopTrap)', () => {
   stroopTrap.startGame(room, io, broadcast);
   assert.strictEqual(room.status, 'STROOP_ANSWER');
 
-  stroopTrap.submitAnswer(room, room.players[0], room.currentQuestion.correctIndex, io, broadcast);
-  stroopTrap.submitAnswer(room, room.players[1], room.currentQuestion.correctIndex, io, broadcast);
+  const q0 = room.playerQuestions[room.players[0].token];
+  const q1 = room.playerQuestions[room.players[1].token];
+  stroopTrap.submitAnswer(room, room.players[0], q0.targetId, io, broadcast);
+  stroopTrap.submitAnswer(room, room.players[1], q1.targetId, io, broadcast);
+  stroopTrap.endRound(room, io, broadcast);
   assert.strictEqual(room.status, 'STROOP_RESULT');
 
   stroopTrap.finishGame(room, io, broadcast);

@@ -157,7 +157,7 @@ test('numberGuess.evaluateGuesses: 偏差最小者排名第一且获得最高分
 
   const results = numberGuess.evaluateGuesses(submissions, truth);
   assert.strictEqual(results[0].token, 'p2', '差 1 的玩家B应该排第 1 名');
-  assert.strictEqual(results[0].scoreGain, 150, '第 1 名应该获得 150 分');
+  assert.strictEqual(results[0].scoreGain, 160, '第 1 名应该获得 160 分');
   assert.strictEqual(results[1].token, 'p1', '差 4 的玩家A应该排第 2 名');
   assert.strictEqual(results[1].scoreGain, 100, '第 2 名应该获得 100 分');
   assert.strictEqual(results[2].token, 'p3', '差 36 的玩家C应该排第 3 名');

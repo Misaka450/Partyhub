@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/unit/engine_core.test.js tests/unit/player_removal.test.js tests/unit/voice_signaling.test.js tests/unit/new_brain_games.test.js tests/unit/full_games_e2e.test.js",
+    "test": "node --test tests/unit/engine_core.test.js tests/unit/player_removal.test.js tests/unit/voice_signaling.test.js tests/unit/new_brain_games.test.js tests/unit/full_games_e2e.test.js && node tests/ux_cdp_watchdog.js",
+    "test:watchdog": "node tests/ux_cdp_watchdog.js",
     "test:e2e": "node tests/test_cube_round2.js && node tests/test_all_games.js && node tests/test_new_games.js && node tests/test_perfect_slice.js && node tests/test_reclaim.js"
   },
   "dependencies": {

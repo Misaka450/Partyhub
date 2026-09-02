@@ -101,8 +101,8 @@ function pickTrivia(round = 1) {
 function evaluateGuesses(submissions, truth) {
   const evaluated = submissions.map(sub => {
     const guessNum = Number(sub.guess);
-    const isValidNum = Number.isFinite(guessNum);
-    const isBust = !isValidNum || guessNum > truth;
+    const isValidNum = Number.isFinite(guessNum) && !isNaN(guessNum);
+    const isBust = !isValidNum;
     const diff = isValidNum ? Math.abs(guessNum - truth) : Infinity;
     return {
       ...sub,
