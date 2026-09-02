@@ -194,12 +194,15 @@ function startMemoryPhase(room, io, broadcastRoom) {
 
   broadcastRoom(room);
 
-  io.to(room.id).emit('disappear_memory_start', {
+  const memPayload = {
     round: room.round,
     maxRounds: room.maxRounds,
     items: puzzle.initialItems,
+    initialItems: puzzle.initialItems,
     timeLimit: 3
-  });
+  };
+  io.to(room.id).emit('disappear_memory_start', memPayload);
+  io.to(room.id).emit('disappear_start_memorize', memPayload);
 
   io.to(room.id).emit('system_message', `👀 第 ${room.round}/${room.maxRounds} 轮：请用 3 秒记住桌上的所有物品！`);
 
@@ -229,13 +232,16 @@ function startGuessPhase(room, io, broadcastRoom) {
 
   broadcastRoom(room);
 
-  io.to(room.id).emit('disappear_guess_start', {
+  const guessPayload = {
     round: room.round,
     maxRounds: room.maxRounds,
+    items: puzzle.remainingItems,
     remainingItems: puzzle.remainingItems,
     options: puzzle.options,
     timeLimit: 6
-  });
+  };
+  io.to(room.id).emit('disappear_guess_start', guessPayload);
+  io.to(room.id).emit('disappear_start_guess', guessPayload);
 
   io.to(room.id).emit('system_message', `🍽️ 嗷呜！偷吃怪吃掉了一个！究竟哪个东西不见了？请抢答！`);
 

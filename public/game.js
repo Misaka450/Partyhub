@@ -5181,7 +5181,7 @@ const disappearOptionsGrid = document.getElementById('disappear-options-grid');
 const disappearStatusTag = document.getElementById('disappear-status-tag');
 const disappearFeedbackBadge = document.getElementById('disappear-feedback-badge');
 
-socket.on('disappear_start_memorize', (data) => {
+function handleDisappearMemory(data) {
   displayRoundTag?.classList.remove('hidden');
   if (displayRound) displayRound.textContent = `第 ${data.round}/${data.maxRounds} 轮`;
   if (disappearFeedbackBadge) disappearFeedbackBadge.classList.add('hidden');
@@ -5189,9 +5189,10 @@ socket.on('disappear_start_memorize', (data) => {
 
   if (disappearStatusTag) disappearStatusTag.textContent = '👀 记忆阶段：仔细记住餐盘上的所有美食！';
 
+  const items = data.items || data.initialItems || [];
   if (disappearPlate) {
     disappearPlate.innerHTML = '';
-    data.initialItems.forEach(item => {
+    items.forEach(item => {
       const food = document.createElement('div');
       food.className = 'disappear-food-item';
       food.textContent = item.emoji;
@@ -5200,18 +5201,23 @@ socket.on('disappear_start_memorize', (data) => {
     });
   }
   playSound('tick');
-});
+}
 
-socket.on('disappear_start_guess', (data) => {
+socket.on('disappear_memory_start', handleDisappearMemory);
+socket.on('disappear_start_memorize', handleDisappearMemory);
+
+function handleDisappearGuess(data) {
   if (disappearStatusTag) disappearStatusTag.textContent = '👾 嗷呜！哪个食物被偷吃了？快选！';
   playSound('pop');
 
+  const remaining = data.remainingItems || data.items || [];
   if (disappearPlate) {
     disappearPlate.innerHTML = '';
-    data.remainingItems.forEach(item => {
+    remaining.forEach(item => {
       const food = document.createElement('div');
       food.className = 'disappear-food-item';
       food.textContent = item.emoji;
+      food.title = item.name;
       disappearPlate.appendChild(food);
     });
   }
@@ -5219,7 +5225,7 @@ socket.on('disappear_start_guess', (data) => {
   if (disappearOptionsGrid) {
     disappearOptionsGrid.classList.remove('hidden');
     disappearOptionsGrid.innerHTML = '';
-    data.options.forEach(opt => {
+    (data.options || []).forEach(opt => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'brain-opt-btn';
@@ -5232,7 +5238,10 @@ socket.on('disappear_start_guess', (data) => {
       disappearOptionsGrid.appendChild(btn);
     });
   }
-});
+}
+
+socket.on('disappear_guess_start', handleDisappearGuess);
+socket.on('disappear_start_guess', handleDisappearGuess);
 
 socket.on('disappear_answer_feedback', (data) => {
   if (!disappearFeedbackBadge) return;
