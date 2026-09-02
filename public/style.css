@@ -5224,42 +5224,134 @@ html, body {
 
 /* 3. 聚光灯拼图 / 影子猜物 */
 .shadow-box-container {
-  width: 180px;
-  height: 180px;
-  background: #0B0F19;
-  border: 3px solid var(--border-strong);
-  border-radius: 24px;
+  width: 100%;
+  max-width: 440px;
+  height: 250px;
+  background: #0A0E17;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
+@media (max-width: 480px) {
+  .shadow-box-container {
+    height: 215px;
+  }
+}
+
+/* 顶部微章：强化工业级剧场质感与辨析氛围 */
+.shadow-stage-badge {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  background: rgba(10, 14, 23, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94A3B8;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(8px);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.shadow-stage-badge .pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38BDF8;
+  box-shadow: 0 0 6px #38BDF8;
+  animation: dotBlink 1.5s infinite ease-in-out;
+}
+
+@keyframes dotBlink {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* 舞台聚光灯背光与投射光束（核心白金光斑，让黑色剪影无论在手机还是桌面均纤毫毕现） */
+.shadow-spotlight-beam {
+  position: absolute;
+  inset: 0;
+  background:
+    /* 顶部射灯微光光束 */
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, transparent 60%),
+    /* 中央高亮聚光漫反射光晕 */
+    radial-gradient(ellipse 68% 60% at 50% 52%, #FFFFFF 0%, #F1F5F9 35%, rgba(203, 213, 225, 0.4) 65%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+  animation: spotlightBeamBreathe 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes spotlightBeamBreathe {
+  0% { transform: scale(0.97); opacity: 0.94; }
+  100% { transform: scale(1.03); opacity: 1; }
+}
+
+.shadow-target-display {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+/* 阴影物品 Emoji（大画幅、清晰黑白反差轮廓） */
 .shadow-emoji {
-  font-size: 5.5rem;
+  position: relative;
+  z-index: 2;
+  font-size: clamp(5.8rem, 18vw, 7.6rem);
   line-height: 1;
-  filter: brightness(0);
-  transition: filter 0.5s ease;
+  user-select: none;
+  filter: brightness(0) drop-shadow(0 4px 16px rgba(0, 0, 0, 0.45));
+  transform: scale(1);
+  transition: filter 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* 揭晓时刻：瞬间恢复彩色原型并微弹跳 */
 .shadow-emoji.revealed {
-  filter: brightness(1);
+  filter: brightness(1) drop-shadow(0 10px 24px rgba(0, 0, 0, 0.35));
+  transform: scale(1.12);
 }
 
+/* 舞台揭晓时背景高光脉冲 */
+.shadow-box-container.revealed .shadow-spotlight-beam {
+  animation: stageRevealFlash 0.6s ease-out forwards;
+}
+
+@keyframes stageRevealFlash {
+  0% { filter: brightness(1.5); }
+  100% { filter: brightness(1); }
+}
+
+/* 聚光灯环境动态光晕（不遮挡剪影） */
 .spotlight-overlay {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle 35px at 50% 50%, transparent 80%, rgba(0, 0, 0, 0.95) 100%);
+  background: radial-gradient(circle 80px at 50% 50%, rgba(255, 255, 255, 0.15) 0%, transparent 80%);
   pointer-events: none;
+  z-index: 2;
   animation: spotlightScan 4s ease-in-out infinite alternate;
 }
 
 @keyframes spotlightScan {
-  0% { transform: translate(-30px, -20px) scale(0.9); }
-  50% { transform: translate(30px, 25px) scale(1.2); }
-  100% { transform: translate(-20px, 30px) scale(1.5); }
+  0% { transform: translate(-30px, -15px); }
+  50% { transform: translate(25px, 18px); }
+  100% { transform: translate(-15px, 25px); }
 }
 
 /* 4. 谁不见了 / 偷吃怪 */

@@ -5115,6 +5115,9 @@ socket.on('shadow_new_puzzle', (data) => {
   if (displayRound) displayRound.textContent = `第 ${data.round}/${data.maxRounds} 轮`;
   if (shadowFeedbackBadge) shadowFeedbackBadge.classList.add('hidden');
 
+  const shadowBox = document.getElementById('shadow-box-container');
+  if (shadowBox) shadowBox.classList.remove('revealed');
+
   if (shadowEmojiItem) {
     shadowEmojiItem.textContent = data.targetEmoji;
     shadowEmojiItem.classList.remove('revealed');
@@ -5156,6 +5159,8 @@ socket.on('shadow_answer_feedback', (data) => {
 
 socket.on('shadow_round_result', (data) => {
   playSound('fanfare');
+  const shadowBox = document.getElementById('shadow-box-container');
+  if (shadowBox) shadowBox.classList.add('revealed');
   if (shadowEmojiItem) shadowEmojiItem.classList.add('revealed');
   let summaryHtml = '<div style="display:grid;gap:6px;margin-top:6px;text-align:left">';
   data.results.forEach((p, idx) => {

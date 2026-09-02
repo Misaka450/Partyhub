@@ -1373,11 +1373,16 @@
         <!-- 16. 【影子猜物 / 聚光灯拼图】舞台 -->
         <div id="stage-shadow-match" class="game-stage-container hidden">
           <div class="brain-game-arena">
-            <div class="shadow-box-container">
+            <div class="shadow-box-container" id="shadow-box-container">
+              <div class="shadow-stage-badge">
+                <span class="pulse-dot"></span>
+                <span>🔦 聚光灯剪影舞台</span>
+              </div>
+              <div class="shadow-spotlight-beam"></div>
               <div class="shadow-target-display" id="shadow-target-display">
                 <span class="shadow-emoji" id="shadow-emoji-item">🐱</span>
-                <div class="spotlight-overlay" id="spotlight-overlay"></div>
               </div>
+              <div class="spotlight-overlay" id="spotlight-overlay"></div>
             </div>
             <div class="brain-options-grid" id="shadow-options-grid"></div>
             <div id="shadow-feedback-badge" class="brain-feedback-badge hidden"></div>

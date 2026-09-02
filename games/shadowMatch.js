@@ -44,7 +44,7 @@ const ITEM_COLLECTION = [
   { id: 'motorcycle', name: '摩托车', emoji: '🏍️', hint: '两轮机动轰鸣飞驰' },
   { id: 'train', name: '高速列车', emoji: '🚄', hint: '铁轨上飞速穿梭' },
   { id: 'ship', name: '远洋轮船', emoji: '🚢', hint: '深蓝大洋航行的巨轮' },
-  { id: 'submarine', name: '潜水艇', emoji: '潜', emojiReal: '🤿', hint: '潜入深海的特种艇' },
+  { id: 'speedboat', name: '高速快艇', emoji: '🚤', hint: '水面上疾驰飞奔的快艇' },
   { id: 'helicopter', name: '直升机', emoji: '🚁', hint: '顶置旋翼垂直起降' },
   { id: 'sailboat', name: '扬帆帆船', emoji: '⛵', hint: '迎风借力张帆前行' },
   { id: 'bus', name: '双层巴士', emoji: '🚌', hint: '城市公共客运交通' },
