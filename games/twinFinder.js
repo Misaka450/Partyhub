@@ -39,9 +39,18 @@ function isSameChar(a, b) {
 /**
  * 纯函数：生成一道找不同或双胞胎的题目
  * @param {number} round 当前轮次
+ * @param {string} diff 难度档位：easy / normal / hard，决定角色总数
  */
-function generatePuzzle(round = 1) {
-  const totalCount = Math.min(9, 5 + round); // 随着轮次从 6 个逐渐增加到 8~9 个
+function generatePuzzle(round = 1, diff = 'normal') {
+  // 难度对应角色数量（base 起始 + 轮次递增，cap 封顶）：
+  // easy=最多6个 / normal=当前默认最多9个 / hard=最多10个（干扰多更难分辨）
+  const CONF = {
+    easy: { base: 4, cap: 6 },
+    normal: { base: 5, cap: 9 },
+    hard: { base: 7, cap: 10 }
+  };
+  const conf = CONF[diff] || CONF.normal;
+  const totalCount = Math.min(conf.cap, conf.base + round);
   const mode = Math.random() < 0.5 ? 'TWINS' : 'ODD_ONE';
   const list = [];
   let correctIndices = [];
@@ -118,6 +127,7 @@ function initRoomState(room) {
   room.status = 'LOBBY';
   room.round = 1;
   room.maxRounds = room.maxRounds || 3;
+  room.twinDiff = room.twinDiff || 'normal';
   room.currentPuzzle = null;
   room.playerAnswers = {}; // token -> { selectedIndices, isCorrect, timeUsed, score }
   room.timeLeft = 8;
@@ -156,7 +166,7 @@ function startRound(room, io, broadcastRoom) {
   clearTimeout(room.roundTimeout);
   room.roundTimeout = null;
 
-  const puzzle = generatePuzzle(room.round);
+  const puzzle = generatePuzzle(room.round, room.twinDiff || 'normal');
   room.currentPuzzle = puzzle;
   room.playerAnswers = {};
   room.status = 'TWIN_FINDING';

@@ -5084,6 +5084,11 @@ html, body {
   max-width: 440px;
 }
 
+/* ===== 大画布响应式升级：仅作用于【颜色大陷阱】舞台内，桌面端放大、手机端收拢 ===== */
+#stage-stroop-trap .brain-options-grid {
+  max-width: min(560px, 94vw);
+}
+
 .brain-opt-btn {
   display: flex;
   align-items: center;
@@ -5146,7 +5151,7 @@ html, body {
 
 .stroop-word-card {
   width: 100%;
-  max-width: 320px;
+  max-width: min(440px, 86vw);
   height: 120px;
   display: flex;
   align-items: center;
@@ -5177,7 +5182,7 @@ html, body {
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   width: 100%;
-  max-width: 380px;
+  max-width: min(560px, 92vw);
 }
 
 .twin-char-card {
@@ -5544,7 +5549,7 @@ html, body {
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   width: 100%;
-  max-width: 440px;
+  max-width: min(560px, 94vw);
 }
 
 .hole-opt-card {
@@ -5591,7 +5596,7 @@ html, body {
   display: flex;
   justify-content: space-around;
   width: 100%;
-  max-width: 360px;
+  max-width: min(460px, 90vw);
   padding: 10px 14px;
   background: var(--bg-card);
   border: 2px solid var(--border);
@@ -5655,7 +5660,7 @@ html, body {
   border: 2px solid var(--border);
   border-radius: 16px;
   width: 100%;
-  max-width: 440px;
+  max-width: min(520px, 90vw);
   box-shadow: var(--shadow-sm);
 }
 

@@ -117,3 +117,26 @@ test('flashCounter.generateRoundData: 目标动物数量与跑道非重叠性校
   const actualTargetItems = room.flyingItems.filter(item => item.isTarget);
   assert.strictEqual(actualTargetItems.length, room.targetCount, '实际飞行的目标动物数量应与 targetCount 完全一致');
 });
+
+test('flashCounter.generateRoundData: flashSpeed 难度档位实际影响飞掠时长', () => {
+  // 各档位的飞掠时长理论区间：base ~ base+jitter
+  const runBounds = { normal: [2.0, 2.35], fast: [1.2, 1.45], insane: [0.8, 0.95] };
+  const fastestPerMode = {};
+
+  for (const mode of Object.keys(runBounds)) {
+    const room = { round: 1, flashSpeed: mode };
+    flashCounter.generateRoundData(room);
+    const [min, max] = runBounds[mode];
+    assert.ok(room.flyingItems.length > 0, `${mode} 档应生成飞行动物`);
+    const durations = room.flyingItems.map(f => f.runDuration);
+    fastestPerMode[mode] = Math.min(...durations);
+    durations.forEach((d) => {
+      assert.ok(d >= min && d <= max + 1e-6,
+        `${mode} 档 runDuration=${d.toFixed(3)} 应落在 [${min}, ${max}] 区间内`);
+    });
+  }
+
+  // 档位必须真实生效：fast 最快飞掠应比 normal 还快，insane 应快于 fast
+  assert.ok(fastestPerMode.fast < runBounds.normal[1], 'fast 档应比 normal 档飞得更快');
+  assert.ok(fastestPerMode.insane < runBounds.fast[0], 'insane 档应比 fast 档飞得更快');
+});

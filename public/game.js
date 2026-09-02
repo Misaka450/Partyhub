@@ -1594,6 +1594,8 @@ function collectCurrentRoomSettings() {
     bcTime: parseInt(document.getElementById('bc-time')?.value || 45),
     m24Time: parseInt(document.getElementById('m24-time')?.value || 45),
     cubeDiff: document.getElementById('cc-diff')?.value || 'standard',
+    stroopDiff: document.getElementById('st-diff')?.value || 'normal',
+    twinDiff: document.getElementById('tf-diff')?.value || 'normal',
     wbLives: parseInt(document.getElementById('wb-lives')?.value || 3),
     wbTime: parseInt(document.getElementById('wb-time')?.value || 10),
     sliceTolerance: parseFloat(document.getElementById('ps-tolerance')?.value || 2.0),

@@ -20,15 +20,16 @@ const COLOR_PALETTE = [
 /**
  * 纯函数：生成一轮题目数据（便于单元测试与逻辑复用）
  * @param {number} round 当前轮次
+ * @param {number} colorBias 指令偏向：取值 0~1，越大越倾向“看文字颜色”（越难），默认 0.5 随机
  */
-function generateQuestion(round = 1) {
+function generateQuestion(round = 1, colorBias = 0.5) {
   const shuffled = shuffle(COLOR_PALETTE);
   const textItem = shuffled[0]; // 文字内容
   const colorItem = shuffled[1]; // 文字颜色（确保文字与颜色产生认知冲突）
 
   // 轮次越高，文字颜色陷阱越容易随机切换指令
   // 指令：'COLOR' (看颜色) 或 'MEANING' (看字义)
-  const isColorTarget = Math.random() < 0.5;
+  const isColorTarget = Math.random() < colorBias;
   const targetMode = isColorTarget ? 'COLOR' : 'MEANING';
   const targetAnswer = isColorTarget ? colorItem : textItem;
 
@@ -60,6 +61,7 @@ function initRoomState(room) {
   room.status = 'LOBBY';
   room.round = 1;
   room.maxRounds = room.maxRounds || 3;
+  room.stroopDiff = room.stroopDiff || 'normal';
   room.playerQuestions = {}; // token -> current question
   room.playerStats = {}; // token -> { combo, maxCombo, correctCount, wrongCount, totalScoreGain }
   room.timeLeft = 15;
@@ -101,11 +103,21 @@ function startRound(room, io, broadcastRoom) {
   room.playerQuestions = {};
   room.playerStats = {};
   room.status = 'STROOP_ANSWER';
-  room.timeLeft = 15; // 15 秒连击狂飙！
+
+  // 难度档位配置（easy / normal / hard）：
+  //  - easy   20 秒/回合并偏向“看字义”（低冲突）
+  //  - normal 15 秒/回合随机指令（默认）
+  //  - hard   10 秒/回合并偏向“看颜色”（高冲突，斯楚鲁普效应最强）
+  const diff = room.stroopDiff || 'normal';
+  const STROOP_TIME = { easy: 20, normal: 15, hard: 10 };
+  const STROOP_COLOR_BIAS = { easy: 0.35, normal: 0.5, hard: 0.8 };
+  room.stroopTimeLimit = STROOP_TIME[diff] ?? 15;
+  room.stroopColorBias = STROOP_COLOR_BIAS[diff] ?? 0.5;
+  room.timeLeft = room.stroopTimeLimit;
   room.roundStartTime = Date.now();
 
   room.players.forEach(p => {
-    const q = generateQuestion(room.round);
+    const q = generateQuestion(room.round, room.stroopColorBias);
     room.playerQuestions[p.token] = q;
     room.playerStats[p.token] = {
       combo: 0,
@@ -122,12 +134,12 @@ function startRound(room, io, broadcastRoom) {
       targetMode: q.targetMode,
       options: q.options,
       combo: 0,
-      timeLimit: 15
+      timeLimit: room.stroopTimeLimit
     });
   });
 
   broadcastRoom(room);
-  io.to(room.id).emit('system_message', `🔥 第 ${room.round}/${room.maxRounds} 轮：【15秒连击狂飙】启动！连续答对连击翻倍，答错清零！`);
+  io.to(room.id).emit('system_message', `🔥 第 ${room.round}/${room.maxRounds} 轮：【${room.stroopTimeLimit}秒连击狂飙】启动！连续答对连击翻倍，答错清零！`);
 
   // 倒计时定时器
   room.timer = setInterval(() => {
@@ -181,7 +193,7 @@ function submitAnswer(room, player, answerId, io, broadcastRoom) {
   room.playerStats[player.token] = stats;
 
   // 生成下一题并推送给该玩家
-  const nextQ = generateQuestion(room.round);
+  const nextQ = generateQuestion(room.round, room.stroopColorBias);
   room.playerQuestions[player.token] = nextQ;
 
   io.to(player.id).emit('stroop_answer_feedback', {

@@ -28,6 +28,17 @@ test('stroopTrap.generateQuestion: 题目结构合法且具备 4 个互斥候选
   }
 });
 
+test('stroopTrap.generateQuestion: 难度 colorBias 决定“看颜色/看字义”指令偏向，且 init 默认 normal', () => {
+  // colorBias=1 => 永远“看颜色”(COLOR)；colorBias=0 => 永远“看字义”(MEANING)，确定性校验
+  assert.strictEqual(stroopTrap.generateQuestion(1, 1).targetMode, 'COLOR', 'colorBias=1 时指令必须是看颜色');
+  assert.strictEqual(stroopTrap.generateQuestion(1, 0).targetMode, 'MEANING', 'colorBias=0 时指令必须是看字义');
+
+  // 默认难度档位归一到 normal
+  const room = {};
+  stroopTrap.initRoomState(room);
+  assert.strictEqual(room.stroopDiff, 'normal', '未配置难度时应默认 normal');
+});
+
 // ===================== 2. 谁是多胞胎 / 找不同 =====================
 test('twinFinder.generatePuzzle: 双胞胎模式下两只目标角色属性严格一致', () => {
   for (let r = 1; r <= 5; r++) {
@@ -45,6 +56,20 @@ test('twinFinder.generatePuzzle: 双胞胎模式下两只目标角色属性严�
       assert.strictEqual(p.correctIndices.length, 1, '找不同答案必须为 1 个下标');
     }
   }
+});
+
+test('twinFinder.generatePuzzle: 难度档位实际影响生成角色总数', () => {
+  // 第 1 轮时各档位角色数为确定值：easy=5 / normal=6 / hard=8（每档数量严格递增）
+  const easyCount = twinFinder.generatePuzzle(1, 'easy').characters.length;
+  const normalCount = twinFinder.generatePuzzle(1, 'normal').characters.length;
+  const hardCount = twinFinder.generatePuzzle(1, 'hard').characters.length;
+  assert.ok(easyCount < normalCount, `easy 角色数应少于 normal，实测 easy=${easyCount} normal=${normalCount}`);
+  assert.ok(normalCount < hardCount, `normal 角色数应少于 hard，实测 normal=${normalCount} hard=${hardCount}`);
+
+  // 默认难度档位归一到 normal
+  const room = {};
+  twinFinder.initRoomState(room);
+  assert.strictEqual(room.twinDiff, 'normal', '未配置难度时应默认 normal');
 });
 
 // ===================== 3. 影子猜物 / 聚光灯拼图 =====================

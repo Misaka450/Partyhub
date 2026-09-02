@@ -503,6 +503,7 @@ io.on('connection', (socket) => {
     flashSpeed: 'string', bombWires: 'number', bombTime: 'number',
     bcRounds: 'number', bcTime: 'number', m24Time: 'number',
     cubeDiff: 'string', wbLives: 'number', wbTime: 'number',
+    stroopDiff: 'string', twinDiff: 'string',
     sliceTolerance: 'number', fixedTargetSeconds: 'number'
   };
 

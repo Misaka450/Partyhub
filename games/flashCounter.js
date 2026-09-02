@@ -12,11 +12,17 @@ const ANIMAL_TYPES = [
   { id: 'penguin', name: '企鹅', emoji: '🐧' }
 ];
 
+// 飞掠时长难度档位：normal=正常(约2.0s) / fast=快速(约1.2s) / insane=极速(约0.8s)
+// base 为该档动物的基准过场秒数，jitter 为抖动区间；档位越低动物飞得越快、越难看清
+const FLASH_SPEED_BASE = { normal: 2.0, fast: 1.2, insane: 0.8 };
+const FLASH_SPEED_JITTER = { normal: 0.35, fast: 0.25, insane: 0.15 };
+
 function initRoomState(room) {
   room.gameType = 'flash-counter';
   room.status = 'LOBBY';
   room.round = 1;
   room.maxRounds = room.maxRounds || 3;
+  room.flashSpeed = room.flashSpeed || 'normal';
   room.targetAnimal = null;
   room.targetCount = 0;
   room.options = [];
@@ -31,6 +37,10 @@ function initRoomState(room) {
 
 function generateRoundData(room) {
   const round = room.round || 1;
+  // 读取房主配置的飞掠时长档位（normal / fast / insane），实际影响动物过场速度
+  const speedMode = room.flashSpeed || 'normal';
+  const speedBase = FLASH_SPEED_BASE[speedMode] ?? 2.0;
+  const speedJitter = FLASH_SPEED_JITTER[speedMode] ?? 0.35;
   const totalSpecies = Math.min(ANIMAL_TYPES.length, round + 2);
   const shuffledAnimals = shuffle(ANIMAL_TYPES);
 
@@ -78,7 +88,8 @@ function generateRoundData(room) {
       if (nextFreeTime[t] < nextFreeTime[minTrack]) minTrack = t;
     }
     const delay = Math.max(nextFreeTime[minTrack], waveBaseTime + (Math.random() * 0.35));
-    const runDuration = 2.4 + (Math.random() * 0.4);
+    // 飞掠时长随难度档位变化：normal 慢 / fast 快 / insane 极速
+    const runDuration = speedBase + (Math.random() * speedJitter);
     const speed = 1 / runDuration;
     const laneY = lanes[minTrack];
 
