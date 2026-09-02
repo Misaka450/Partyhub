@@ -25,17 +25,34 @@ try {
   console.error('加载成语/词库失败', e);
 }
 
+function pickRuleMode() {
+  const r = Math.random();
+  if (r < 0.45) return 'ANY';
+  if (r < 0.65) return 'START';
+  if (r < 0.85) return 'END';
+  return 'IDIOM';
+}
+
+function getRuleDesc(keyword, ruleMode) {
+  if (ruleMode === 'START') return `必须以【${keyword}】开头！`;
+  if (ruleMode === 'END') return `必须以【${keyword}】结尾！`;
+  if (ruleMode === 'IDIOM') return `必须是包含【${keyword}】的四字成语！`;
+  return `包含【${keyword}】的词语或成语！`;
+}
+
 function initRoomState(room) {
   room.gameType = 'word-bomb';
   room.status = 'LOBBY';
   // 持弹人改用 token 记录（数组下标会因玩家退出/被踢而漂移指向错误玩家，审计 R2-12）
   room.currentTurnToken = null;
   room.currentKeyword = '天';
+  room.ruleMode = 'ANY';
   room.usedWords = new Set();
   room.playerLives = {}; // token -> lives (default 2)
   room.baseTime = 8;
   room.wbBaseTimeConfig = 8; // 开局时保存的原始引信配置，续爆时复用（审计 R2-38）
   room.timeLeft = 8;
+  room.timeLeftPenalty = 0;
   room.winner = null;
   clearInterval(room.timer);
   room.timer = null;
@@ -69,6 +86,8 @@ function startGame(room, io, broadcastRoom) {
   const starter = room.players[Math.floor(Math.random() * room.players.length)];
   room.currentTurnToken = starter.token;
   room.currentKeyword = KEYWORDS[Math.floor(Math.random() * KEYWORDS.length)];
+  room.ruleMode = pickRuleMode();
+  room.timeLeftPenalty = 0;
   room.status = 'BOMB_TICKING';
   // 基础引信时长读取房间设置 wbTime（4~30 秒），未配置则默认 8 秒
   room.baseTime = Math.min(30, Math.max(4, Number.isFinite(room.wbTime) && room.wbTime > 0 ? room.wbTime : 8));
@@ -79,14 +98,16 @@ function startGame(room, io, broadcastRoom) {
 
   broadcastRoom(room);
 
-  io.to(room.id).emit('system_message', `💣 词汇炸弹已点燃！条件：输入包含【${room.currentKeyword}】的词语/成语！当前持弹人：【${starter.name}】！`);
+  io.to(room.id).emit('system_message', `💣 词汇炸弹已点燃！规则：【${getRuleDesc(room.currentKeyword, room.ruleMode)}】当前持弹人：【${starter.name}】！`);
 
   startTurnTimer(room, io, broadcastRoom);
 }
 
 function startTurnTimer(room, io, broadcastRoom) {
   clearInterval(room.timer);
-  room.timeLeft = Math.max(4, room.baseTime);
+  room.timeLeft = Math.max(3, room.baseTime - (room.timeLeftPenalty || 0));
+  room.timeLeftPenalty = 0; // 消耗惩罚
+  room.turnStartAt = Date.now();
 
   const current = findCurrentPlayer(room);
   if (!current) return;
@@ -126,21 +147,35 @@ function submitWord(room, playerToken, wordInput, io, broadcastRoom) {
     return;
   }
 
+  // 规则限定模式校验（首字/尾字/成语）
+  if (room.ruleMode === 'START' && !word.startsWith(room.currentKeyword)) {
+    io.to(current.id).emit('system_message', `⚠️ 本轮规则限制：必须以【${room.currentKeyword}】开头！`);
+    return;
+  }
+  if (room.ruleMode === 'END' && !word.endsWith(room.currentKeyword)) {
+    io.to(current.id).emit('system_message', `⚠️ 本轮规则限制：必须以【${room.currentKeyword}】结尾！`);
+    return;
+  }
+  if (room.ruleMode === 'IDIOM' && word.length !== 4) {
+    io.to(current.id).emit('system_message', `⚠️ 本轮规则限制：必须是包含【${room.currentKeyword}】的四字成语！`);
+    return;
+  }
+
   if (room.usedWords.has(word)) {
     io.to(current.id).emit('system_message', `⚠️ 词语【${word}】已被使用过！`);
     return;
   }
 
-  // 词库有效性校验：词库为空（加载失败）时同样执行纯中文兜底校验，
-  // 而不是完全放行任意垃圾串得分（审计 R2-37）
+  // 词库有效性校验：词库为空（加载失败）时同样执行纯中文兜底校验
   if (!validWordSet.has(word)) {
-    // 允许 4 字成语/合法词，如果是乱打字符则拦截
     const isChineseOnly = /^[\u4e00-\u9fa5]{2,6}$/.test(word);
     if (!isChineseOnly) {
       io.to(current.id).emit('system_message', '⚠️ 请输入纯中文合法词语或成语！');
       return;
     }
   }
+
+  const timeUsed = (Date.now() - (room.turnStartAt || Date.now())) / 1000;
 
   // 成功通过！
   room.usedWords.add(word);
@@ -154,29 +189,43 @@ function submitWord(room, playerToken, wordInput, io, broadcastRoom) {
     text: `💥 打出【${word}】传递炸弹！（+40 分）`
   });
 
+  // 1. 神速作答加速甩锅：2.2 秒内答出，下家引信缩短 2 秒
+  if (timeUsed <= 2.2) {
+    room.timeLeftPenalty = 2.0;
+    io.to(room.id).emit('system_message', `⚡ 【${current.name}】仅用时 ${timeUsed.toFixed(1)}s 神速答出！触发炸弹加速，下家引信扣减 2 秒！`);
+  }
+
+  // 2. 自发成语反弹：非强制成语模式下打出四字成语，炸弹方向反转
+  let isReversed = false;
+  if (word.length === 4 && room.ruleMode !== 'IDIOM') {
+    isReversed = true;
+    io.to(room.id).emit('system_message', `🔄 【${current.name}】打出高阶成语【${word}】！触发炸弹方向反转，原路反弹！`);
+  }
+
   // 加快节奏并换题或换人
   room.baseTime = Math.max(4, room.baseTime - 0.2);
   if (Math.random() < 0.35) {
     room.currentKeyword = KEYWORDS[Math.floor(Math.random() * KEYWORDS.length)];
-    io.to(room.id).emit('system_message', `🔄 炸弹变异！新关键字变为：【${room.currentKeyword}】！`);
+    room.ruleMode = pickRuleMode();
+    io.to(room.id).emit('system_message', `🔄 炸弹变异！新规则：【${getRuleDesc(room.currentKeyword, room.ruleMode)}】！`);
   }
 
   // 顺延到下一个活着的玩家
-  advanceAliveTurn(room);
+  advanceAliveTurn(room, isReversed);
   broadcastRoom(room);
   startTurnTimer(room, io, broadcastRoom);
 }
 
-// 顺延持弹人：从当前持弹人之后按座位顺位找下一个活着的玩家（token 锚定，审计 R2-12）
-function advanceAliveTurn(room) {
+// 顺延持弹人：按座位顺位找下一个活着的玩家，支持反向传递（反转炸弹）
+function advanceAliveTurn(room, reverse = false) {
   const count = room.players.length;
   if (count === 0) return;
   const curIdx = room.players.findIndex(p => p.token === room.currentTurnToken);
   const start = curIdx >= 0 ? curIdx : -1;
+  const step = reverse ? -1 : 1;
   for (let i = 1; i <= count; i++) {
-    const p = room.players[(start + i + count) % count];
+    const p = room.players[(start + i * step + count * 10) % count];
     const lives = room.playerLives[p.token];
-    // 生命值未初始化（中途加入且未被 server 补发）时按默认 2 条处理，避免永远被跳过
     if (lives === undefined || lives > 0) {
       room.currentTurnToken = p.token;
       return;
@@ -268,6 +317,8 @@ function getPublicState(room) {
     status: room.status,
     timeLeft: room.timeLeft,
     currentKeyword: room.currentKeyword,
+    ruleMode: room.ruleMode || 'ANY',
+    ruleDesc: getRuleDesc(room.currentKeyword, room.ruleMode || 'ANY'),
     currentTurnToken: current ? current.token : null,
     currentTurnName: current ? current.name : '',
     playerLives: room.playerLives || {}

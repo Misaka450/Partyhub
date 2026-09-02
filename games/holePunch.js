@@ -341,13 +341,22 @@ function submitAnswer(room, player, optionId, io, broadcastRoom) {
   const puzzle = room.currentPuzzle;
   if (!puzzle) return;
 
-  const isCorrect = optionId === puzzle.correctOptionId;
-  const timeUsed = (Date.now() - room.roundStartTime) / 1000;
+  const isPass = optionId === 'pass' || optionId === 'skip';
+  const isCorrect = !isPass && optionId === puzzle.correctOptionId;
+  const timeUsed = Math.max(0, (Date.now() - room.roundStartTime) / 1000);
   let scoreGain = 0;
 
   if (isCorrect) {
-    scoreGain = Math.max(10, Math.round(100 - timeUsed * 10));
+    // 时效递减分：前 3 秒满分 100 分，之后每秒衰减 6 分，保底 20 分
+    scoreGain = Math.max(20, Math.round(100 - Math.max(0, timeUsed - 3) * 6));
     player.score += scoreGain;
+  } else if (!isPass) {
+    // 防蒙猜惩罚：答错扣 50 分，最低扣至 0
+    scoreGain = -50;
+    player.score = Math.max(0, player.score - 50);
+  } else {
+    // 主动放弃不扣分
+    scoreGain = 0;
   }
 
   room.playerAnswers[player.token] = {

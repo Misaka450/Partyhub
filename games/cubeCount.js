@@ -153,19 +153,19 @@ function startGuessPhase(room, io, broadcastRoom) {
 function submitAnswer(room, playerToken, chosenOption, io, broadcastRoom) {
   if (room.status !== 'CUBE_GUESSING') return;
   if (room.playerAnswers[playerToken]) return;
-  // 校验提交者真实在房：被踢/已退出玩家的 socket 若仍残留，不能让其幽灵作答污染数据（审计 R2-40）
+  // 校验提交者真实在房
   const player = room.players.find(p => p.token === playerToken);
   if (!player) return;
 
-  // 严格校验答案：必须是整数且在选项集内（parseInt 会把 '6abc' 解析成 6 绕过判定，审计 R2-41）
+  // 直接输入模式校验：1~99 的有效整数，废除 4 选 1 蒙题
   const answerNum = Number(chosenOption);
-  if (!Number.isInteger(answerNum) || !(room.options || []).includes(answerNum)) return;
+  if (!Number.isInteger(answerNum) || answerNum < 1 || answerNum > 99) return;
 
   const timeTaken = Date.now() - (room.guessStartTime || Date.now());
   const isCorrect = (answerNum === room.totalCubes);
 
   room.playerAnswers[playerToken] = {
-    option: chosenOption,
+    option: answerNum,
     timeTaken,
     isCorrect
   };
@@ -188,6 +188,7 @@ function endRound(room, io, broadcastRoom) {
   clearTimeout(room.roundTimeout);
   room.roundTimeout = null;
 
+  // 正确者按用时排序奖励速度分；答错者扣 30 分防乱试
   const correctAnswers = Object.entries(room.playerAnswers)
     .filter(([_, ans]) => ans.isCorrect)
     .sort((a, b) => a[1].timeTaken - b[1].timeTaken);
@@ -201,6 +202,17 @@ function endRound(room, io, broadcastRoom) {
       ans.earnedScore = points;
     }
   });
+
+  // 答错扣分
+  Object.entries(room.playerAnswers)
+    .filter(([_, ans]) => !ans.isCorrect)
+    .forEach(([token, ans]) => {
+      const player = room.players.find(p => p.token === token);
+      if (player) {
+        player.score = Math.max(0, player.score - 30);
+        ans.earnedScore = -30;
+      }
+    });
 
   const answersSummary = room.players.map(p => {
     const ans = room.playerAnswers[p.token];
@@ -272,5 +284,6 @@ module.exports = {
   getPublicState,
   startGame,
   submitAnswer,
+  endRound,
   generateCubeGrid
 };

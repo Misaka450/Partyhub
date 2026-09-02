@@ -72,6 +72,9 @@ function startRound(room, io, broadcastRoom) {
   room.playerInputs = {};
   room.status = 'SIMON_DEMO';
 
+  // 逆向西蒙模式：第 2 轮起 60% 概率触发倒序输入！
+  room.isReverse = (room.round >= 2 && Math.random() < 0.65);
+
   // 计算演示所需时间：每个动作 0.6 秒 + 0.5秒缓冲
   const demoDuration = Math.ceil(sequence.length * 0.7 + 0.8);
   room.timeLeft = demoDuration;
@@ -82,10 +85,12 @@ function startRound(room, io, broadcastRoom) {
     round: room.round,
     maxRounds: room.maxRounds,
     sequence,
+    isReverse: room.isReverse,
     demoDuration
   });
 
-  io.to(room.id).emit('system_message', `🎶 第 ${room.round}/${room.maxRounds} 轮：仔细看并记住闪烁序列（共 ${sequence.length} 步）！`);
+  const reverseAlert = room.isReverse ? ' 🔄【高难度：稍后需完全倒序输入！】' : '';
+  io.to(room.id).emit('system_message', `🎶 第 ${room.round}/${room.maxRounds} 轮：仔细看并记住闪烁序列（共 ${sequence.length} 步）！${reverseAlert}`);
 
   // 演示结束后自动开启输入阶段
   clearTimeout(room.roundTimeout);
@@ -110,10 +115,12 @@ function startInputPhase(room, io, broadcastRoom) {
     round: room.round,
     maxRounds: room.maxRounds,
     totalSteps: room.currentSequence.length,
+    isReverse: room.isReverse,
     timeLimit: inputTimeLimit
   });
 
-  io.to(room.id).emit('system_message', `🕹️ 开始！请按照刚刚的顺序复现序列！`);
+  const modePrompt = room.isReverse ? '🔄【注意：必须按倒序从后往前点击！】' : '🕹️ 开始！请按照刚刚的顺序复现序列！';
+  io.to(room.id).emit('system_message', modePrompt);
 
   room.timer = setInterval(() => {
     room.timeLeft -= 1;
@@ -148,29 +155,34 @@ function submitStep(room, player, color, io, broadcastRoom) {
   if (pState.isFailed || pState.isCompleted) return;
 
   const currentStepIdx = pState.inputs.length;
-  const expectedColor = room.currentSequence[currentStepIdx];
+  const expectedSequence = room.isReverse ? [...room.currentSequence].reverse() : room.currentSequence;
+  const expectedColor = expectedSequence[currentStepIdx];
 
   pState.inputs.push(color);
 
   if (color !== expectedColor) {
-    // 按错了，立即淘汰
+    // 按错了，立即淘汰并扣 25 分
     pState.isFailed = true;
+    pState.scoreGain = -25;
+    player.score = Math.max(0, (player.score || 0) - 25);
     io.to(player.id).emit('simon_step_feedback', {
       stepIndex: currentStepIdx,
       isCorrect: false,
       isCompleted: false,
       isFailed: true,
+      isReverse: room.isReverse,
       expectedColor
     });
   } else {
     // 按对了
-    const isCompleted = pState.inputs.length === room.currentSequence.length;
+    const isCompleted = pState.inputs.length === expectedSequence.length;
     if (isCompleted) {
       pState.isCompleted = true;
       const timeUsed = (Date.now() - room.roundStartTime) / 1000;
       pState.timeUsed = parseFloat(timeUsed.toFixed(2));
       const speedBonus = Math.max(0, Math.round((room.timeLeft) * 8));
-      const scoreGain = 100 + speedBonus;
+      const reverseBonus = room.isReverse ? 50 : 0;
+      const scoreGain = 100 + speedBonus + reverseBonus;
       pState.scoreGain = scoreGain;
       player.score = (player.score || 0) + scoreGain;
     }
@@ -180,6 +192,7 @@ function submitStep(room, player, color, io, broadcastRoom) {
       isCorrect: true,
       isCompleted,
       isFailed: false,
+      isReverse: room.isReverse,
       scoreGain: pState.scoreGain
     });
   }

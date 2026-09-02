@@ -68,18 +68,26 @@ function find24Solution(cards) {
   return null;
 }
 
-function getRandom24Puzzle() {
-  // 优先从保证有解的题库中或随机生成有解题目
-  for (let attempt = 0; attempt < 50; attempt++) {
+// 动态算法发牌：从 1~13（扑克牌标准 A~K）中生成保证有严格 24 点解法的题目，
+// 彻底打破固定题库限制，题库完全无限。
+function getRandom24Puzzle(round = 1) {
+  // 第 1 轮偏简单：1~10 的数字；第 2~3 轮使用 1~13 全扑克范围
+  const maxCard = round === 1 ? 10 : 13;
+  for (let attempt = 0; attempt < 200; attempt++) {
     const nums = [
-      Math.floor(Math.random() * 10) + 1,
-      Math.floor(Math.random() * 10) + 1,
-      Math.floor(Math.random() * 10) + 1,
-      Math.floor(Math.random() * 10) + 1
+      Math.floor(Math.random() * maxCard) + 1,
+      Math.floor(Math.random() * maxCard) + 1,
+      Math.floor(Math.random() * maxCard) + 1,
+      Math.floor(Math.random() * maxCard) + 1
     ];
     if (solve24(nums)) return nums;
   }
-  return PRESET_24_PUZZLES[Math.floor(Math.random() * PRESET_24_PUZZLES.length)];
+  // 极低概率尝试失败时的经典保底集合（保证即时返回）
+  const FALLBACKS = [
+    [3, 8, 3, 8], [5, 5, 5, 1], [4, 4, 10, 10], [1, 5, 5, 5],
+    [2, 7, 8, 9], [3, 3, 8, 8], [4, 6, 8, 9], [1, 3, 4, 6]
+  ];
+  return FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
 }
 
 // 用 Shunting-yard（调度场）算法安全求值四则运算表达式，不依赖 eval/Function，
@@ -225,7 +233,7 @@ function startRound(room, io, broadcastRoom) {
   room.roundTimeout = null;
 
   room.status = 'M24_PLAYING';
-  room.currentCards = getRandom24Puzzle();
+  room.currentCards = getRandom24Puzzle(room.round);
   room.roundWinner = null;
   room.roundExpression = '';
   // 与 initRoomState 保持一致：读取房间设置 m24Time（15~300 秒）
@@ -360,5 +368,8 @@ module.exports = {
   submitSolution,
   skipPuzzleAction,
   safeEvaluate,
-  validateExpression
+  validateExpression,
+  solve24,
+  find24Solution,
+  getRandom24Puzzle
 };

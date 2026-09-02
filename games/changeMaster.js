@@ -9,6 +9,22 @@
 const DENOMINATIONS = [50, 20, 10, 5, 1];
 
 /**
+ * 求解给定可用面额下的最优最少张数
+ */
+function getOptimalChange(amount, denoms) {
+  const dp = new Array(amount + 1).fill(Infinity);
+  dp[0] = 0;
+  for (let i = 1; i <= amount; i++) {
+    for (const d of denoms) {
+      if (i >= d && dp[i - d] + 1 < dp[i]) {
+        dp[i] = dp[i - d] + 1;
+      }
+    }
+  }
+  return dp[amount] === Infinity ? null : dp[amount];
+}
+
+/**
  * 纯函数：生成一道找零钱题目
  * @param {number} round 当前轮次
  */
@@ -29,30 +45,60 @@ function generateBill(round = 1) {
   const cost = Math.floor(Math.random() * (maxCost - minCost + 1)) + minCost;
   const changeDue = paid - cost;
 
+  // 零钱危机：第 2、3 轮有 60% 概率随机抽取一种大面额（50, 20, 10）宣告用罄
+  let depletedDenom = null;
+  let availableDenoms = [...DENOMINATIONS];
+  if (round >= 2 && Math.random() < 0.65) {
+    const candidateDepleted = [50, 20, 10];
+    depletedDenom = candidateDepleted[Math.floor(Math.random() * candidateDepleted.length)];
+    availableDenoms = availableDenoms.filter(d => d !== depletedDenom);
+  }
+
+  const minSheets = getOptimalChange(changeDue, availableDenoms) || 1;
+
   return {
     paid,
     cost,
     changeDue,
-    denominations: DENOMINATIONS
+    denominations: DENOMINATIONS,
+    availableDenoms,
+    depletedDenom,
+    minSheets
   };
 }
 
 /**
- * 验证玩家提交的纸币组合总额是否正确
- * @param {Object} counts 面额键值对，例如 { 50: 1, 10: 1, 1: 3 }
- * @param {number} changeDue 目标找零金额
+ * 验证玩家提交的纸币组合总额与张数
  */
-function validateChange(counts = {}, changeDue) {
+function validateChange(counts = {}, changeDue, depletedDenom = null, minSheets = 1) {
   let total = 0;
+  let sheetCount = 0;
+  let usedDepleted = false;
+
   for (const denom of DENOMINATIONS) {
     const qty = Number(counts[denom]) || 0;
     if (qty > 0) {
+      if (depletedDenom && denom === depletedDenom) {
+        usedDepleted = true;
+      }
       total += denom * qty;
+      sheetCount += qty;
     }
   }
+
+  const isExact = total === changeDue;
+  const isValid = isExact && !usedDepleted;
+  const isOptimal = isValid && sheetCount === minSheets;
+  const extraSheets = Math.max(0, sheetCount - minSheets);
+
   return {
     total,
-    isValid: total === changeDue
+    sheetCount,
+    minSheets,
+    usedDepleted,
+    isValid,
+    isOptimal,
+    extraSheets
   };
 }
 
@@ -118,10 +164,14 @@ function startRound(room, io, broadcastRoom) {
     cost: bill.cost,
     changeDue: bill.changeDue,
     denominations: bill.denominations,
+    availableDenoms: bill.availableDenoms,
+    depletedDenom: bill.depletedDenom,
+    minSheets: bill.minSheets,
     timeLimit: 10
   });
 
-  io.to(room.id).emit('system_message', `💵 第 ${room.round}/${room.maxRounds} 轮：顾客付款 ¥${bill.paid}，商品总计 ¥${bill.cost}，请迅速找零 ¥${bill.changeDue}！`);
+  const crisisText = bill.depletedDenom ? ` ⚠️ [零钱危机] ¥${bill.depletedDenom} 纸币已找完！` : '';
+  io.to(room.id).emit('system_message', `💵 第 ${room.round}/${room.maxRounds} 轮：顾客付款 ¥${bill.paid}，商品总计 ¥${bill.cost}，请用最少张数迅速找零 ¥${bill.changeDue}！${crisisText}`);
 
   room.timer = setInterval(() => {
     room.timeLeft -= 1;
@@ -143,20 +193,38 @@ function submitChange(room, player, counts, io, broadcastRoom) {
   if (!room.currentBill) return;
   if (room.playerAnswers[player.token]) return;
 
+  const bill = room.currentBill;
   const timeUsed = (Date.now() - room.roundStartTime) / 1000;
-  const { total, isValid } = validateChange(counts, room.currentBill.changeDue);
+  const { total, sheetCount, minSheets, usedDepleted, isValid, isOptimal, extraSheets } =
+    validateChange(counts, bill.changeDue, bill.depletedDenom, bill.minSheets);
 
   let scoreGain = 0;
   if (isValid) {
     const speedBonus = Math.max(0, Math.round((10 - timeUsed) * 8));
-    scoreGain = 100 + speedBonus;
+    let base = 100;
+    if (!isOptimal) {
+      // 未用最少张数，每多 1 张扣 15 分，保底 35 分
+      base = Math.max(35, 100 - extraSheets * 15);
+    } else {
+      // 完美贪心最少张数额外 +20 奖励
+      base += 20;
+    }
+    scoreGain = base + speedBonus;
     player.score = (player.score || 0) + scoreGain;
+  } else {
+    // 找错钱或使用了已用完的面额：扣 30 分
+    scoreGain = -30;
+    player.score = Math.max(0, (player.score || 0) - 30);
   }
 
   room.playerAnswers[player.token] = {
     counts,
     total,
     isValid,
+    isOptimal,
+    sheetCount,
+    minSheets,
+    usedDepleted,
     timeUsed: parseFloat(timeUsed.toFixed(2)),
     scoreGain
   };
@@ -164,7 +232,11 @@ function submitChange(room, player, counts, io, broadcastRoom) {
   io.to(player.id).emit('change_answer_feedback', {
     isValid,
     total,
-    expectedChange: room.currentBill.changeDue,
+    expectedChange: bill.changeDue,
+    sheetCount,
+    minSheets,
+    isOptimal,
+    usedDepleted,
     scoreGain
   });
 

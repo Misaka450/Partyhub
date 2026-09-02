@@ -47,15 +47,19 @@ function startRound(room, io, broadcastRoom) {
   // 服务端时间锚点：用于校验客户端自报的按压时长是否物理可信（审计 R2-14）
   room.roundStartAt = Date.now();
 
+  // 开启干扰模式：第2轮以上或50%概率触发声光认知干扰
+  room.isChaosMode = room.round >= 2 || Math.random() < 0.5;
+
   broadcastRoom(room);
   io.to(room.id).emit('hold_start_round', {
     round: room.round,
     maxRounds: room.maxRounds,
     targetSeconds: room.targetSeconds,
-    timeLeft: room.timeLeft
+    timeLeft: room.timeLeft,
+    isChaosMode: room.isChaosMode
   });
 
-  io.to(room.id).emit('system_message', `⏱️ 第 ${room.round}/${room.maxRounds} 轮：本轮目标时间为【${room.targetSeconds}.000 秒】！按住大按钮凭直觉精准松开！`);
+  io.to(room.id).emit('system_message', `⏱️ 第 ${room.round}/${room.maxRounds} 轮：目标时间【${room.targetSeconds}.000 秒】！${room.isChaosMode ? '⚡ [干扰模式触发！保持专注！]' : ''}按住大按钮凭直觉精准松开！`);
 
   clearInterval(room.timer);
   clearTimeout(room.roundTimeout);
@@ -71,19 +75,20 @@ function startRound(room, io, broadcastRoom) {
   }, 1000);
 }
 
-function submitHoldTime(room, playerToken, elapsedMs, io, broadcastRoom) {
+function submitHoldTime(room, playerToken, payload, io, broadcastRoom) {
   if (room.status !== 'HOLD_PRESSING') return;
   if (room.playerHolds[playerToken]) return;
   // 校验提交者真实在房：防止被踢/已退出玩家的幽灵提交污染数据（审计 R2-40）
   const player = room.players.find(p => p.token === playerToken);
   if (!player) return;
 
+  const elapsedMs = typeof payload === 'number' ? payload : (payload?.elapsedMs || 0);
+  const isWager = Boolean(typeof payload === 'object' && payload?.isWager);
+
   // 校验时间数值合理：必须是大于 0 的有限数字且不超过 60 秒，防止 NaN/伪造值污染成绩
   if (typeof elapsedMs !== 'number' || !Number.isFinite(elapsedMs) || elapsedMs <= 0 || elapsedMs > 60000) return;
 
   // 服务端锚点校验（审计 R2-14）：按压时长不可能超过"本轮已过去的墙钟时间 + 容差"。
-  // 挡住开局瞬间直接伪造 elapsedMs = targetSeconds*1000 的最粗糙作弊
-  // （容差 1 秒覆盖客户端时钟偏差；等待后再提交的精细作弊属已知信任模型限制）
   if (room.roundStartAt) {
     const wallElapsed = Date.now() - room.roundStartAt;
     if (elapsedMs > wallElapsed + 1000) return;
@@ -96,14 +101,16 @@ function submitHoldTime(room, playerToken, elapsedMs, io, broadcastRoom) {
   room.playerHolds[playerToken] = {
     seconds: parseFloat(seconds.toFixed(3)),
     diff: parseFloat(diff.toFixed(3)),
-    baseScore
+    baseScore,
+    isWager
   };
 
   // player 已在函数开头校验过存在性，直接发即时反馈
   io.to(player.id).emit('hold_submit_feedback', {
     seconds: room.playerHolds[playerToken].seconds,
     diff: room.playerHolds[playerToken].diff,
-    targetSeconds: room.targetSeconds
+    targetSeconds: room.targetSeconds,
+    isWager
   });
 
   broadcastRoom(room);
@@ -127,7 +134,19 @@ function endRound(room, io, broadcastRoom) {
     const player = room.players.find(p => p.token === token);
     if (player) {
       const precisionBonus = holdData.diff <= 0.05 ? 60 : (holdData.diff <= 0.15 ? 30 : (holdData.diff <= 0.3 ? 10 : 0));
-      const totalEarned = holdData.baseScore + precisionBonus;
+      let totalEarned = holdData.baseScore + precisionBonus;
+
+      // 自信翻倍下注结算机制
+      if (holdData.isWager) {
+        if (holdData.diff <= 0.15) {
+          // 下注成功：极高精准度，得分翻 2.5 倍！
+          totalEarned = Math.round(totalEarned * 2.5);
+        } else if (holdData.diff > 0.35) {
+          // 下注失败：误差超标，清零
+          totalEarned = 0;
+        }
+      }
+
       player.score += totalEarned;
       holdData.earnedScore = totalEarned;
     }

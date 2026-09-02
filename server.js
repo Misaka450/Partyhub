@@ -917,10 +917,10 @@ io.on('connection', (socket) => {
   });
 
   // 盲压 5 秒
-  socket.on('hold_submit_time', ({ elapsedMs }) => {
+  socket.on('hold_submit_time', (payload) => {
     const room = rooms.get(currentRoomId);
     if (!room || room.gameType !== 'hold-five') return;
-    safeEngineCall(holdFiveEngine.submitHoldTime, room, currentPlayerToken, elapsedMs, io, broadcastRoom);
+    safeEngineCall(holdFiveEngine.submitHoldTime, room, currentPlayerToken, payload, io, broadcastRoom);
   });
 
   // 1. 颜色与文字大陷阱

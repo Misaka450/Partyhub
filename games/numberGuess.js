@@ -94,36 +94,50 @@ function pickTrivia(round = 1) {
 }
 
 /**
- * 纯函数：计算所有猜测与真实答案的排名得分
+ * 纯函数：计算所有猜测与真实答案的排名得分（绝不爆牌规则 The Price is Right）
  * @param {Array} submissions [{ token, name, guess }]
  * @param {number} truth 真实答案
  */
 function evaluateGuesses(submissions, truth) {
   const evaluated = submissions.map(sub => {
     const guessNum = Number(sub.guess);
-    const diff = Number.isFinite(guessNum) ? Math.abs(guessNum - truth) : Infinity;
+    const isValidNum = Number.isFinite(guessNum);
+    const isBust = !isValidNum || guessNum > truth;
+    const diff = isValidNum ? Math.abs(guessNum - truth) : Infinity;
     return {
       ...sub,
-      guessNum: Number.isFinite(guessNum) ? guessNum : null,
-      diff
+      guessNum: isValidNum ? guessNum : null,
+      isBust,
+      diff: isValidNum ? diff : null
     };
   });
 
-  // 按偏差绝对值从小到大排序
-  evaluated.sort((a, b) => a.diff - b.diff);
+  // 排序逻辑：未爆牌者排在前面，按 (truth - guessNum) 越小越好；爆牌者排在后面
+  evaluated.sort((a, b) => {
+    if (!a.isBust && b.isBust) return -1;
+    if (a.isBust && !b.isBust) return 1;
+    if (!a.isBust && !b.isBust) return a.diff - b.diff;
+    return (a.diff || Infinity) - (b.diff || Infinity);
+  });
 
-  // 奖励阶梯：第1名 150分，第2名 100分，第3名 60分，其余参与者若有答题给 30 分
-  evaluated.forEach((item, rank) => {
-    if (item.diff === Infinity) {
+  // 奖励阶梯：只有未爆牌的玩家才能得分！
+  let validRank = 0;
+  evaluated.forEach((item) => {
+    if (item.isBust) {
       item.scoreGain = 0;
-    } else if (rank === 0) {
-      item.scoreGain = 150;
-    } else if (rank === 1) {
-      item.scoreGain = 100;
-    } else if (rank === 2) {
-      item.scoreGain = 60;
     } else {
-      item.scoreGain = 30;
+      let gain = 30;
+      if (validRank === 0) {
+        gain = 160;
+        // 正中靶心完全猜中额外 +100
+        if (item.diff === 0) gain += 100;
+      } else if (validRank === 1) {
+        gain = 100;
+      } else if (validRank === 2) {
+        gain = 60;
+      }
+      item.scoreGain = gain;
+      validRank++;
     }
   });
 
@@ -193,7 +207,7 @@ function startRound(room, io, broadcastRoom) {
     timeLimit: 12
   });
 
-  io.to(room.id).emit('system_message', `🔢 第 ${room.round}/${room.maxRounds} 轮：${trivia.question}（输入你估算的数字）`);
+  io.to(room.id).emit('system_message', `🔢 第 ${room.round}/${room.maxRounds} 轮：【绝不爆牌规则】请估算【${trivia.question}】！最接近且绝不可超额，超过直接 0 分！`);
 
   room.timer = setInterval(() => {
     room.timeLeft -= 1;

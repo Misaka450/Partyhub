@@ -1329,7 +1329,14 @@
         <div id="stage-hold-five" class="game-stage-container hidden">
           <div class="hold-arena">
             <div class="hold-target-title" id="hold-target-title">🎯 目标时间：5.000 秒</div>
-            <div class="hold-btn-wrapper">
+            <div class="hold-wager-container" style="display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0;">
+              <label style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:4px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);">
+                <input type="checkbox" id="hold-wager-toggle" style="cursor:pointer;accent-color:#f59e0b;">
+                <span id="hold-wager-label">🔥 自信下注 (误差≤0.15s翻2.5倍)</span>
+              </label>
+            </div>
+            <div class="hold-btn-wrapper" style="position:relative;">
+              <div id="hold-chaos-overlay" class="hold-chaos-overlay hidden" style="position:absolute;inset:0;pointer-events:none;display:flex;align-items:center;justify-content:center;font-size:2.5rem;font-weight:900;color:#ef4444;text-shadow:0 0 12px rgba(239,68,68,0.8);z-index:5;"></div>
               <button type="button" class="btn-hold-trigger" id="btn-hold-trigger">
                 <span class="hold-icon">⏱</span>
                 <span class="hold-text" id="hold-text">按住计时</span>

@@ -516,6 +516,26 @@ function startGame(room, io, broadcastRoom) {
   startRound(room, io, broadcastRoom);
 }
 
+function pointInPolygon(point, vs) {
+  let x = point.x, y = point.y;
+  let inside = false;
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    let xi = vs[i].x, yi = vs[i].y;
+    let xj = vs[j].x, yj = vs[j].y;
+    let intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function distToSegment(p, v, w) {
+  const l2 = (v.x - w.x) ** 2 + (v.y - w.y) ** 2;
+  if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+  let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+}
+
 function startRound(room, io, broadcastRoom) {
   if (room.gameType !== 'perfect-slice') return;
   clearInterval(room.timer);
@@ -531,15 +551,51 @@ function startRound(room, io, broadcastRoom) {
   room.timeLeft = 12; // 12秒下刀时间
   room.roundStartTime = Date.now();
 
+  // 1. 动态比例悬赏：第1轮50:50，第2轮30:70或40:60，第3轮多变悬赏
+  let targetRatio = 50.0;
+  if (room.round === 2) {
+    targetRatio = Math.random() < 0.5 ? 30.0 : 40.0;
+  } else if (room.round >= 3) {
+    const CANDIDATES = [20.0, 25.0, 30.0, 33.3, 40.0, 50.0];
+    targetRatio = CANDIDATES[Math.floor(Math.random() * CANDIDATES.length)];
+  }
+  room.targetRatio = targetRatio;
+  room.currentShape.targetRatio = targetRatio;
+
+  // 2. 避障刀法限制：第2轮以上生成 1~2 颗辣椒障碍
+  const obstacles = [];
+  if (room.round >= 2 || Math.random() < 0.4) {
+    for (let attempt = 0; attempt < 35; attempt++) {
+      const ox = 0.5 + (Math.random() - 0.5) * 0.42;
+      const oy = 0.5 + (Math.random() - 0.5) * 0.42;
+      if (pointInPolygon({ x: ox, y: oy }, room.currentShape.points)) {
+        obstacles.push({
+          id: 'obs_' + obstacles.length,
+          x: parseFloat(ox.toFixed(3)),
+          y: parseFloat(oy.toFixed(3)),
+          r: 0.045,
+          name: '🌶️ 辣椒'
+        });
+        if (obstacles.length >= (room.round >= 3 ? 2 : 1)) break;
+      }
+    }
+  }
+  room.currentShape.obstacles = obstacles;
+
   broadcastRoom(room);
   io.to(room.id).emit('slice_start_round', {
     round: room.round,
     maxRounds: room.maxRounds,
     shape: room.currentShape,
+    targetRatio: room.targetRatio,
     timeLeft: room.timeLeft
   });
 
-  io.to(room.id).emit('system_message', `🍕 第 ${room.round}/${room.maxRounds} 轮：在屏幕上划一刀，将【${room.currentShape.name}】完美 50:50 二等分！`);
+  const ratioPrompt = targetRatio === 50.0
+    ? '【50 : 50】二等分'
+    : `【${targetRatio} : ${(100 - targetRatio).toFixed(1)}】悬赏比例`;
+  const obsPrompt = obstacles.length > 0 ? ` ⚠️ 切线不可触碰【${obstacles.length} 颗🌶️辣椒】！` : '';
+  io.to(room.id).emit('system_message', `🍕 第 ${room.round}/${room.maxRounds} 轮：在屏幕上划一刀，将【${room.currentShape.name}】切出 ${ratioPrompt}！${obsPrompt}`);
 
   clearInterval(room.timer);
   room.timer = setInterval(() => {
@@ -584,17 +640,40 @@ function submitSlice(room, playerToken, p1, p2, io, broadcastRoom) {
   const { ratio1, ratio2, poly1, poly2 } = slicePolygon(room.currentShape.points, cleanP1, cleanP2);
   const cleanRatio1 = isNaN(ratio1) ? 50.0 : ratio1;
   const cleanRatio2 = isNaN(ratio2) ? 50.0 : ratio2;
-  const diff = Math.abs(50.0 - cleanRatio1); // 误差 (越小越好)
 
-  // 基础分 100 - (diff * 15)
-  const baseScore = Math.max(0, Math.round(100 - diff * 15));
+  const targetRatio = room.targetRatio || 50.0;
+  // 计算两块中任一块匹配目标比例的最小绝对误差
+  const diff = Math.min(
+    Math.abs(cleanRatio1 - targetRatio),
+    Math.abs(cleanRatio2 - targetRatio)
+  );
+
+  // 避障检测：判断切线是否穿过了辣椒障碍
+  let hitObstacle = false;
+  if (room.currentShape.obstacles && room.currentShape.obstacles.length > 0) {
+    for (const obs of room.currentShape.obstacles) {
+      const d = distToSegment({ x: obs.x, y: obs.y }, cleanP1, cleanP2);
+      if (d < obs.r) {
+        hitObstacle = true;
+        break;
+      }
+    }
+  }
+
+  // 基础分 100 - (diff * 15)，切中障碍扣 50 分惩罚
+  let baseScore = Math.max(0, Math.round(100 - diff * 15));
+  if (hitObstacle) {
+    baseScore = Math.max(0, baseScore - 50);
+  }
 
   room.playerSlices[playerToken] = {
     p1: cleanP1,
     p2: cleanP2,
     ratio1: parseFloat(cleanRatio1.toFixed(2)),
     ratio2: parseFloat(cleanRatio2.toFixed(2)),
+    targetRatio,
     diff: parseFloat(diff.toFixed(2)),
+    hitObstacle,
     baseScore,
     timeTaken,
     poly1,
@@ -607,8 +686,13 @@ function submitSlice(room, playerToken, p1, p2, io, broadcastRoom) {
     io.to(player.id).emit('slice_cut_result', {
       ratio1: room.playerSlices[playerToken].ratio1,
       ratio2: room.playerSlices[playerToken].ratio2,
-      diff: room.playerSlices[playerToken].diff
+      targetRatio,
+      diff: room.playerSlices[playerToken].diff,
+      hitObstacle
     });
+    if (hitObstacle) {
+      io.to(player.id).emit('system_message', '⚠️ 刀刃切到了【🌶️ 辣椒】！避障失败扣除 50 分！');
+    }
   }
 
   broadcastRoom(room);

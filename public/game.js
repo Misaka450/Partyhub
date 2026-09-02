@@ -2907,8 +2907,16 @@ socket.on('flash_start_flying', (data) => {
 
 socket.on('flash_question', (data) => {
   resetFlashForm();
-  flashTargetEmoji.textContent = data.targetAnimal.emoji;
-  flashTargetName.textContent = data.targetAnimal.name;
+  if (data.questionType === 'COMPARE') {
+    flashTargetEmoji.textContent = '⚖️';
+    flashTargetName.textContent = data.questionPrompt || '谁更多？';
+  } else if (data.questionType === 'ABSENT') {
+    flashTargetEmoji.textContent = '👻';
+    flashTargetName.textContent = data.questionPrompt || '哪种动物未出现？';
+  } else {
+    flashTargetEmoji.textContent = data.targetAnimal.emoji;
+    flashTargetName.textContent = data.targetAnimal.name;
+  }
   flashOptionsGrid.innerHTML = '';
 
   data.options.forEach(opt => {
@@ -2929,7 +2937,9 @@ socket.on('flash_question', (data) => {
 
 socket.on('flash_round_result', (data) => {
   playSound('fanfare');
-  showRevealModal(`🎯 正确数量：${data.targetCount} 只 ${data.targetAnimal ? data.targetAnimal.emoji : ''}`, `${data.targetCount}`, 3500);
+  const ansDisplay = data.correctOption ? String(data.correctOption) : `${data.targetCount}`;
+  const promptText = data.questionPrompt ? `🎯 正解：【${ansDisplay}】` : `🎯 正确数量：${data.targetCount} 只 ${data.targetAnimal ? data.targetAnimal.emoji : ''}`;
+  showRevealModal(promptText, `${ansDisplay}`, 3500);
 });
 
 socket.on('flash_game_over', (data) => {
@@ -3393,7 +3403,7 @@ function setCubeGuessingMode(options, submittedOpt = null) {
     cubePromptTitle.textContent = submittedOpt ? `✓ 已提交答案：【${submittedOpt}】` : '🧊 立方体总数是多少？';
   }
   if (cubePromptSub) {
-    cubePromptSub.textContent = submittedOpt ? '（已锁定提交，等待结算...）' : '（包含内部支撑方块 · 抢答加分）';
+    cubePromptSub.textContent = submittedOpt ? '（已锁定提交，等待结算...）' : '（包含内部支撑方块 · 手动输入数字 · 严禁蒙题）';
   }
 
   if (submittedOpt) {
@@ -3413,25 +3423,14 @@ function setCubeGuessingMode(options, submittedOpt = null) {
     submitDefaultText: '提交答案'
   });
   if (cubeDirectInput) {
-    cubeDirectInput.placeholder = '输入答案';
+    cubeDirectInput.placeholder = '输入方块总数 (1~99)';
     cubeDirectInput.disabled = false;
+    setTimeout(() => { cubeDirectInput.focus(); }, 100);
   }
 
-  if (cubeOptionsGrid && options && options.length > 0) {
+  // 废除 4 选 1 候选项，彻底消灭蒙题
+  if (cubeOptionsGrid) {
     cubeOptionsGrid.innerHTML = '';
-    options.forEach(opt => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn-cube-option';
-      btn.textContent = opt;
-      btn.onclick = () => {
-        if (cubeDirectInput) cubeDirectInput.value = opt;
-        setCubeAnswerSubmitted(opt);
-        socket.emit('cube_submit_answer', { option: opt });
-        playSound('tick');
-      };
-      cubeOptionsGrid.appendChild(btn);
-    });
   }
 }
 
@@ -3728,10 +3727,18 @@ function renderWordBombState(state) {
   displayRoundTag.classList.add('hidden');
   const isMyTurn = (state.currentTurnToken === myPlayerToken);
 
-  wbKeywordBadge.textContent = state.currentKeyword || '天';
+  if (state.ruleMode === 'START') {
+    wbKeywordBadge.textContent = `${state.currentKeyword}... (首字)`;
+  } else if (state.ruleMode === 'END') {
+    wbKeywordBadge.textContent = `...${state.currentKeyword} (尾字)`;
+  } else if (state.ruleMode === 'IDIOM') {
+    wbKeywordBadge.textContent = `四字成语: ${state.currentKeyword}`;
+  } else {
+    wbKeywordBadge.textContent = state.currentKeyword || '天';
+  }
   wbTurnStatus.textContent = isMyTurn ? '🔥 炸弹在你手中！快输入符合条件的词语！' : `⏳ 持弹人：【${state.currentTurnName}】`;
   wbTurnStatus.style.color = isMyTurn ? '#EF4444' : '#FBBF24';
-  wordHintBox.textContent = `必须包含【${state.currentKeyword}】· 倒计时 ${state.timeLeft}s`;
+  wordHintBox.textContent = `规则：${state.ruleDesc || ('包含【' + state.currentKeyword + '】')} · 倒计时 ${state.timeLeft}s`;
 
   // 渲染生命值
   const myLives = (state.playerLives && state.playerLives[myPlayerToken] !== undefined) ? state.playerLives[myPlayerToken] : 2;
@@ -4424,6 +4431,33 @@ function drawSliceShape(c, shape, width, height, cutLine = null) {
   } else {
     // 完整披萨
     drawArtisanPizzaPiece(c, shape.points, width, height, seed, 0, 0, false);
+
+    // 绘制障碍物（辣椒）
+    if (shape.obstacles && shape.obstacles.length > 0) {
+      shape.obstacles.forEach(obs => {
+        const ox = obs.x * width;
+        const oy = obs.y * height;
+        const or = obs.r * Math.min(width, height);
+
+        c.save();
+        // 危险发光外环
+        c.beginPath();
+        c.arc(ox, oy, or * 1.2, 0, Math.PI * 2);
+        c.fillStyle = 'rgba(239, 68, 68, 0.25)';
+        c.fill();
+        c.strokeStyle = '#ef4444';
+        c.lineWidth = 1.5;
+        c.setLineDash([3, 3]);
+        c.stroke();
+
+        // 绘制辣椒 Emoji
+        c.font = `${Math.round(or * 1.6)}px "Apple Color Emoji", "Segoe UI Emoji", sans-serif`;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText('🌶️', ox, oy);
+        c.restore();
+      });
+    }
   }
 
   // 划线中预览
@@ -4532,6 +4566,14 @@ socket.on('slice_start_round', (data) => {
   sliceResultBadge.classList.add('hidden');
   sliceCutPrompt.classList.remove('hidden');
 
+  const targetRatio = data.targetRatio || 50.0;
+  const ratioPrompt = targetRatio === 50.0 ? '50:50 二等分' : `${targetRatio}:${(100 - targetRatio).toFixed(1)} 悬赏`;
+  const obsPrompt = data.shape?.obstacles?.length ? ' · ⚠️避开🌶️' : '';
+  wordHintBox.textContent = `将【${data.shape.name}】切出【${ratioPrompt}】${obsPrompt}！剩余 ${data.timeLeft}s`;
+  if (sliceCutPrompt) {
+    sliceCutPrompt.textContent = `划一刀切出 ${ratioPrompt}${obsPrompt}`;
+  }
+
   const { w, h } = initSliceCanvasResolution();
   drawSliceShape(sliceCtx, currentSliceShape, w, h);
   playSound('card');
@@ -4628,19 +4670,27 @@ socket.on('slice_cut_result', (data) => {
   playSound('tick');
   if (sliceRatioText) sliceRatioText.textContent = `${data.ratio1}% : ${data.ratio2}%`;
   if (sliceDiffText) {
-    sliceDiffText.textContent = `误差 ±${data.diff}%`;
-    if (data.diff < 1.0) {
-      sliceDiffText.style.background = 'rgba(16, 185, 129, 0.2)';
-      sliceDiffText.style.borderColor = '#10b981';
-      sliceDiffText.style.color = '#34d399';
-    } else if (data.diff < 3.0) {
-      sliceDiffText.style.background = 'rgba(56, 189, 248, 0.2)';
-      sliceDiffText.style.borderColor = '#38bdf8';
-      sliceDiffText.style.color = '#38bdf8';
+    if (data.hitObstacle) {
+      sliceDiffText.textContent = `💥 切中辣椒 (-50) · 误差 ±${data.diff}%`;
+      sliceDiffText.style.background = 'rgba(239, 68, 68, 0.25)';
+      sliceDiffText.style.borderColor = '#ef4444';
+      sliceDiffText.style.color = '#f87171';
     } else {
-      sliceDiffText.style.background = 'rgba(245, 158, 11, 0.2)';
-      sliceDiffText.style.borderColor = '#f59e0b';
-      sliceDiffText.style.color = '#fbbf24';
+      const target = data.targetRatio || 50;
+      sliceDiffText.textContent = `目标 ${target}% · 误差 ±${data.diff}%`;
+      if (data.diff < 1.0) {
+        sliceDiffText.style.background = 'rgba(16, 185, 129, 0.2)';
+        sliceDiffText.style.borderColor = '#10b981';
+        sliceDiffText.style.color = '#34d399';
+      } else if (data.diff < 3.0) {
+        sliceDiffText.style.background = 'rgba(56, 189, 248, 0.2)';
+        sliceDiffText.style.borderColor = '#38bdf8';
+        sliceDiffText.style.color = '#38bdf8';
+      } else {
+        sliceDiffText.style.background = 'rgba(245, 158, 11, 0.2)';
+        sliceDiffText.style.borderColor = '#f59e0b';
+        sliceDiffText.style.color = '#fbbf24';
+      }
     }
   }
   
@@ -4729,10 +4779,21 @@ function renderHoldFiveState(state) {
   }
 }
 
+let currentHoldIsChaos = false;
+let holdChaosInterval = null;
+
 socket.on('hold_start_round', (data) => {
   hasSubmittedHold = false;
   isHoldingButton = false;
   holdPressStartTime = null;
+  currentHoldIsChaos = Boolean(data.isChaosMode);
+  if (holdChaosInterval) clearInterval(holdChaosInterval);
+  const chaosOverlay = document.getElementById('hold-chaos-overlay');
+  if (chaosOverlay) {
+    chaosOverlay.classList.add('hidden');
+    chaosOverlay.textContent = '';
+  }
+
   if (holdResultBox) holdResultBox.classList.add('hidden');
   if (btnHoldTrigger) {
     btnHoldTrigger.classList.remove('pressing');
@@ -4743,7 +4804,7 @@ socket.on('hold_start_round', (data) => {
   const targetSec = data.targetSeconds ? `${data.targetSeconds}.000` : '5.000';
   const targetTitle = document.getElementById('hold-target-title');
   if (targetTitle) {
-    targetTitle.textContent = `🎯 目标时间：${targetSec} 秒`;
+    targetTitle.textContent = `🎯 目标时间：${targetSec} 秒${currentHoldIsChaos ? ' ⚡[干扰模式]' : ''}`;
   }
   wordHintBox.textContent = `按住大按钮，在正好 ${targetSec} 秒时松手！剩余 ${data.timeLeft}s`;
 
@@ -4759,12 +4820,34 @@ function handleHoldStart(e) {
   if (btnHoldTrigger) btnHoldTrigger.classList.add('pressing');
   if (holdText) holdText.textContent = '计时中...松开提交';
   playSound('tick');
+
+  // 障眼法声光干扰：按压期间冷不丁闪烁假数字打乱节拍
+  const chaosOverlay = document.getElementById('hold-chaos-overlay');
+  if (currentHoldIsChaos && chaosOverlay) {
+    if (holdChaosInterval) clearInterval(holdChaosInterval);
+    const fakeAlerts = ['4.8s!', '5.0s!', '3.2s!', '⚡哔!', '6.1s!', '快了!', '4.99s!'];
+    holdChaosInterval = setInterval(() => {
+      if (!isHoldingButton) {
+        clearInterval(holdChaosInterval);
+        return;
+      }
+      if (Math.random() < 0.6) {
+        chaosOverlay.textContent = fakeAlerts[Math.floor(Math.random() * fakeAlerts.length)];
+        chaosOverlay.classList.remove('hidden');
+        setTimeout(() => { chaosOverlay?.classList.add('hidden'); }, 350);
+      }
+    }, 700);
+  }
 }
 
 function handleHoldEnd(e) {
   if (!isHoldingButton || hasSubmittedHold) return;
   if (e && e.cancelable) e.preventDefault();
   isHoldingButton = false;
+  if (holdChaosInterval) clearInterval(holdChaosInterval);
+  const chaosOverlay = document.getElementById('hold-chaos-overlay');
+  if (chaosOverlay) chaosOverlay.classList.add('hidden');
+
   if (btnHoldTrigger) {
     btnHoldTrigger.classList.remove('pressing');
     btnHoldTrigger.style.pointerEvents = 'none';
@@ -4775,7 +4858,9 @@ function handleHoldEnd(e) {
     holdPressStartTime = null;
     hasSubmittedHold = true;
     if (holdText) holdText.textContent = '已提交！等待结算...';
-    socket.emit('hold_submit_time', { elapsedMs });
+    const wagerToggle = document.getElementById('hold-wager-toggle');
+    const isWager = Boolean(wagerToggle && wagerToggle.checked);
+    socket.emit('hold_submit_time', { elapsedMs, isWager });
     playSound('card');
   }
 }
@@ -4869,14 +4954,11 @@ const stroopTextDisplay = document.getElementById('stroop-text-display');
 const stroopOptionsGrid = document.getElementById('stroop-options-grid');
 const stroopFeedbackBadge = document.getElementById('stroop-feedback-badge');
 
-socket.on('stroop_new_question', (data) => {
-  displayRoundTag?.classList.remove('hidden');
-  if (displayRound) displayRound.textContent = `第 ${data.round}/${data.maxRounds} 轮`;
-  if (stroopFeedbackBadge) stroopFeedbackBadge.classList.add('hidden');
-
+function renderStroopQuestion(data) {
   const isColor = data.targetMode === 'COLOR';
   if (stroopInstructionBadge) {
-    stroopInstructionBadge.textContent = isColor ? '🎯 请按【文字颜色】选择！' : '🎯 请按【文字内容】选择！';
+    const comboPrefix = (data.combo && data.combo > 1) ? `🔥 ${data.combo} 连击！ · ` : '';
+    stroopInstructionBadge.textContent = isColor ? `${comboPrefix}🎯 请按【文字颜色】选择！` : `${comboPrefix}🎯 请按【文字内容】选择！`;
     stroopInstructionBadge.style.color = isColor ? '#EF4444' : '#3B82F6';
   }
 
@@ -4896,25 +4978,38 @@ socket.on('stroop_new_question', (data) => {
       btn.style.borderLeftWidth = '6px';
       btn.onclick = () => {
         socket.emit('stroop_submit_answer', { answerId: opt.id });
-        stroopOptionsGrid.querySelectorAll('button').forEach(b => b.disabled = true);
         playSound('card');
       };
       stroopOptionsGrid.appendChild(btn);
     });
   }
+}
+
+socket.on('stroop_new_question', (data) => {
+  displayRoundTag?.classList.remove('hidden');
+  if (displayRound) displayRound.textContent = `第 ${data.round}/${data.maxRounds} 轮`;
+  if (stroopFeedbackBadge) stroopFeedbackBadge.classList.add('hidden');
+  wordHintBox.textContent = `🔥 15秒连击狂飙！连续答对连击翻倍，答错清零！`;
+
+  renderStroopQuestion(data);
   playSound('tick');
+});
+
+socket.on('stroop_next_subquestion', (data) => {
+  renderStroopQuestion(data);
 });
 
 socket.on('stroop_answer_feedback', (data) => {
   if (!stroopFeedbackBadge) return;
   stroopFeedbackBadge.classList.remove('hidden');
   if (data.isCorrect) {
-    stroopFeedbackBadge.textContent = `✓ 答对了！速度加分 +${data.scoreGain}`;
+    const comboText = data.combo > 1 ? ` (🔥 ${data.combo} 连击!)` : '';
+    stroopFeedbackBadge.textContent = `✓ 答对！+${data.scoreGain}分${comboText}`;
     stroopFeedbackBadge.style.background = 'var(--success-subtle)';
     stroopFeedbackBadge.style.color = 'var(--success)';
     playSound('pop');
   } else {
-    stroopFeedbackBadge.textContent = `✕ 答错了！脑子被绕晕啦`;
+    stroopFeedbackBadge.textContent = `✕ 答错！连击清零 (-20分)`;
     stroopFeedbackBadge.style.background = 'var(--danger-subtle)';
     stroopFeedbackBadge.style.color = 'var(--danger)';
     playSound('error');
@@ -4928,12 +5023,13 @@ socket.on('stroop_round_result', (data) => {
     summaryHtml += `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;font-size:0.82rem">
         <span>${idx === 0 ? '👑 ' : ''}${escapeHtml(p.avatar)} <b>${escapeHtml(p.name)}</b></span>
-        <span style="font-weight:700;color:${p.isCorrect ? 'var(--success)' : 'var(--text-muted)'}">${p.isCorrect ? `+${p.scoreGain}分 (${p.timeUsed}s)` : '未得分'}</span>
+        <span style="font-weight:700;color:${p.scoreGain > 0 ? 'var(--success)' : 'var(--text-muted)'}">+${p.scoreGain}分 (最高🔥${p.maxCombo}连击 / 对${p.correctCount}错${p.wrongCount})</span>
       </div>
     `;
   });
   summaryHtml += '</div>';
-  showRevealModal(`🎯 正确答案：【${escapeHtml(data.correctTargetName)}】`, '', 3500, summaryHtml);
+  const topText = data.bestComboPlayer ? `🔥 最高连击王：【${escapeHtml(data.bestComboPlayer.name)}】(🔥${data.bestComboPlayer.maxCombo}连击)` : '15秒连击狂飙结算';
+  showRevealModal(topText, '', 3500, summaryHtml);
 });
 
 // ------------------------- 2. 谁是多胞胎 / 找不同 -------------------------
@@ -5198,7 +5294,15 @@ socket.on('simon_start_demo', (data) => {
 socket.on('simon_start_input', (data) => {
   simonInputActive = true;
   currentSimonStep = 0;
-  if (simonStatusPill) simonStatusPill.textContent = `🕹️ 开始按顺序点击复现！`;
+  if (simonStatusPill) {
+    if (data.isReverse) {
+      simonStatusPill.textContent = `🔄 逆向挑战：请完全【倒序】从后往前点击！`;
+      simonStatusPill.style.color = '#f59e0b';
+    } else {
+      simonStatusPill.textContent = `🕹️ 开始按顺序点击复现！`;
+      simonStatusPill.style.color = '';
+    }
+  }
   playSound('pop');
 });
 
@@ -5438,6 +5542,27 @@ socket.on('change_new_bill', (data) => {
   if (cashCostVal) cashCostVal.textContent = `¥${data.cost}`;
   if (cashDueVal) cashDueVal.textContent = `¥${data.changeDue}`;
 
+  // 零钱危机：处理缺货面额
+  document.querySelectorAll('.cash-chip-btn[data-denom]').forEach(btn => {
+    const denom = Number(btn.dataset.denom);
+    if (data.depletedDenom && denom === data.depletedDenom) {
+      btn.disabled = true;
+      btn.style.opacity = '0.35';
+      btn.style.filter = 'grayscale(1)';
+      btn.style.pointerEvents = 'none';
+      btn.setAttribute('title', '¥' + denom + ' 纸币已找完！');
+    } else {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.filter = 'none';
+      btn.style.pointerEvents = '';
+      btn.removeAttribute('title');
+    }
+  });
+
+  const crisisNotice = data.depletedDenom ? ` · ⚠️¥${data.depletedDenom}已找完！` : '';
+  wordHintBox.textContent = `请以最少张数凑齐 ¥${data.changeDue}${crisisNotice}！最少需 ${data.minSheets || 1} 张`;
+
   selectedCashCounts = {};
   updateCashDisplay();
   playSound('tick');
@@ -5467,12 +5592,20 @@ socket.on('change_answer_feedback', (data) => {
   if (!cashFeedbackBadge) return;
   cashFeedbackBadge.classList.remove('hidden');
   if (data.isValid) {
-    cashFeedbackBadge.textContent = `💵 找零分毫不差！(+${data.scoreGain}分)`;
+    if (data.isOptimal) {
+      cashFeedbackBadge.textContent = `💵 完美贪心！最少 ${data.sheetCount} 张分毫不差！(+${data.scoreGain}分)`;
+    } else {
+      cashFeedbackBadge.textContent = `💵 找零正确，但多用了 ${data.sheetCount - data.minSheets} 张纸币 (+${data.scoreGain}分)`;
+    }
     cashFeedbackBadge.style.background = 'var(--success-subtle)';
     cashFeedbackBadge.style.color = 'var(--success)';
     playSound('pop');
   } else {
-    cashFeedbackBadge.textContent = `✕ 找零金额有误（你交付了 ¥${data.total}，应找 ¥${data.expectedChange}）`;
+    if (data.usedDepleted) {
+      cashFeedbackBadge.textContent = `✕ 使用了已用完的面额！(-30分)`;
+    } else {
+      cashFeedbackBadge.textContent = `✕ 找零有误（交付 ¥${data.total}，应找 ¥${data.expectedChange}）(-30分)`;
+    }
     cashFeedbackBadge.style.background = 'var(--danger-subtle)';
     cashFeedbackBadge.style.color = 'var(--danger)';
     playSound('error');
@@ -5532,19 +5665,25 @@ numberGuessForm?.addEventListener('submit', (e) => {
 socket.on('number_round_result', (data) => {
   playSound('fanfare');
   let rankHtml = `
-    <div style="font-size:1.1rem;font-weight:800;color:var(--primary);margin-bottom:6px">真实答案：${data.truth} ${escapeHtml(data.unit)}</div>
-    <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:10px">${escapeHtml(data.funFact)}</div>
+    <div style="font-size:1.1rem;font-weight:800;color:var(--primary);margin-bottom:4px">真实答案：${data.truth} ${escapeHtml(data.unit)}</div>
+    <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">${escapeHtml(data.funFact)}</div>
+    <div style="font-size:0.75rem;color:#f59e0b;margin-bottom:8px">⚖️ 绝不爆牌：估值大于真相直接判定爆牌 0 分！</div>
     <div style="display:grid;gap:6px;text-align:left">
   `;
   data.rankings.forEach((p, idx) => {
+    const isBust = p.isBust;
+    const badge = isBust
+      ? '<span style="color:#ef4444;font-weight:bold">💥 爆牌超额 (+0分)</span>'
+      : `<span style="color:var(--success);font-weight:bold">${p.diff === 0 ? '🎯 精准绝杀 ' : ''}+${p.scoreGain}分</span>`;
+
     rankHtml += `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;font-size:0.82rem">
-        <span>${idx === 0 ? '👑 ' : ''}${escapeHtml(p.avatar)} <b>${escapeHtml(p.name)}</b></span>
-        <span>猜【${p.guess ?? '未答'}】 ${p.diff !== null ? `(差 ${p.diff})` : ''} <b>+${p.scoreGain}分</b></span>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:${isBust ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.04)'};border:1px solid ${isBust ? 'rgba(239,68,68,0.2)' : 'var(--border)'};border-radius:6px;font-size:0.82rem">
+        <span>${idx === 0 && !isBust ? '👑 ' : ''}${escapeHtml(p.avatar)} <b>${escapeHtml(p.name)}</b> (猜: ${p.guess ?? '未答'})</span>
+        <span>${badge}</span>
       </div>
     `;
   });
   rankHtml += '</div>';
 
-  showRevealModal(`🔢 盲猜真相大揭秘`, `${data.truth} ${data.unit}`, 4500, rankHtml);
+  showRevealModal(`🔢 绝不爆牌真相大揭秘`, `${data.truth} ${data.unit}`, 4500, rankHtml);
 });

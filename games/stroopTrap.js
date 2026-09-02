@@ -60,9 +60,9 @@ function initRoomState(room) {
   room.status = 'LOBBY';
   room.round = 1;
   room.maxRounds = room.maxRounds || 3;
-  room.currentQuestion = null;
-  room.playerAnswers = {}; // token -> { answerId, isCorrect, timeUsed, score }
-  room.timeLeft = 5;
+  room.playerQuestions = {}; // token -> current question
+  room.playerStats = {}; // token -> { combo, maxCombo, correctCount, wrongCount, totalScoreGain }
+  room.timeLeft = 15;
   clearInterval(room.timer);
   room.timer = null;
   clearTimeout(room.roundTimeout);
@@ -98,27 +98,36 @@ function startRound(room, io, broadcastRoom) {
   clearTimeout(room.roundTimeout);
   room.roundTimeout = null;
 
-  const question = generateQuestion(room.round);
-  room.currentQuestion = question;
-  room.playerAnswers = {};
+  room.playerQuestions = {};
+  room.playerStats = {};
   room.status = 'STROOP_ANSWER';
-  room.timeLeft = 5; // 每轮 5 秒限时抢答
+  room.timeLeft = 15; // 15 秒连击狂飙！
   room.roundStartTime = Date.now();
 
-  broadcastRoom(room);
-
-  io.to(room.id).emit('stroop_new_question', {
-    round: room.round,
-    maxRounds: room.maxRounds,
-    displayText: question.displayText,
-    displayColorHex: question.displayColorHex,
-    targetMode: question.targetMode,
-    options: question.options,
-    timeLimit: 5
+  room.players.forEach(p => {
+    const q = generateQuestion(room.round);
+    room.playerQuestions[p.token] = q;
+    room.playerStats[p.token] = {
+      combo: 0,
+      maxCombo: 0,
+      correctCount: 0,
+      wrongCount: 0,
+      totalScoreGain: 0
+    };
+    io.to(p.id).emit('stroop_new_question', {
+      round: room.round,
+      maxRounds: room.maxRounds,
+      displayText: q.displayText,
+      displayColorHex: q.displayColorHex,
+      targetMode: q.targetMode,
+      options: q.options,
+      combo: 0,
+      timeLimit: 15
+    });
   });
 
-  const promptMode = question.targetMode === 'COLOR' ? '【文字颜色】' : '【文字内容】';
-  io.to(room.id).emit('system_message', `⚡ 第 ${room.round}/${room.maxRounds} 轮：请根据 ${promptMode} 快速选出正确颜色！`);
+  broadcastRoom(room);
+  io.to(room.id).emit('system_message', `🔥 第 ${room.round}/${room.maxRounds} 轮：【15秒连击狂飙】启动！连续答对连击翻倍，答错清零！`);
 
   // 倒计时定时器
   room.timer = setInterval(() => {
@@ -134,50 +143,66 @@ function startRound(room, io, broadcastRoom) {
 }
 
 /**
- * 玩家提交选择
+ * 玩家提交选择：即时结算连击并立刻派发下一道题目
  */
 function submitAnswer(room, player, answerId, io, broadcastRoom) {
   if (room.gameType !== 'stroop-trap' || room.status !== 'STROOP_ANSWER') return;
-  if (!room.currentQuestion) return;
-  if (room.playerAnswers[player.token]) return; // 已作答不能重复作答
+  const currentQ = room.playerQuestions[player.token];
+  if (!currentQ) return;
 
-  const timeUsed = (Date.now() - room.roundStartTime) / 1000;
-  const isCorrect = answerId === room.currentQuestion.targetId;
-
-  // 计分规则：答对获得 100 基础分 + 速度加分（最高50分）；答错不给分
-  let scoreGain = 0;
-  if (isCorrect) {
-    const speedBonus = Math.max(0, Math.round((5 - timeUsed) * 10));
-    scoreGain = 100 + speedBonus;
-    player.score = (player.score || 0) + scoreGain;
-  }
-
-  room.playerAnswers[player.token] = {
-    answerId,
-    isCorrect,
-    timeUsed: parseFloat(timeUsed.toFixed(2)),
-    scoreGain
+  const stats = room.playerStats[player.token] || {
+    combo: 0,
+    maxCombo: 0,
+    correctCount: 0,
+    wrongCount: 0,
+    totalScoreGain: 0
   };
 
-  // 通知本人答题结果
+  const isCorrect = answerId === currentQ.targetId;
+  let scoreGain = 0;
+
+  if (isCorrect) {
+    stats.combo += 1;
+    stats.maxCombo = Math.max(stats.maxCombo, stats.combo);
+    stats.correctCount += 1;
+    // 连击加成：基础 25 分 + 连击数 * 10
+    scoreGain = 25 + stats.combo * 10;
+    player.score = (player.score || 0) + scoreGain;
+    stats.totalScoreGain += scoreGain;
+  } else {
+    // 答错清空连击并扣除 20 分惩罚
+    stats.combo = 0;
+    stats.wrongCount += 1;
+    scoreGain = -20;
+    player.score = Math.max(0, (player.score || 0) - 20);
+    stats.totalScoreGain -= 20;
+  }
+
+  room.playerStats[player.token] = stats;
+
+  // 生成下一题并推送给该玩家
+  const nextQ = generateQuestion(room.round);
+  room.playerQuestions[player.token] = nextQ;
+
   io.to(player.id).emit('stroop_answer_feedback', {
     isCorrect,
     scoreGain,
-    correctAnswerId: room.currentQuestion.targetId
+    combo: stats.combo,
+    correctAnswerId: currentQ.targetId,
+    correctAnswerName: currentQ.targetName
   });
 
-  // 如果所有活跃玩家都已作答，直接提前结束本轮
-  const activePlayers = room.players.filter(p => !p.offlineTimer);
-  const allAnswered = activePlayers.every(p => !!room.playerAnswers[p.token]);
-  if (allAnswered) {
-    clearInterval(room.timer);
-    room.timer = null;
-    endRound(room, io, broadcastRoom);
-  }
+  io.to(player.id).emit('stroop_next_subquestion', {
+    displayText: nextQ.displayText,
+    displayColorHex: nextQ.displayColorHex,
+    targetMode: nextQ.targetMode,
+    options: nextQ.options,
+    combo: stats.combo
+  });
 }
 
 /**
- * 结算本轮
+ * 结算本轮 15 秒连击战报
  */
 function endRound(room, io, broadcastRoom) {
   if (room.gameType !== 'stroop-trap') return;
@@ -187,31 +212,38 @@ function endRound(room, io, broadcastRoom) {
   room.status = 'STROOP_RESULT';
 
   const roundResults = room.players.map(p => {
-    const ans = room.playerAnswers[p.token];
+    const stats = room.playerStats[p.token] || {
+      combo: 0,
+      maxCombo: 0,
+      correctCount: 0,
+      wrongCount: 0,
+      totalScoreGain: 0
+    };
     return {
       playerId: p.id,
       playerToken: p.token,
       name: p.name,
       avatar: p.avatar,
       score: p.score,
-      answered: !!ans,
-      isCorrect: ans ? ans.isCorrect : false,
-      timeUsed: ans ? ans.timeUsed : null,
-      scoreGain: ans ? ans.scoreGain : 0
+      maxCombo: stats.maxCombo,
+      correctCount: stats.correctCount,
+      wrongCount: stats.wrongCount,
+      scoreGain: stats.totalScoreGain
     };
-  });
+  }).sort((a, b) => b.scoreGain - a.scoreGain);
+
+  const bestComboPlayer = [...roundResults].sort((a, b) => b.maxCombo - a.maxCombo)[0];
 
   io.to(room.id).emit('stroop_round_result', {
     round: room.round,
     maxRounds: room.maxRounds,
-    correctTargetId: room.currentQuestion ? room.currentQuestion.targetId : null,
-    correctTargetName: room.currentQuestion ? room.currentQuestion.targetName : null,
+    bestComboPlayer: bestComboPlayer ? { name: bestComboPlayer.name, maxCombo: bestComboPlayer.maxCombo } : null,
     results: roundResults
   });
 
   broadcastRoom(room);
 
-  // 3秒后进入下一轮或结束游戏
+  // 3.5秒后进入下一轮或结束游戏
   clearTimeout(room.roundTimeout);
   room.roundTimeout = setTimeout(() => {
     if (room.gameType !== 'stroop-trap' || room.status !== 'STROOP_RESULT') return;
@@ -221,7 +253,7 @@ function endRound(room, io, broadcastRoom) {
     } else {
       finishGame(room, io, broadcastRoom);
     }
-  }, 3500);
+  }, 4000);
 }
 
 /**

@@ -31,55 +31,57 @@ function initRoomState(room) {
 
 function generateRoundData(room) {
   const round = room.round || 1;
-  // 动物种类数按轮次严格递增：第1轮2种，第2轮3种，第3轮4种...
-  const totalSpecies = Math.min(ANIMAL_TYPES.length, round + 1);
+  const totalSpecies = Math.min(ANIMAL_TYPES.length, round + 2);
   const shuffledAnimals = shuffle(ANIMAL_TYPES);
 
-  const target = shuffledAnimals[0];
-  const distractors = shuffledAnimals.slice(1, totalSpecies);
+  // 区分出场动物与未出场动物
+  const presentSpecies = shuffledAnimals.slice(0, totalSpecies);
+  const absentSpecies = shuffledAnimals.slice(totalSpecies);
 
-  // 目标动物数量梯度：第1轮 5-8 只，第2轮 7-10 只，第3轮 9-13 只
+  const animalCounts = {};
+  presentSpecies.forEach(a => { animalCounts[a.id] = 0; });
+
+  const target = presentSpecies[0];
+  const distractors = presentSpecies.slice(1);
+
+  // 目标动物数量
   const baseMin = 4 + round * 2;
   const baseMax = 6 + round * 3;
   const targetCount = Math.floor(Math.random() * (baseMax - baseMin + 1)) + baseMin;
 
   const pool = [];
-  // 放入目标动物
   for (let i = 0; i < targetCount; i++) {
-    pool.push({ isTarget: true, emoji: target.emoji, name: target.name });
+    pool.push({ isTarget: true, id: target.id, emoji: target.emoji, name: target.name });
+    animalCounts[target.id]++;
   }
 
-  // 放入递增的干扰动物（每种干扰动物放 2~3 只）
+  // 放入干扰动物
   distractors.forEach(dist => {
-    const distCount = Math.floor(Math.random() * 2) + 2; // 2~3 只
+    const distCount = Math.floor(Math.random() * 3) + 2; // 2~4 只
     for (let i = 0; i < distCount; i++) {
-      pool.push({ isTarget: false, emoji: dist.emoji, name: dist.name });
+      pool.push({ isTarget: false, id: dist.id, emoji: dist.emoji, name: dist.name });
+      animalCounts[dist.id]++;
     }
   });
 
-  // 随机乱序池（Fisher-Yates 无偏洗牌）
   const orderedPool = shuffle(pool);
 
-  // 5 条全屏独立跑道 (Y 轴等距分布：10%, 30%, 50%, 70%, 90%)
+  // 跑道计算
   const lanes = [0.10, 0.30, 0.50, 0.70, 0.90];
   const nextFreeTime = [0, 0, 0, 0, 0];
   const flyingItems = [];
   let waveBaseTime = 0.2;
 
   orderedPool.forEach((item, idx) => {
-    // 寻找当前最空闲的跑道，杜绝同跑道拥挤重叠
     let minTrack = 0;
     for (let t = 1; t < 5; t++) {
       if (nextFreeTime[t] < nextFreeTime[minTrack]) minTrack = t;
     }
-
     const delay = Math.max(nextFreeTime[minTrack], waveBaseTime + (Math.random() * 0.35));
-    // 奔跑耗时 2.4 ~ 2.8 秒横穿屏幕，平稳清晰
     const runDuration = 2.4 + (Math.random() * 0.4);
     const speed = 1 / runDuration;
     const laneY = lanes[minTrack];
 
-    // 该跑道下一次入场必须间隔 1.3 秒以上，绝对不重叠
     nextFreeTime[minTrack] = delay + 1.3;
     waveBaseTime += 0.22;
 
@@ -97,26 +99,63 @@ function generateRoundData(room) {
     });
   });
 
-  // 排序
   flyingItems.sort((a, b) => a.delay - b.delay);
   const maxEndTime = Math.max(...flyingItems.map(f => f.delay + f.runDuration));
 
-  // 生成 4 个竞猜选项（含正确答案与相近的干扰项）
-  const optionsSet = new Set([targetCount]);
-  const offsets = [-3, -2, -1, 1, 2, 3, 4];
-  for (const off of shuffle(offsets)) {
-    const opt = targetCount + off;
-    if (opt > 0) optionsSet.add(opt);
-    if (optionsSet.size >= 4) break;
-  }
-  const options = Array.from(optionsSet).sort((a, b) => a - b);
+  // 决定本轮题型：COUNT (常规计数)、COMPARE (数量多寡对比)、ABSENT (未出场幽灵动物)
+  let questionType = 'COUNT';
+  let questionPrompt = '';
+  let correctOption = null;
+  let options = [];
 
+  if (round === 2 && Math.random() < 0.6) {
+    questionType = 'COMPARE';
+  } else if (round >= 3) {
+    const rType = Math.random();
+    if (rType < 0.45) questionType = 'COMPARE';
+    else if (rType < 0.85 && absentSpecies.length > 0) questionType = 'ABSENT';
+    else questionType = 'COUNT';
+  }
+
+  if (questionType === 'COMPARE') {
+    const a1 = presentSpecies[0];
+    const a2 = presentSpecies[1];
+    const c1 = animalCounts[a1.id];
+    const c2 = animalCounts[a2.id];
+    questionPrompt = `【${a1.emoji}${a1.name}】与【${a2.emoji}${a2.name}】谁出现得更多？`;
+    if (c1 > c2) correctOption = `${a1.emoji} ${a1.name}多`;
+    else if (c2 > c1) correctOption = `${a2.emoji} ${a2.name}多`;
+    else correctOption = '🤝 一样多';
+    options = [`${a1.emoji} ${a1.name}多`, `${a2.emoji} ${a2.name}多`, '🤝 一样多'];
+  } else if (questionType === 'ABSENT') {
+    const ghost = absentSpecies[Math.floor(Math.random() * absentSpecies.length)];
+    const seenPicks = shuffle(presentSpecies).slice(0, 3);
+    questionPrompt = `刚才奔跑中，哪种动物【完全没有出现】？`;
+    correctOption = `${ghost.emoji} ${ghost.name}`;
+    options = shuffle([correctOption, ...seenPicks.map(p => `${p.emoji} ${p.name}`)]);
+  } else {
+    // 常规计数
+    questionPrompt = `刚才一共飞过了几只【${target.emoji} ${target.name}】？`;
+    correctOption = targetCount;
+    const optionsSet = new Set([targetCount]);
+    const offsets = [-3, -2, -1, 1, 2, 3, 4];
+    for (const off of shuffle(offsets)) {
+      const opt = targetCount + off;
+      if (opt > 0) optionsSet.add(opt);
+      if (optionsSet.size >= 4) break;
+    }
+    options = Array.from(optionsSet).sort((a, b) => a - b);
+  }
+
+  room.questionType = questionType;
+  room.questionPrompt = questionPrompt;
+  room.correctOption = correctOption;
   room.targetAnimal = target;
   room.targetCount = targetCount;
   room.options = options;
   room.flyingItems = flyingItems;
   room.speciesCount = totalSpecies;
-  room.raceDuration = Math.ceil(maxEndTime * 1000) + 600; // 动画总耗时
+  room.raceDuration = Math.ceil(maxEndTime * 1000) + 600;
   room.playerAnswers = {};
 }
 
@@ -148,10 +187,14 @@ function startRound(room, io, broadcastRoom) {
   generateRoundData(room);
 
   broadcastRoom(room);
-  io.to(room.id).emit('system_message', `👀 第 ${room.round}/${room.maxRounds} 轮：准备数【${room.targetAnimal.name}】！奔跑即将开始！`);
+  const readyTip = room.questionType === 'COMPARE'
+    ? '【突袭对比题】请留心观察各动物的出现多寡！'
+    : (room.questionType === 'ABSENT' ? '【突袭幽灵题】请仔细辨认有哪些动物登场！' : `准备数【${room.targetAnimal.name}】！`);
+  io.to(room.id).emit('system_message', `👀 第 ${room.round}/${room.maxRounds} 轮：${readyTip}奔跑即将开始！`);
   io.to(room.id).emit('flash_round_ready', {
     round: room.round,
     maxRounds: room.maxRounds,
+    questionType: room.questionType,
     targetAnimal: room.targetAnimal
   });
 
@@ -199,11 +242,13 @@ function startGuessingPhase(room, io, broadcastRoom) {
   room.guessStartTime = Date.now();
 
   io.to(room.id).emit('flash_question', {
+    questionType: room.questionType,
+    questionPrompt: room.questionPrompt,
     targetAnimal: room.targetAnimal,
     options: room.options
   });
 
-  io.to(room.id).emit('system_message', `❓ 刚才一共飞过了几只【${room.targetAnimal.emoji} ${room.targetAnimal.name}】？请抢答！`);
+  io.to(room.id).emit('system_message', `❓ ${room.questionPrompt} 请抢答！`);
   broadcastRoom(room);
 
   clearInterval(room.timer);
@@ -225,16 +270,16 @@ function startGuessingPhase(room, io, broadcastRoom) {
 function submitAnswer(room, playerToken, chosenOption, io, broadcastRoom) {
   if (room.status !== 'FLASH_GUESSING') return;
   if (room.playerAnswers[playerToken]) return; // 已作答
-  // 校验提交者真实在房：防止被踢/已退出玩家的幽灵作答污染数据（审计 R2-40）
+  // 校验提交者真实在房
   const player = room.players.find(p => p.token === playerToken);
   if (!player) return;
 
-  // 严格校验答案：必须是整数且在选项集内（parseInt 宽松解析会误判 '6abc' 类畸形值，审计 R2-41）
-  const answerNum = Number(chosenOption);
-  if (!Number.isInteger(answerNum) || !(room.options || []).includes(answerNum)) return;
+  // 校验答案：支持数字或字符选项
+  const isOptionValid = (room.options || []).some(opt => String(opt) === String(chosenOption));
+  if (!isOptionValid) return;
 
   const timeTaken = Date.now() - (room.guessStartTime || Date.now());
-  const isCorrect = (answerNum === room.targetCount);
+  const isCorrect = String(chosenOption) === String(room.correctOption);
 
   room.playerAnswers[playerToken] = {
     option: chosenOption,
@@ -244,7 +289,6 @@ function submitAnswer(room, playerToken, chosenOption, io, broadcastRoom) {
 
   broadcastRoom(room);
 
-  // 检查是否全员已作答
   const activePlayers = room.players.filter(p => !p.offlineTimer);
   const allAnswered = activePlayers.length > 0 && activePlayers.every(p => room.playerAnswers[p.token] !== undefined);
   if (allAnswered) {
@@ -276,6 +320,17 @@ function endRound(room, io, broadcastRoom) {
     }
   });
 
+  // 答错扣 30 分
+  Object.entries(room.playerAnswers)
+    .filter(([_, ans]) => !ans.isCorrect)
+    .forEach(([token, ans]) => {
+      const player = room.players.find(p => p.token === token);
+      if (player) {
+        player.score = Math.max(0, player.score - 30);
+        ans.earnedScore = -30;
+      }
+    });
+
   const answersSummary = room.players.map(p => {
     const ans = room.playerAnswers[p.token];
     return {
@@ -290,12 +345,15 @@ function endRound(room, io, broadcastRoom) {
   });
 
   io.to(room.id).emit('flash_round_result', {
+    questionType: room.questionType,
+    questionPrompt: room.questionPrompt,
+    correctOption: room.correctOption,
     targetAnimal: room.targetAnimal,
     targetCount: room.targetCount,
     answersSummary
   });
 
-  io.to(room.id).emit('system_message', `🎯 正确答案是：【${room.targetCount}】只 ${room.targetAnimal.emoji}！`);
+  io.to(room.id).emit('system_message', `🎯 正确答案是：【${room.correctOption}】！`);
   broadcastRoom(room);
 
   clearTimeout(room.roundTimeout);
