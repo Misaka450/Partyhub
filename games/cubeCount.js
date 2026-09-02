@@ -1,22 +1,29 @@
 const { shuffle } = require('./shuffle');
 
-function generateCubeGrid(round = 1) {
+function generateCubeGrid(round = 1, cubeDiff = 'standard') {
   // 3x3 空间等轴测立方体柱状阵列
   const size = 3;
   const grid = [];
   let totalCubes = 0;
 
-  // 难度随轮次递增：第1轮高度 1~3 (总数 7~11), 第2轮高度 1~4 (总数 10~15), 第3轮高度 1~5 (总数 13~20)
-  const maxHeight = Math.min(4, 2 + round);
+  // 根据房主配置的复杂度 (standard / hard) 和轮次动态计算
+  // standard: 基础高度 1~3, 后续 1~4 层 (总数约 7~16)
+  // hard: 进阶高度 2~4, 后续 2~5 层 (总数约 14~25，多层遮挡考验空间想象力)
+  const isHard = cubeDiff === 'hard';
+  const maxHeight = isHard ? Math.min(5, 3 + round) : Math.min(4, 2 + round);
 
   for (let r = 0; r < size; r++) {
     const row = [];
     for (let c = 0; c < size; c++) {
       // 中心与后方柱子略高，前方柱子略低，形成层次分明的立体阶梯
-      let baseProb = 0.85;
+      let baseProb = isHard ? 0.90 : 0.85;
       let h = 0;
       if (Math.random() < baseProb) {
-        h = Math.floor(Math.random() * maxHeight) + 1;
+        if (isHard && round >= 2 && Math.random() < 0.4) {
+          h = Math.floor(Math.random() * (maxHeight - 2 + 1)) + 2;
+        } else {
+          h = Math.floor(Math.random() * maxHeight) + 1;
+        }
       }
       row.push(h);
       totalCubes += h;
@@ -24,22 +31,28 @@ function generateCubeGrid(round = 1) {
     grid.push(row);
   }
 
-  // 兜底保障：至少有 6 个方块且不全平。
-  // 重建时先清零全部格子再固定对角线三格，保证 totalCubes 与 grid 实际数量严格一致
-  // （原实现只设三格不清零其他格，画面方块数可能与 totalCubes 不符导致整轮不可玩，审计 R2-39）
-  if (totalCubes < 6) {
+  // 兜底保障：保证立方体数量充实且结构错落
+  const minCubes = isHard ? 11 : 6;
+  if (totalCubes < minCubes) {
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) grid[r][c] = 0;
     }
-    grid[0][0] = 3;
-    grid[1][1] = 2;
-    grid[2][2] = 1;
-    totalCubes = 6;
+    if (isHard) {
+      grid[0][0] = 4;
+      grid[1][1] = 4;
+      grid[2][2] = 3;
+      totalCubes = 11;
+    } else {
+      grid[0][0] = 3;
+      grid[1][1] = 2;
+      grid[2][2] = 1;
+      totalCubes = 6;
+    }
   }
 
   // 生成 4 个相近选项
   const optionsSet = new Set([totalCubes]);
-  const offsets = [-4, -3, -2, -1, 1, 2, 3, 4];
+  const offsets = isHard ? [-6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6] : [-4, -3, -2, -1, 1, 2, 3, 4];
   // Fisher-Yates 无偏洗牌打乱干扰项顺序
   for (const off of shuffle(offsets)) {
     const opt = totalCubes + off;
@@ -56,6 +69,7 @@ function initRoomState(room) {
   room.status = 'LOBBY';
   room.round = 1;
   room.maxRounds = room.maxRounds || 3;
+  room.cubeDiff = room.cubeDiff || 'standard';
   room.currentGrid = [];
   room.totalCubes = 0;
   room.options = [];
@@ -90,7 +104,8 @@ function startRound(room, io, broadcastRoom) {
   clearTimeout(room.roundTimeout);
   room.roundTimeout = null;
 
-  const { grid, totalCubes, options } = generateCubeGrid(room.round);
+  const diff = room.cubeDiff || 'standard';
+  const { grid, totalCubes, options } = generateCubeGrid(room.round, diff);
   room.currentGrid = grid;
   room.totalCubes = totalCubes;
   room.options = options;
