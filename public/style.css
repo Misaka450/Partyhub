@@ -4265,6 +4265,7 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  position: relative;
 }
 .slice-header-info { flex-shrink: 0; text-align: center; }
 .slice-cut-prompt {
@@ -4297,26 +4298,50 @@ html, body {
 [data-theme="light"] .slice-canvas-wrapper { background: #FEF3C7; }
 #slice-canvas { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
 
-/* 切割结果看板 */
+/* 切割结果悬浮窗 (Floating HUD Overlay) - 杜绝挤压画板与尺寸抖动 */
 .slice-result-panel {
-  flex-shrink: 0;
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 340px;
+  z-index: 20;
+  pointer-events: none; /* 穿透交互，不阻挡画布 */
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 10px 14px;
-  background: var(--bg-card);
-  border: 2px solid var(--primary);
-  border-radius: 13px;
-  box-shadow: 0 0 14px var(--primary-glow);
+  padding: 10px 16px;
+  background: rgba(18, 20, 29, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid var(--primary);
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45), 0 0 16px var(--primary-glow);
+  animation: sliceFloatUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-theme="light"] .slice-result-panel {
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12), 0 0 12px rgba(99, 102, 241, 0.2);
+}
+@keyframes sliceFloatUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
 }
 .slice-ratio-title { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; color: var(--text-muted); }
-.slice-ratio-val { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 800; color: var(--text-main); line-height: 1.1; }
+.slice-ratio-val { font-family: var(--font-mono); font-size: 1.4rem; font-weight: 800; color: var(--text-main); line-height: 1.1; }
 .slice-ratio-bar-wrap {
   display: flex;
   width: 100%;
-  max-width: 320px;
-  height: 12px;
+  max-width: 280px;
+  height: 10px;
   border-radius: 999px;
   overflow: hidden;
   border: 1px solid var(--border);
