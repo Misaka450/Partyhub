@@ -3819,12 +3819,23 @@ html, body {
   font-weight: 800;
   cursor: pointer;
   transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: manipulation;
 }
-.btn-flash-option:hover, .btn-cube-option:hover {
+.btn-flash-option:hover:not(:disabled), .btn-cube-option:hover:not(:disabled) {
   border-color: var(--primary);
   background: var(--primary-subtle);
   color: var(--primary);
   transform: translateY(-2px);
+}
+.btn-flash-option:active:not(:disabled), .btn-cube-option:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.btn-cube-option:disabled {
+  cursor: not-allowed;
 }
 
 /* ------------------------- 【拆弹轮盘】 ------------------------- */

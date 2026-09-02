@@ -3381,15 +3381,20 @@ socket.on('m24_game_over', (data) => {
   });
 });
 
-// =====================【3D 几何数方块 渲染】=====================\
+// =====================【3D 几何数方块 渲染】=====================
+let hasSubmittedCubeAnswer = false;
+let myCubeSubmittedVal = null;
+
 function setCubeObserveMode() {
+  hasSubmittedCubeAnswer = false;
+  myCubeSubmittedVal = null;
   if (cubeOptionsGrid) {
     cubeOptionsGrid.innerHTML = '<div class="cube-observe-hint">👀 观察阶段：请仔细默数方块，倒计时结束后开启抢答</div>';
   }
   if (cubeDirectInput) {
     cubeDirectInput.value = '';
     cubeDirectInput.disabled = true;
-    cubeDirectInput.placeholder = '👀 观察中，稍后开启输入...';
+    cubeDirectInput.placeholder = '👀 观察中，稍后开启抢答...';
   }
   if (cubeSubmitBtn) {
     cubeSubmitBtn.disabled = true;
@@ -3401,42 +3406,73 @@ function setCubeObserveMode() {
 }
 
 function setCubeGuessingMode(options, submittedOpt = null) {
+  const isSubmitted = Boolean(submittedOpt || hasSubmittedCubeAnswer);
+  const activeOpt = submittedOpt || myCubeSubmittedVal;
+
   if (cubePromptTitle) {
-    cubePromptTitle.textContent = submittedOpt ? `✓ 已提交答案：【${submittedOpt}】` : '🧊 立方体总数是多少？';
+    cubePromptTitle.textContent = isSubmitted ? `✓ 已提交答案：【${activeOpt || ''}】` : '🧊 立方体总数是多少？';
   }
   if (cubePromptSub) {
-    cubePromptSub.textContent = submittedOpt ? '（已锁定提交，等待结算...）' : '（包含内部支撑方块 · 手动输入数字 · 严禁蒙题）';
+    cubePromptSub.textContent = isSubmitted ? '（已锁定提交 · 每轮限答一次 · 等待结算...）' : '（包含内部支撑方块 · 仅限提交一次 · 抢答加分）';
   }
 
-  if (submittedOpt) {
+  if (!isSubmitted) {
+    resetFormAnswerState({
+      inputEl: cubeDirectInput,
+      formEl: cubeDirectForm,
+      optionButtonsSelector: '.btn-cube-option',
+      submitDefaultText: '提交答案'
+    });
+    if (cubeDirectInput) {
+      cubeDirectInput.placeholder = '输入答案';
+      cubeDirectInput.disabled = false;
+    }
+  }
+
+  // 渲染 4 选 1 候选项按钮，玩家直接点击作答，杜绝移动端唤起输入法遮挡画布
+  if (cubeOptionsGrid && options && options.length > 0) {
+    cubeOptionsGrid.innerHTML = '';
+    options.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-cube-option';
+      btn.textContent = opt;
+      if (isSubmitted) {
+        btn.disabled = true;
+        btn.style.pointerEvents = 'none';
+        if (parseInt(opt) === parseInt(activeOpt)) {
+          btn.style.opacity = '1';
+          btn.style.borderColor = 'var(--success)';
+          btn.style.background = 'var(--success-subtle)';
+          btn.style.color = 'var(--success)';
+        } else {
+          btn.style.opacity = '0.35';
+        }
+      } else {
+        btn.onclick = () => {
+          if (hasSubmittedCubeAnswer) return;
+          setCubeAnswerSubmitted(opt);
+          socket.emit('cube_submit_answer', { option: opt });
+          playSound('tick');
+        };
+      }
+      cubeOptionsGrid.appendChild(btn);
+    });
+  }
+
+  if (isSubmitted && activeOpt) {
     setFormAnswerSubmitted({
       inputEl: cubeDirectInput,
       formEl: cubeDirectForm,
       optionButtonsSelector: '.btn-cube-option',
-      submittedVal: submittedOpt
+      submittedVal: activeOpt
     });
-    return;
-  }
-
-  resetFormAnswerState({
-    inputEl: cubeDirectInput,
-    formEl: cubeDirectForm,
-    optionButtonsSelector: '.btn-cube-option',
-    submitDefaultText: '提交答案'
-  });
-  if (cubeDirectInput) {
-    cubeDirectInput.placeholder = '输入方块总数 (1~99)';
-    cubeDirectInput.disabled = false;
-    setTimeout(() => { cubeDirectInput.focus(); }, 100);
-  }
-
-  // 废除 4 选 1 候选项，彻底消灭蒙题
-  if (cubeOptionsGrid) {
-    cubeOptionsGrid.innerHTML = '';
   }
 }
 
 function setCubeAnswerSubmitted(opt) {
+  hasSubmittedCubeAnswer = true;
+  myCubeSubmittedVal = opt;
   setFormAnswerSubmitted({
     inputEl: cubeDirectInput,
     formEl: cubeDirectForm,
@@ -3444,11 +3480,13 @@ function setCubeAnswerSubmitted(opt) {
     submittedVal: opt
   });
   if (cubePromptTitle) cubePromptTitle.textContent = `✓ 已提交答案：【${opt}】`;
-  if (cubePromptSub) cubePromptSub.textContent = '（已锁定提交，等待结算...）';
-  if (wordHintBox) wordHintBox.textContent = `✓ 已提交答案 (${opt})，等待其他玩家结算...`;
+  if (cubePromptSub) cubePromptSub.textContent = '（已锁定提交 · 每轮限答一次 · 等待结算...）';
+  if (wordHintBox) wordHintBox.textContent = `✓ 已提交答案 (${opt})，每轮限答一次，等待其他玩家结算...`;
 }
 
 function resetCubeForm() {
+  hasSubmittedCubeAnswer = false;
+  myCubeSubmittedVal = null;
   resetFormAnswerState({
     inputEl: cubeDirectInput,
     formEl: cubeDirectForm,
@@ -3479,14 +3517,14 @@ function renderCubeCountState(state) {
       setCubeObserveMode();
     }
   } else if (state.status === 'CUBE_GUESSING') {
-    if (isMySubmitted) {
-      wordHintBox.textContent = `✓ 已提交答案，等待结算... 剩余 ${state.timeLeft}s`;
+    if (isMySubmitted || hasSubmittedCubeAnswer) {
+      wordHintBox.textContent = `✓ 已提交答案，每轮限答一次，等待结算... 剩余 ${state.timeLeft}s`;
     } else {
-      wordHintBox.textContent = `❓ 请选择或输入立方体总数！剩余 ${state.timeLeft}s`;
+      wordHintBox.textContent = `❓ 请选择立方体总数（限答一次）！剩余 ${state.timeLeft}s`;
     }
     // 状态自愈：如果尚未渲染当前轮的选项按钮则即时渲染
     if (state.options && state.options.length > 0 && (cubeOptionsGrid.children.length === 0 || cubeOptionsGrid.querySelector('.cube-observe-hint'))) {
-      setCubeGuessingMode(state.options);
+      setCubeGuessingMode(state.options, (isMySubmitted || hasSubmittedCubeAnswer) ? (myCubeSubmittedVal || cubeDirectInput?.value) : null);
     }
   } else if (state.status === 'CUBE_ROUND_RESULT') {
     wordHintBox.textContent = `🎯 结算中，准备进入下一轮...`;
@@ -3663,7 +3701,7 @@ function drawSingleModernVoxel(c, x, y, w, h, ch) {
 if (cubeDirectForm) {
   cubeDirectForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (cubeDirectInput?.disabled) return;
+    if (hasSubmittedCubeAnswer || cubeDirectInput?.disabled) return;
     const val = parseInt(cubeDirectInput?.value);
     if (!isNaN(val) && val > 0) {
       setCubeAnswerSubmitted(val);

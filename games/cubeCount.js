@@ -172,9 +172,10 @@ function submitAnswer(room, playerToken, chosenOption, io, broadcastRoom) {
   const player = room.players.find(p => p.token === playerToken);
   if (!player) return;
 
-  // 直接输入模式校验：1~99 的有效整数，废除 4 选 1 蒙题
+  // 校验有效整数且在当前题目的选项列表内（严格防刷）
   const answerNum = Number(chosenOption);
-  if (!Number.isInteger(answerNum) || answerNum < 1 || answerNum > 99) return;
+  if (!Number.isInteger(answerNum)) return;
+  if (room.options && room.options.length > 0 && !room.options.includes(answerNum)) return;
 
   const timeTaken = Date.now() - (room.guessStartTime || Date.now());
   const isCorrect = (answerNum === room.totalCubes);
