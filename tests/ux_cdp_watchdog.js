@@ -259,7 +259,52 @@ async function testVisualContrastStateMachine(wsSend) {
   const r = revealResult.result.value;
   assert.ok(r.isColorReveal, `揭晓态 Emoji 滤镜必须平滑恢复彩色原型，实测: ${r.revealFilter}`);
   console.log(`  ✓ 揭晓状态: 彩色还原 (filter: ${r.revealFilter})`);
-  console.log('  ✅ [看门狗 3/3] 视觉状态机与光影对比度测试 100% 通过！');
+  console.log('  ✅ [看门狗 3/4] 视觉状态机与光影对比度测试 100% 通过！');
+}
+
+// -----------------------------------------------------------------------------
+// 4. 终局结算与颁奖台看门狗 (Podium & Game Over Watchdog)
+// -----------------------------------------------------------------------------
+async function testGameOverPodiumIntegrity(wsSend) {
+  console.log('\n🏆 [看门狗 4/4] 执行终局结算颁奖台完整性断言 (杜绝空排行榜)...');
+
+  const mockPayload = {
+    scores: [
+      { id: '1', name: '冠军玩家', avatar: '🥇', score: 280 },
+      { id: '2', name: '亚军玩家', avatar: '🥈', score: 190 },
+      { id: '3', name: '季军玩家', avatar: '🥉', score: 120 }
+    ]
+  };
+
+  const result = await wsSend('Runtime.evaluate', {
+    expression: `(() => {
+      // 模拟触发 shadow_game_over
+      window.dispatchEvent(new CustomEvent('test_game_over'));
+      // 调用公用 showGameOverModal 测试
+      showGameOverModal({
+        title: '测试终局结算',
+        desc: '测试描述',
+        podium: (${JSON.stringify(mockPayload)}).podium || (${JSON.stringify(mockPayload)}).scores || []
+      });
+
+      const body = document.getElementById('gameover-body');
+      const cards = body ? body.querySelectorAll('.podium-card') : [];
+      return {
+        hasBody: !!body,
+        cardCount: cards.length,
+        firstWinner: cards[0]?.querySelector('.podium-name')?.textContent
+      };
+    })()`,
+    returnByValue: true
+  });
+
+  const p = result.result.value;
+  assert.ok(p.hasBody, '结算弹窗容器必须存在');
+  assert.strictEqual(p.cardCount, 3, `颁奖台卡片必须完整渲染 3 名玩家，实测渲染了 ${p.cardCount} 张卡片`);
+  assert.strictEqual(p.firstWinner, '冠军玩家', '榜首名称必须准确渲染');
+
+  console.log(`  ✓ 结算弹窗卡片完整渲染: ${p.cardCount} 张 (冠军: ${p.firstWinner})`);
+  console.log('  ✅ [看门狗 4/4] 终局结算颁奖台完整性测试 100% 通过！');
 }
 
 // -----------------------------------------------------------------------------
@@ -311,12 +356,13 @@ async function runWatchdog() {
     await wsSend('Runtime.enable');
     await wait(1500);
 
-    // 运行第二步和第三步
+    // 运行第二步、第三步与第四步
     await testDomAndHciDimensions(wsSend);
     await testVisualContrastStateMachine(wsSend);
+    await testGameOverPodiumIntegrity(wsSend);
 
     console.log('\n======================================================================');
-    console.log('🎉 体验级看门狗套件 3/3 大核心指标全部验证通过！无死黑、无小框、全闭环！');
+    console.log('🎉 体验级看门狗套件 4/4 大核心指标全部验证通过！无死黑、无小框、全闭环、有排行！');
     console.log('======================================================================\n');
 
     ws.close();

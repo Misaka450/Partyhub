@@ -325,7 +325,15 @@ function endGame(room, io, broadcastRoom) {
 
   broadcastRoom(room);
 
+  const podium = ranked.slice(0, 3).map(p => ({
+    id: p.id,
+    name: p.name,
+    avatar: p.avatar,
+    score: p.score
+  }));
+
   io.to(room.id).emit('shadow_game_over', {
+    podium,
     scores: ranked.map(p => ({
       id: p.id,
       name: p.name,

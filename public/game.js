@@ -3808,7 +3808,7 @@ socket.on('stroop_game_over', (data) => {
   showGameOverModal({
     title: '🧠 斯特鲁普陷阱 决出胜者！',
     desc: '思维反应超群，成功避开全部色彩错觉！',
-    podium: data.podium || []
+    podium: data.podium || data.scores || []
   });
 });
 
@@ -3816,7 +3816,7 @@ socket.on('twin_game_over', (data) => {
   showGameOverModal({
     title: '👀 找不同 / 多胞胎 决出胜者！',
     desc: '火眼金睛，瞬间识破隐藏的双胞胎！',
-    podium: data.podium || []
+    podium: data.podium || data.scores || []
   });
 });
 
@@ -3824,7 +3824,7 @@ socket.on('shadow_game_over', (data) => {
   showGameOverModal({
     title: '🔦 影子猜物 决出胜者！',
     desc: '洞察入微，聚光灯下的最强大脑！',
-    podium: data.podium || []
+    podium: data.podium || data.scores || []
   });
 });
 
@@ -3832,7 +3832,7 @@ socket.on('disappear_game_over', (data) => {
   showGameOverModal({
     title: '👾 谁不见了 / 偷吃怪 决出胜者！',
     desc: '超强瞬时记忆，偷吃怪无所遁形！',
-    podium: data.podium || []
+    podium: data.podium || data.scores || []
   });
 });
 
@@ -3840,7 +3840,7 @@ socket.on('simon_game_over', (data) => {
   showGameOverModal({
     title: '🎶 西蒙节拍 决出胜者！',
     desc: '音律节奏大师，完美复刻全部序列！',
-    podium: data.podium || []
+    podium: data.podium || data.scores || []
   });
 });
 
@@ -3848,7 +3848,7 @@ socket.on('train_game_over', (data) => {
   showGameOverModal({
     title: '🚂 轨道小火车 决出胜者！',
     desc: '顶级空间推演大师，铺轨通车一气呵成！',
-    podium: data.podium || []
+    podium: data.podium || data.scores || []
   });
 });
 
@@ -3856,7 +3856,7 @@ socket.on('hole_game_over', (data) => {
   showGameOverModal({
     title: '📄 折纸打孔 决出胜者！',
     desc: '空间对称想象力天花板！',
-    podium: data.podium || []
+    podium: data.podium || data.scores || []
   });
 });
 
@@ -3864,7 +3864,7 @@ socket.on('change_game_over', (data) => {
   showGameOverModal({
     title: '💵 找零大师 决出胜者！',
     desc: '神级口算手速，分毫不差的找零王者！',
-    podium: data.podium || []
+    podium: data.podium || data.scores || []
   });
 });
 
@@ -3872,7 +3872,7 @@ socket.on('number_game_over', (data) => {
   showGameOverModal({
     title: '🔢 盲猜估数 决出胜者！',
     desc: '直觉敏锐，最贴近真相的数据预言家！',
-    podium: data.podium || []
+    podium: data.podium || data.scores || []
   });
 });
 
@@ -5681,13 +5681,13 @@ socket.on('number_round_result', (data) => {
   let rankHtml = `
     <div style="font-size:1.1rem;font-weight:800;color:var(--primary);margin-bottom:4px">真实答案：${data.truth} ${escapeHtml(data.unit)}</div>
     <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">${escapeHtml(data.funFact)}</div>
-    <div style="font-size:0.75rem;color:#f59e0b;margin-bottom:8px">⚖️ 绝不爆牌：估值大于真相直接判定爆牌 0 分！</div>
+    <div style="font-size:0.75rem;color:#f59e0b;margin-bottom:8px">🎯 偏差对决：估值最接近真实答案者荣登榜首！</div>
     <div style="display:grid;gap:6px;text-align:left">
   `;
   data.rankings.forEach((p, idx) => {
     const isBust = p.isBust;
     const badge = isBust
-      ? '<span style="color:#ef4444;font-weight:bold">💥 爆牌超额 (+0分)</span>'
+      ? '<span style="color:#ef4444;font-weight:bold">💥 未填有效数值 (+0分)</span>'
       : `<span style="color:var(--success);font-weight:bold">${p.diff === 0 ? '🎯 精准绝杀 ' : ''}+${p.scoreGain}分</span>`;
 
     rankHtml += `
