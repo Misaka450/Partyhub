@@ -17,6 +17,12 @@ const ANIMAL_TYPES = [
 const FLASH_SPEED_BASE = { normal: 2.0, fast: 1.2, insane: 0.8 };
 const FLASH_SPEED_JITTER = { normal: 0.35, fast: 0.25, insane: 0.15 };
 
+// 剥离飞行物的答案标记：isTarget 会让作弊客户端直接数出 COUNT 题答案（审计 C3）。
+// 内部 room.flyingItems 保留完整字段供结算/测试使用，只在下发（广播/公开态）时剥离。
+function stripFlyingSecrets(items) {
+  return (items || []).map(({ isTarget, ...rest }) => rest);
+}
+
 function initRoomState(room) {
   room.gameType = 'flash-counter';
   room.status = 'LOBBY';
@@ -93,7 +99,8 @@ function generateRoundData(room) {
     const speed = 1 / runDuration;
     const laneY = lanes[minTrack];
 
-    nextFreeTime[minTrack] = delay + 1.3;
+    // 车道间隔与飞掠时长联动：防止同车道前后两只动物画面重叠（审计 L5）
+    nextFreeTime[minTrack] = delay + Math.max(runDuration + 0.15, 1.3);
     waveBaseTime += 0.22;
 
     flyingItems.push({
@@ -129,8 +136,13 @@ function generateRoundData(room) {
   }
 
   if (questionType === 'COMPARE') {
-    const a1 = presentSpecies[0];
-    const a2 = presentSpecies[1];
+    // 比较两个非目标的干扰物种：目标动物(presentSpecies[0])数量恒≥8、远大于干扰的
+    // 2~4 只，若拿它参与比较，答案必为"目标更多"，任何人摸清规律即可稳赢（审计 C3）。
+    // 两个干扰物种同为随机 2~4 只，谁多/一样多完全随机，题目无确定性答案。
+    const comparePool = presentSpecies.slice(1); // 至少剩 2 个（totalSpecies ≥ 3）
+    const pair = shuffle(comparePool).slice(0, 2);
+    const a1 = pair[0];
+    const a2 = pair[1];
     const c1 = animalCounts[a1.id];
     const c2 = animalCounts[a2.id];
     questionPrompt = `【${a1.emoji}${a1.name}】与【${a2.emoji}${a2.name}】谁出现得更多？`;
@@ -206,7 +218,10 @@ function startRound(room, io, broadcastRoom) {
     round: room.round,
     maxRounds: room.maxRounds,
     questionType: room.questionType,
-    targetAnimal: room.targetAnimal
+    // 仅 COUNT 计数题下发目标动物（提示语会点名"数谁"）；
+    // COMPARE/ABSENT 题的提示语刻意不点名目标，载荷里也绝不能带，否则
+    // 作弊客户端直接读 targetAnimal 即可确定答案（审计 C3）
+    ...(room.questionType === 'COUNT' ? { targetAnimal: room.targetAnimal } : {})
   });
 
   room.timer = setInterval(() => {
@@ -230,9 +245,9 @@ function startFlyingPhase(room, io, broadcastRoom) {
   const durationMs = room.raceDuration || 7000;
   room.timeLeft = Math.ceil(durationMs / 1000);
 
-  // 广播飞行动物列表给客户端渲染
+  // 广播飞行动物列表给客户端渲染（剥离 isTarget 答案标记，审计 C3）
   io.to(room.id).emit('flash_start_flying', {
-    flyingItems: room.flyingItems,
+    flyingItems: stripFlyingSecrets(room.flyingItems),
     duration: durationMs
   });
 
@@ -255,7 +270,9 @@ function startGuessingPhase(room, io, broadcastRoom) {
   io.to(room.id).emit('flash_question', {
     questionType: room.questionType,
     questionPrompt: room.questionPrompt,
-    targetAnimal: room.targetAnimal,
+    // 同 flash_round_ready：目标动物仅 COUNT 题下发（前端 COMPARE/ABSENT 用
+    // questionPrompt 展示，COUNT 分支才消费 targetAnimal，审计 C3）
+    ...(room.questionType === 'COUNT' ? { targetAnimal: room.targetAnimal } : {}),
     options: room.options
   });
 
@@ -402,10 +419,13 @@ function getPublicState(room) {
     round: room.round,
     maxRounds: room.maxRounds,
     timeLeft: room.timeLeft,
-    targetAnimal: room.targetAnimal,
+    // 仅 COUNT 题型公开目标动物（断线重连恢复"准备数谁"提示需用）；
+    // COMPARE/ABSENT 题不下发，杜绝据此推导答案（审计 C3）
+    targetAnimal: room.questionType === 'COUNT' ? room.targetAnimal : null,
     options: room.options || [],
-    // 飞行阶段把动物清单放进公共状态：中途加入/断线重连的玩家可补看动画（审计 R2-33）
-    flyingItems: room.status === 'FLASH_FLYING' ? (room.flyingItems || []) : undefined,
+    // 飞行阶段把动物清单放进公共状态：中途加入/断线重连的玩家可补看动画（审计 R2-33），
+    // 但下发前剥离 isTarget 答案标记（审计 C3）
+    flyingItems: room.status === 'FLASH_FLYING' ? stripFlyingSecrets(room.flyingItems) : undefined,
     answeredTokens: Object.keys(room.playerAnswers || {})
   };
 }

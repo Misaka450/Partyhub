@@ -98,7 +98,7 @@ function clamp01(v) {
  * 若在环境变量中配置了 TURN 服务器（例如部署在自己云服务器上的 coturn），则合并加入，
  * 解决移动端4G/5G或对称 NAT 复杂网络环境下两个玩家无法直接建立 P2P 语音连接的问题。
  */
-function getIceServers() {
+function getIceServers(userToken = 'guest') {
   const iceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
@@ -110,12 +110,28 @@ function getIceServers() {
   const turnUrls = process.env.TURN_URLS || process.env.TURN_URL;
   if (turnUrls) {
     const urls = turnUrls.split(',').map(u => u.trim()).filter(Boolean);
-    const turnConfig = {
-      urls: urls,
-      username: process.env.TURN_USERNAME || '',
-      credential: process.env.TURN_CREDENTIAL || process.env.TURN_PASSWORD || ''
-    };
-    iceServers.push(turnConfig);
+    const turnSecret = process.env.TURN_SECRET;
+    if (turnSecret) {
+      // RFC 5766 REST API 动态短效凭据（1 小时有效期，审计 L11）
+      const crypto = require('crypto');
+      const expiry = Math.floor(Date.now() / 1000) + 3600;
+      const username = `${expiry}:${userToken}`;
+      const hmac = crypto.createHmac('sha1', turnSecret);
+      hmac.update(username);
+      const credential = hmac.digest('base64');
+      iceServers.push({
+        urls,
+        username,
+        credential
+      });
+    } else {
+      // 静态用户名密码（若未配置 TURN_SECRET 时的降级兜底）
+      iceServers.push({
+        urls,
+        username: process.env.TURN_USERNAME || '',
+        credential: process.env.TURN_CREDENTIAL || process.env.TURN_PASSWORD || ''
+      });
+    }
   }
 
   return iceServers;
@@ -125,7 +141,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // 提供 ICE/TURN 服务器配置接口，供前端语音模块随时拉取
 app.get('/api/ice-servers', (req, res) => {
-  res.json({ iceServers: getIceServers() });
+  const { roomId, token } = req.query;
+  // 会话校验：若传参则校验房间与玩家存在，未在合法房间内的非法探测拦截（审计 L11）
+  if (roomId || token) {
+    const room = rooms.get(roomId);
+    if (!room || !room.players.some(p => p.token === token)) {
+      return res.status(403).json({ error: '未授权访问内部语音中继凭据' });
+    }
+  }
+  res.json({ iceServers: getIceServers(token || 'user') });
 });
 
 const rooms = new Map();
@@ -193,7 +217,9 @@ function notifyPlayerRemoved(room, removedIndex) {
   }
 }
 
-function broadcastRoom(room) {
+// 构建房间状态对象（玩家白名单 + 引擎公开态）。
+// 全房广播(broadcastRoom)与单播回发(重连/唤醒 ping_sync)共用，保证两者数据结构完全一致（审计 H2）
+function buildRoomState(room) {
   room.lastActivity = Date.now();
   // 注意：绝不序列化 avalonSide（阵营）等私密字段——room_state 会广播给全房间，
   // 任何玩家开 DevTools 即可看到，等价于全员作弊（审计 R2-01）
@@ -213,13 +239,17 @@ function broadcastRoom(room) {
   const engine = GAME_ENGINES[room.gameType] || drawGuessEngine;
   const publicState = safeEngineCall(engine.getPublicState, room) || {};
 
-  io.to(room.id).emit('room_state', {
+  return {
     roomId: room.id,
     gameType: room.gameType,
     status: room.status,
     players: safePlayers,
     ...publicState
-  });
+  };
+}
+
+function broadcastRoom(room) {
+  io.to(room.id).emit('room_state', buildRoomState(room));
 }
 
 function resetToLobby(room) {
@@ -243,7 +273,7 @@ io.on('connection', (socket) => {
   let currentRoomId = null;
   let currentPlayerToken = null;
 
-  socket.on('join_room', ({ roomId, playerName, avatar, playerToken }) => {
+  socket.on('join_room', ({ roomId, playerName, avatar, playerToken, reconnectSecret }) => {
     // 输入校验：限制类型与长度，防止超长字符串滥用内存/带宽（昵称最长12字、房间号最长32字符）
     // 校验失败时回发 join_error，让登录界面能给出提示而不是毫无反应（审计 R2-17）
     if (typeof roomId !== 'string' || typeof playerName !== 'string') {
@@ -261,6 +291,9 @@ io.on('connection', (socket) => {
     // token 必须是 64 字符以内的字符串，否则视为无效并重新生成
     if (typeof playerToken !== 'string' || !playerToken || playerToken.length > 64) {
       playerToken = `token_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    }
+    if (typeof reconnectSecret !== 'string' || reconnectSecret.length > 64) {
+      reconnectSecret = '';
     }
 
     currentRoomId = roomId;
@@ -295,6 +328,17 @@ io.on('connection', (socket) => {
       }
     }
 
+    // 会话安全防护（审计 H1）：
+    // 若按 Token 匹配到了席位，校验私密重连凭据与昵称。
+    // 防止他人从 room_state 获得公开 token 后，趁原玩家离线 90 秒宽限期内冒领席位并改名
+    if (player) {
+      if (player.reconnectSecret && reconnectSecret && player.reconnectSecret !== reconnectSecret) {
+        player = null;
+      } else if (player.name !== playerName) {
+        player = null;
+      }
+    }
+
     // 2. 若 Token 未匹配（例如隐私模式、清除缓存或换了浏览器），检查房间内是否有同名玩家
     if (!player) {
       const sameNamePlayer = room.players.find(p => p.name === playerName);
@@ -319,6 +363,9 @@ io.on('connection', (socket) => {
       player.id = socket.id;
       player.name = playerName;
       player.avatar = avatar || player.avatar;
+      if (reconnectSecret) {
+        player.reconnectSecret = reconnectSecret;
+      }
     } else {
       // 人数上限保护：防止恶意客户端无限创建连接挤爆房间
       if (room.players.length >= 20) {
@@ -350,6 +397,7 @@ io.on('connection', (socket) => {
       player = {
         id: socket.id,
         token: currentPlayerToken,
+        reconnectSecret: reconnectSecret || `sec_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
         name: finalName,
         avatar: avatar || '🐱',
         score: 0,
@@ -389,6 +437,7 @@ io.on('connection', (socket) => {
       gameType: room.gameType,
       playerId: socket.id,
       playerToken: player.token,
+      reconnectSecret: player.reconnectSecret,
       isHost: player.isHost,
       iceServers: getIceServers()
     });
@@ -435,12 +484,13 @@ io.on('connection', (socket) => {
     if (!currentRoomId) return;
     const room = rooms.get(currentRoomId);
     if (!room) return;
-    // 500ms 频控：ping_sync 每次触发都是一次全房 room_state 广播，
-    // 不限频会被恶意客户端当广播放大器刷流量（审计 R2-21）
+    // 500ms 频控：避免恶意客户端把这里当广播放大器刷流量（审计 R2-21）
     const nowSync = Date.now();
     if (socket.lastPingSyncAt && nowSync - socket.lastPingSyncAt < 500) return;
     socket.lastPingSyncAt = nowSync;
-    broadcastRoom(room);
+    // 改为单播回发当前客户端，绝不广播全房：
+    // N 个客户端各自心跳若各触发一次全房广播，会放大成 N² 个状态包（审计 H2）
+    socket.emit('room_state', buildRoomState(room));
   });
 
 // 房主切换游戏类型
@@ -992,6 +1042,24 @@ io.on('connection', (socket) => {
     if (!currentRoomId || !currentPlayerToken || typeof toToken !== 'string' || !signal) return;
     const room = rooms.get(currentRoomId);
     if (!room) return;
+
+    // 安全防御（审计 M7）：频控与体积上限，防止信令通道被作为广播放大/洪泛攻击
+    const nowSignalAt = Date.now();
+    if (!socket.voiceSignalWindow || nowSignalAt - socket.voiceSignalWindow > 1000) {
+      socket.voiceSignalWindow = nowSignalAt;
+      socket.voiceSignalCount = 0;
+    }
+    socket.voiceSignalCount = (socket.voiceSignalCount || 0) + 1;
+    if (socket.voiceSignalCount > 50) return;
+
+    if (typeof signal !== 'object') return;
+    try {
+      const signalSize = JSON.stringify(signal).length;
+      if (signalSize > 4096) return;
+    } catch (e) {
+      return;
+    }
+
     const targetPlayer = room.players.find(p => p.token === toToken);
     if (!targetPlayer) return;
     const targetSocket = io.sockets.sockets.get(targetPlayer.id);

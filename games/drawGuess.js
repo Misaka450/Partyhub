@@ -326,6 +326,9 @@ function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
     if (drawerRemoved) {
       // 绘制阶段画师离场：直接结算本回合（提示语见原因字段）
       endRound(room, '画师离开了房间，本回合提前结束！', io, broadcastRoom);
+      // 抵消 endRound 延时回调里的 currentDrawerIndex += 1，
+      // 保证补位到该位置的下一位玩家不会被跳过（审计 M3）
+      room.currentDrawerIndex -= 1;
     } else if (removedIndex < room.currentDrawerIndex) {
       room.currentDrawerIndex -= 1;
     }

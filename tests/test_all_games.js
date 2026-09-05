@@ -208,6 +208,14 @@ async function runTests() {
   await wait(300);
 
   const avalonRoles = {};
+  // 队长 token 监听必须在 start_game 前注册：
+  // start_game 的首播 room_state（AVALON_ROLE_REVEAL）即携带随机选出的队长 token，
+  // 若注册太晚会错过该广播导致 currentLeaderToken=null，回退成房主后
+  // 在"队长非房主"时 submitTeam 被守卫丢弃，表决链路整体失败（审计 R2-55）
+  let currentLeaderToken = null;
+  players[0].socket.on('room_state', (st) => {
+    if (st.leaderToken) currentLeaderToken = st.leaderToken;
+  });
   players.forEach(p => {
     p.socket.on('avalon_secret_role', (data) => {
       avalonRoles[p.token] = data;
@@ -254,10 +262,15 @@ async function runTests() {
   console.log('  -> 任务 1 组队：挑选 2 名正义队员...');
   const goodTokens = players.filter(p => avalonRoles[p.token]?.side === 'good').map(p => p.token).slice(0, 2);
 
-  let currentLeaderToken = null;
-  players[0].socket.on('room_state', (st) => {
-    if (st.leaderToken) currentLeaderToken = st.leaderToken;
-  });
+  // 防御性等待：确保已捕获到队长 token（若极端情况下仍未收到，稍候下一个 room_state）
+  const waitLeader = Date.now();
+  while (!currentLeaderToken && Date.now() - waitLeader < 8000) {
+    await wait(200);
+  }
+  if (!currentLeaderToken) {
+    failCount++;
+    console.error('  ✗ 无法获取当前队长 token（room_state 未携带 leaderToken）');
+  }
 
   // 关键事件证据：组队表决结果与任务结果（必须在提交表决/任务票之前注册监听）
   let teamVoteApproved = null;

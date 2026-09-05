@@ -46,7 +46,24 @@ function savePlayerToken(token) {
 function clearPlayerToken() {
   safeRemoveItem('dg_player_token', true);
   safeRemoveItem('dg_player_token');
+  clearReconnectSecret();
 }
+
+// 私密重连凭据 (Reconnect Secret)：服务端单播下发，不公开广播，防离线席位劫持（审计 H1）
+function loadReconnectSecret() {
+  const sessionSecret = safeGetItem('dg_reconnect_secret', true);
+  if (sessionSecret) return sessionSecret;
+  return safeGetItem('dg_reconnect_secret');
+}
+function saveReconnectSecret(secret) {
+  safeSetItem('dg_reconnect_secret', secret, true);
+  safeSetItem('dg_reconnect_secret', secret);
+}
+function clearReconnectSecret() {
+  safeRemoveItem('dg_reconnect_secret', true);
+  safeRemoveItem('dg_reconnect_secret');
+}
+let myReconnectSecret = loadReconnectSecret() || '';
 
 // 主题管理 (深色 / 浅色模式)
 let currentTheme = safeGetItem('party_theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
@@ -1088,7 +1105,8 @@ btnJoin.addEventListener('click', () => {
     roomId: room,
     playerName: myPlayerName,
     avatar: myAvatar,
-    playerToken: myPlayerToken
+    playerToken: myPlayerToken,
+    reconnectSecret: myReconnectSecret
   });
 });
 
@@ -1115,6 +1133,10 @@ socket.on('joined_successfully', (data) => {
   if (data.playerToken) {
     myPlayerToken = data.playerToken;
     savePlayerToken(myPlayerToken);
+  }
+  if (data.reconnectSecret) {
+    myReconnectSecret = data.reconnectSecret;
+    saveReconnectSecret(myReconnectSecret);
   }
 
   loginScreen.classList.remove('active');
@@ -1213,7 +1235,8 @@ function tryAutoReconnect(force = false) {
       roomId: currentRoomId,
       playerName: myPlayerName,
       avatar: myAvatar,
-      playerToken: myPlayerToken
+      playerToken: myPlayerToken,
+      reconnectSecret: myReconnectSecret
     });
     socket.emit('ping_sync');
   } else {
@@ -1229,7 +1252,8 @@ function tryAutoReconnect(force = false) {
         roomId: currentRoomId,
         playerName: myPlayerName,
         avatar: myAvatar,
-        playerToken: myPlayerToken
+        playerToken: myPlayerToken,
+        reconnectSecret: myReconnectSecret
       });
     }
   }, 1000);
@@ -1241,7 +1265,8 @@ socket.on('connect', () => {
       roomId: currentRoomId,
       playerName: myPlayerName,
       avatar: myAvatar,
-      playerToken: myPlayerToken
+      playerToken: myPlayerToken,
+      reconnectSecret: myReconnectSecret
     });
   }
 });
@@ -1265,15 +1290,10 @@ window.addEventListener('pageshow', () => {
   tryAutoReconnect(true);
 });
 
-// 每 2.5 秒心跳保活，避免移动端 NAT 超时丢包。
-// 设计说明：本计时器是有意的全局保活机制，退出房间后仍在运行（内部已判空跳过 emit），
-// 保持 socket 活性以便随时重新入房，属可接受权衡（审计 R2-48 注记）
-setInterval(() => {
-  lastWakeupCheck = Date.now();
-  if (currentRoomId && socket.connected) {
-    socket.emit('ping_sync');
-  }
-}, 2500);
+// 移除 2.5 秒定时心跳（审计 H2）：
+// 服务端 ping_sync 已改为单播回发，但 N 个客户端心跳仍会产生 N 次单播；
+// 且 Socket.IO 底层自带 ping/pong 保活兜底 NAT 超时，无需业务层定时轮询。
+// 前台唤醒/重连/获焦时的按需同步已由上方 visibilitychange/focus/pageshow 触发
 
 // 游戏分类 Tab 切换过滤
 document.querySelectorAll('.cat-pill, .category-tab').forEach(tab => {
@@ -1408,7 +1428,8 @@ document.querySelectorAll('.game-tile, .game-mode-card').forEach(card => {
         roomId: currentRoomId,
         playerName: myPlayerName,
         avatar: myAvatar,
-        playerToken: myPlayerToken
+        playerToken: myPlayerToken,
+        reconnectSecret: myReconnectSecret
       });
     }
     socket.emit('switch_game', { gameType: targetGame });
@@ -1627,6 +1648,15 @@ function debounceClick(fn, waitMs = 300) {
 
 btnStartGame.addEventListener('click', debounceClick(() => {
   if (isHost) {
+    // 本地人数下限前置断言（审计 L10）：0ms 立即反馈，消除人数不足时"按钮无反应/假死"错觉
+    const cap = GAME_CAPACITY[currentGameType];
+    const curPlayerCount = currentRoomState?.players?.length || 1;
+    if (cap && curPlayerCount < cap.min) {
+      showToast(`人数不足！【${cap.name}】至少需要 ${cap.min} 人（当前仅 ${curPlayerCount} 人）`, '⚠️');
+      triggerVibration('error');
+      playSound('error');
+      return;
+    }
     if (!socket.connected) socket.connect();
     socket.emit('update_room_settings', collectCurrentRoomSettings());
     socket.emit('start_game');
@@ -1799,8 +1829,10 @@ socket.on('room_state', (state) => {
   const prevStatus = currentRoomState?.status;
   currentRoomState = state;
   currentGameType = state.gameType || 'draw-guess';
-  if (window.voiceManager && state.id && myPlayerToken) {
-    window.voiceManager.init(socket, myPlayerToken, state.id);
+  // 初始化语音引擎：注意字段是 roomId（服务端 room_state 广播的字段名），
+  // 误用 state.id 会让语音模块永远不初始化（审计 C1）
+  if (window.voiceManager && state.roomId && myPlayerToken) {
+    window.voiceManager.init(socket, myPlayerToken, state.roomId);
   }
   updateGameStageView(currentGameType);
 
@@ -2184,6 +2216,9 @@ function handleMove(e) {
   if (!isDrawing || !isMyTurnToDraw) return;
   e.preventDefault();
   const pos = getPos(e);
+  // 微小位移防抖（小于 1px 归一化间距不重复派发，审计 M6）
+  if (Math.hypot(pos.x - lastX, pos.y - lastY) < 0.001) return;
+
   drawLine(lastX, lastY, pos.x, pos.y, currentColor, currentSize);
   socket.emit('draw_stroke', { type: 'line', x1: lastX, y1: lastY, x2: pos.x, y2: pos.y, color: currentColor, size: currentSize });
   lastX = pos.x;
@@ -2230,11 +2265,33 @@ document.getElementById('btn-eraser')?.addEventListener('click', () => {
 document.getElementById('btn-undo')?.addEventListener('click', () => { socket.emit('undo_canvas'); });
 document.getElementById('btn-clear')?.addEventListener('click', () => { socket.emit('clear_canvas'); });
 
+const remoteStrokeQueue = [];
+let remoteStrokeRafId = null;
+
+function processRemoteStrokes() {
+  remoteStrokeRafId = null;
+  while (remoteStrokeQueue.length > 0) {
+    const data = remoteStrokeQueue.shift();
+    if (data.type === 'line') {
+      drawLine(data.x1, data.y1, data.x2, data.y2, data.color, data.size);
+    }
+  }
+}
+
 socket.on('draw_stroke', (data) => {
-  if (data.type === 'line') drawLine(data.x1, data.y1, data.x2, data.y2, data.color, data.size);
+  // rAF 合帧批处理：应对高频笔画广播，降低重排绘制开销（审计 M6）
+  remoteStrokeQueue.push(data);
+  if (!remoteStrokeRafId) {
+    remoteStrokeRafId = requestAnimationFrame(processRemoteStrokes);
+  }
 });
 
 socket.on('clear_canvas', () => {
+  remoteStrokeQueue.length = 0;
+  if (remoteStrokeRafId) {
+    cancelAnimationFrame(remoteStrokeRafId);
+    remoteStrokeRafId = null;
+  }
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 });
 
@@ -2308,6 +2365,10 @@ btnUcMicToggle?.addEventListener('click', async () => {
     const isEnabled = await window.voiceManager.toggleMic();
     btnUcMicToggle.textContent = isEnabled ? '🔴 闭麦' : '🎤 开麦发言';
     btnUcMicToggle.className = isEnabled ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-primary';
+    // Mesh 拓扑高人数提示（审计 L12）：8人以上提示适时闭麦，降低多路推流负荷
+    if (isEnabled && currentRoomState?.players?.length > 8) {
+      showToast('💡 房间人数较多（>8人），发言完毕后请及时闭麦以节省移动端网络与电量', '🎙️');
+    }
   }
 });
 
@@ -2579,6 +2640,10 @@ btnAvMicToggle?.addEventListener('click', async () => {
     btnAvMicToggle.textContent = isEnabled ? '🔴 闭麦' : '🎤 开麦发言';
     btnAvMicToggle.className = isEnabled ? 'btn btn-sm btn-danger' : 'btn btn-sm btn-primary';
     showToast(isEnabled ? '麦克风已开启，请开始发言 🎤' : '麦克风已静音 🔇', isEnabled ? '🎤' : '🔇');
+    // Mesh 拓扑高人数提示（审计 L12）
+    if (isEnabled && currentRoomState?.players?.length > 8) {
+      showToast('💡 房间人数较多（>8人），发言完毕后请及时闭麦以节省移动端网络与电量', '🎙️');
+    }
   } catch (err) {
     console.warn('麦克风开启异常:', err);
     showToast('无法启动麦克风：请检查浏览器麦克风授权与 HTTPS 环境 ⚠️', '⚠️');
@@ -2993,7 +3058,8 @@ socket.on('bomb_exploded', (data) => {
 socket.on('bomb_game_over', (data) => {
   showGameOverModal({
     title: '💣 拆弹轮盘 对决结束',
-    desc: data.explodedPlayer ? `【${escapeHtml(data.explodedPlayer.name)}】触发了爆炸引线！` : '全员奇迹生还！',
+    // desc 走 textContent 渲染，无需预转义，防止名字含 < & 显示为实体字符（审计 L2）
+    desc: data.explodedPlayer ? `【${data.explodedPlayer.name}】触发了爆炸引线！` : '全员奇迹生还！',
     podium: data.podium || []
   });
 });
@@ -3926,6 +3992,16 @@ chatForm.addEventListener('submit', (e) => {
   }
 });
 
+const MAX_CHAT_MESSAGES = 1000;
+function appendChatMessage(msgEl) {
+  chatMessages.appendChild(msgEl);
+  // 消息上限控制：限制最多保留 1000 条，超出时裁剪头部最早节点，防止长会话挂机 DOM 无限膨胀（审计 M5）
+  while (chatMessages.children.length > MAX_CHAT_MESSAGES) {
+    chatMessages.removeChild(chatMessages.firstChild);
+  }
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
 socket.on('chat_message', (data) => {
   const msgEl = document.createElement('div');
   const safeAvatar = escapeHtml(data.avatar);
@@ -3941,8 +4017,7 @@ socket.on('chat_message', (data) => {
     msgEl.className = 'msg-item';
     msgEl.innerHTML = `<span class="msg-sender">${safeAvatar} ${safeSender}:</span> ${safeText}`;
   }
-  chatMessages.appendChild(msgEl);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  appendChatMessage(msgEl);
 
   if (isChatCollapsed) {
     unreadMessageCount++;
@@ -3955,8 +4030,7 @@ socket.on('system_message', (text) => {
   const msgEl = document.createElement('div');
   msgEl.className = 'msg-item msg-system';
   msgEl.textContent = `📢 ${text}`;
-  chatMessages.appendChild(msgEl);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  appendChatMessage(msgEl);
 
   if (isChatCollapsed) {
     unreadMessageCount++;
@@ -5212,7 +5286,8 @@ socket.on('shadow_round_result', (data) => {
     `;
   });
   summaryHtml += '</div>';
-  showRevealModal(`🔦 揭晓：【${escapeHtml(data.targetEmoji)} ${escapeHtml(data.targetName)}】`, '', 3500, summaryHtml);
+  // showRevealModal 首参走 textContent，无需预转义，防止 & < 显示为实体字符（审计 L2）
+  showRevealModal(`🔦 揭晓：【${data.targetEmoji} ${data.targetName}】`, '', 3500, summaryHtml);
 });
 
 // ------------------------- 4. 谁不见了 / 偷吃怪 -------------------------
@@ -5311,7 +5386,8 @@ socket.on('disappear_round_result', (data) => {
     `;
   });
   summaryHtml += '</div>';
-  showRevealModal(`👾 消失的美食是：【${escapeHtml(data.eatenItem?.emoji)} ${escapeHtml(data.eatenItem?.name)}】`, '', 3500, summaryHtml);
+  // showRevealModal 首参走 textContent，无需预转义（审计 L2）
+  showRevealModal(`👾 消失的美食是：【${data.eatenItem?.emoji || ''} ${data.eatenItem?.name || ''}】`, '', 3500, summaryHtml);
 });
 
 // ------------------------- 5. 西蒙说 / 节拍记忆 -------------------------
@@ -5486,7 +5562,8 @@ socket.on('train_round_result', (data) => {
     `;
   });
   summaryHtml += '</div>';
-  showRevealModal(`🚂 正确轨道块：【${escapeHtml(data.correctTrackName)}】`, '', 3500, summaryHtml);
+  // showRevealModal 首参走 textContent，无需预转义（审计 L2）
+  showRevealModal(`🚂 正确轨道块：【${data.correctTrackName}】`, '', 3500, summaryHtml);
 });
 
 // ------------------------- 7. 折纸打孔展开 -------------------------

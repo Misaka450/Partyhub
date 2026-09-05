@@ -463,13 +463,26 @@ function endGame(room, io, broadcastRoom) {
   io.to(room.id).emit('system_message', `🏆 折纸打孔全赛程结束！恭喜 ${ranked[0]?.name || '胜者'} 夺得空间几何大师！`);
 }
 
-function onPlayerRemoved(room, removedPlayer, io, broadcastRoom) {
+function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
   if (room.gameType !== 'hole-punch') return;
-  delete room.playerAnswers[removedPlayer.token];
+  if (!room.playerAnswers) return;
+  // 清理离场玩家的答案记录，防止残留导致全员作答提早误判（审计 M4）
+  const currentTokens = new Set(room.players.map(p => p.token));
+  for (const token of Object.keys(room.playerAnswers)) {
+    if (!currentTokens.has(token)) {
+      delete room.playerAnswers[token];
+    }
+  }
   if (room.status === 'HOLE_ANSWER') {
-    const activePlayers = room.players.filter(p => p.alive !== false);
+    const activePlayers = room.players.filter(p => !p.offlineTimer && p.alive !== false);
+    if (activePlayers.length === 0) {
+      clearInterval(room.timer);
+      clearTimeout(room.roundTimeout);
+      initRoomState(room);
+      return;
+    }
     const answerCount = Object.keys(room.playerAnswers).length;
-    if (activePlayers.length > 0 && answerCount >= activePlayers.length) {
+    if (answerCount >= activePlayers.length) {
       clearInterval(room.timer);
       room.timer = null;
       endRound(room, io, broadcastRoom);
@@ -477,7 +490,24 @@ function onPlayerRemoved(room, removedPlayer, io, broadcastRoom) {
   }
 }
 
+function getPublicState(room) {
+  const p = room.currentPuzzle;
+  return {
+    gameType: 'hole-punch',
+    status: room.status,
+    round: room.round,
+    maxRounds: room.maxRounds,
+    timeLeft: room.timeLeft,
+    foldType: p ? p.foldType : null,
+    foldDescription: p ? p.foldDescription : null,
+    punchPos: p ? p.punchPos : null,
+    options: p ? p.options : [],
+    answeredTokens: Object.keys(room.playerAnswers || {})
+  };
+}
+
 module.exports = {
+  getPublicState,
   generateFoldingPuzzle,
   initRoomState,
   startGame,

@@ -139,6 +139,16 @@ test('WebRTC 语音信令与状态中继测试', async (t) => {
     assert.equal(left.playerToken, 'token_1');
   });
 
+  await t.test('voiceManager.init 契约: room_state 必须具备 roomId 供客户端初始化语音 (审计 C1 防回归)', async () => {
+    // 验证客户端 game.js 中的初始化条件: if (window.voiceManager && state.roomId && myPlayerToken)
+    // 确保客户端与服务端字段严格对齐为 roomId，而不是错误的 state.id
+    const fs = require('fs');
+    const path = require('path');
+    const gameJs = fs.readFileSync(path.join(__dirname, '../../public/game.js'), 'utf8');
+    assert.ok(gameJs.includes('state.roomId && myPlayerToken'), 'game.js 必须使用 state.roomId 初始化 voiceManager');
+    assert.ok(!gameJs.includes('state.id && myPlayerToken'), 'game.js 不得使用已弃用或不存在的 state.id 字段');
+  });
+
   client1.close();
   client2.close();
   server.close();

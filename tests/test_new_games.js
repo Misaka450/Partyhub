@@ -302,10 +302,12 @@ async function runNewGamesTests() {
 
   let bombKeyword = '';
   let bombTurnToken = '';
+  let bombRuleMode = 'ANY';
   players[0].socket.on('room_state', (st) => {
     if (st.gameType === 'word-bomb') {
       bombKeyword = st.currentKeyword;
       bombTurnToken = st.currentTurnToken;
+      if (st.ruleMode) bombRuleMode = st.ruleMode;
     }
   });
 
@@ -315,7 +317,7 @@ async function runNewGamesTests() {
 
   // 断言：开局必须下发关键字（否则无法构造合法词语）
   if (bombKeyword) {
-    console.log(`  ✓ 炸弹已点燃！当前关键字：【${bombKeyword}】`);
+    console.log(`  ✓ 炸弹已点燃！当前关键字：【${bombKeyword}】（规则模式：${bombRuleMode}）`);
   } else {
     failCount++;
     console.error('  ✗ 词汇炸弹关键字未下发（room_state.currentKeyword 为空）');
@@ -329,8 +331,13 @@ async function runNewGamesTests() {
     if (msg.type === 'correct') wordAccepted = true;
   });
 
-  // 构造包含关键字的词语传递炸弹
-  const testWord = `${bombKeyword}空万里`;
+  // 根据本轮规则模式（START / END / IDIOM / ANY）构造符合规则的中文词语传递炸弹
+  let testWord = `${bombKeyword}空万里`;
+  if (bombRuleMode === 'END') {
+    testWord = `晴空万${bombKeyword}`;
+  } else if (bombRuleMode === 'IDIOM') {
+    testWord = `${bombKeyword}空万里`;
+  }
   console.log(`  -> 【${activeWbPlayer.name}】输入词语：【${testWord}】传递炸弹...`);
   activeWbPlayer.socket.emit('word_bomb_submit', { word: testWord });
   await wait(1000);

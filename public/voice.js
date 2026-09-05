@@ -440,6 +440,8 @@ class VoiceManager {
         const analyser = this.audioCtx.createAnalyser();
         analyser.fftSize = 64;
         source.connect(analyser);
+        // 保存节点引用：closePeer 退出时需 disconnect 才能被 GC 回收（审计 L9）
+        peer.sourceNode = source;
         peer.analyser = analyser;
       } catch (e) {
         console.warn('远程音频流连接分析器异常:', e);
@@ -455,6 +457,16 @@ class VoiceManager {
     if (peer) {
       if (peer.pc) {
         peer.pc.close();
+      }
+      // 释放 Web Audio 节点：未 disconnect 的 AudioNode 会被 AudioContext 内部图
+      // 持续引用而无法被 GC，反复进出房间会累积内存泄漏（审计 L9）
+      if (peer.sourceNode) {
+        try { peer.sourceNode.disconnect(); } catch (e) {}
+        peer.sourceNode = null;
+      }
+      if (peer.analyser) {
+        try { peer.analyser.disconnect(); } catch (e) {}
+        peer.analyser = null;
       }
       if (peer.audioElement) {
         peer.audioElement.srcObject = null;

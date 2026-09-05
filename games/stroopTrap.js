@@ -290,7 +290,7 @@ function finishGame(room, io, broadcastRoom) {
 /**
  * 玩家离场事件钩子（断线保护）
  */
-function onPlayerRemoved(room, player, io, broadcastRoom) {
+function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
   if (room.gameType !== 'stroop-trap') return;
   if (room.status === 'STROOP_ANSWER') {
     const activePlayers = room.players.filter(p => !p.offlineTimer);
@@ -298,19 +298,19 @@ function onPlayerRemoved(room, player, io, broadcastRoom) {
       clearInterval(room.timer);
       clearTimeout(room.roundTimeout);
       initRoomState(room);
-      return;
-    }
-    const allAnswered = activePlayers.every(p => !!room.playerAnswers[p.token]);
-    if (allAnswered) {
-      clearInterval(room.timer);
-      endRound(room, io, broadcastRoom);
     }
   }
 }
 
 
 function getPublicState(room) {
-  return {};
+  return {
+    gameType: 'stroop-trap',
+    status: room.status,
+    round: room.round,
+    maxRounds: room.maxRounds,
+    timeLeft: room.timeLeft
+  };
 }
 
 module.exports = {

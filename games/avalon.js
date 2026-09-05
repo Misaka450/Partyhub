@@ -631,15 +631,18 @@ function endGame(room, io, broadcastRoom) {
     }
   });
 
-  const allRoles = room.players.map(p => ({
-    name: p.name,
-    avatar: p.avatar,
-    token: p.token,
-    role: p.avalonRole,
-    roleName: ROLE_INFO[p.avalonRole].name,
-    side: p.avalonSide,
-    desc: ROLE_INFO[p.avalonRole].desc
-  }));
+  const allRoles = room.players.map(p => {
+    const info = p.avalonRole ? ROLE_INFO[p.avalonRole] : null;
+    return {
+      name: p.name,
+      avatar: p.avatar,
+      token: p.token,
+      role: p.avalonRole || 'spectator',
+      roleName: info ? info.name : '观战者',
+      side: p.avalonSide || 'spectator',
+      desc: info ? info.desc : '中途加入观战'
+    };
+  });
 
   io.to(room.id).emit('avalon_game_over', {
     winner: room.winner,

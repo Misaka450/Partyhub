@@ -304,7 +304,16 @@ function onPlayerRemoved(room, player, io, broadcastRoom) {
 
 
 function getPublicState(room) {
-  return {};
+  return {
+    gameType: 'simon-memory',
+    status: room.status,
+    round: room.round,
+    maxRounds: room.maxRounds,
+    timeLeft: room.timeLeft,
+    totalSteps: room.currentSequence ? room.currentSequence.length : 0,
+    isReverse: !!room.isReverse,
+    completedTokens: Object.keys(room.playerInputs || {}).filter(t => room.playerInputs[t].isCompleted)
+  };
 }
 
 module.exports = {

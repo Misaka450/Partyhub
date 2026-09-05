@@ -348,7 +348,17 @@ function onPlayerRemoved(room, player, io, broadcastRoom) {
 
 
 function getPublicState(room) {
-  return {};
+  const t = room.currentTrivia;
+  return {
+    gameType: 'number-guess',
+    status: room.status,
+    round: room.round,
+    maxRounds: room.maxRounds,
+    timeLeft: room.timeLeft,
+    question: t ? t.question : null,
+    unit: t ? t.unit : null,
+    answeredTokens: Object.keys(room.playerGuesses || {})
+  };
 }
 
 module.exports = {

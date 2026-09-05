@@ -408,7 +408,8 @@ function checkWinCondition(room, io, broadcastRoom) {
       if (winningTeam === 'civilians' && p.role === 'civilian') p.score += 150;
       if (winningTeam === 'undercovers' && p.role === 'undercover') p.score += 200;
       if (winningTeam === 'blank' && p.role === 'blank') p.score += 250;
-      if (p.alive) p.score += 50; // 存活加分
+      // 必须是参战分配过角色的玩家存活才能加分，防止中途加入的观战者白拿分（审计 L4）
+      if (p.role && p.alive) p.score += 50;
     });
 
     const allRoles = room.players.map(p => ({

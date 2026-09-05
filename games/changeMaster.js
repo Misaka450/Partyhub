@@ -75,8 +75,14 @@ function validateChange(counts = {}, changeDue, depletedDenom = null, minSheets 
   let sheetCount = 0;
   let usedDepleted = false;
 
+  if (!counts || typeof counts !== 'object') {
+    counts = {};
+  }
+
   for (const denom of DENOMINATIONS) {
-    const qty = Number(counts[denom]) || 0;
+    const rawQty = Number(counts[denom]);
+    // 校验找零数量为非负整数，杜绝小数或负数欺骗凑整（审计 L3）
+    const qty = (Number.isInteger(rawQty) && rawQty > 0) ? rawQty : 0;
     if (qty > 0) {
       if (depletedDenom && denom === depletedDenom) {
         usedDepleted = true;
@@ -340,7 +346,20 @@ function onPlayerRemoved(room, player, io, broadcastRoom) {
 
 
 function getPublicState(room) {
-  return {};
+  const b = room.currentBill;
+  return {
+    gameType: 'change-master',
+    status: room.status,
+    round: room.round,
+    maxRounds: room.maxRounds,
+    timeLeft: room.timeLeft,
+    items: b ? b.items : [],
+    totalCost: b ? b.totalCost : 0,
+    receivedCash: b ? b.receivedCash : 0,
+    changeDue: b ? b.changeDue : 0,
+    depletedDenom: b ? b.depletedDenom : null,
+    answeredTokens: Object.keys(room.playerAnswers || {})
+  };
 }
 
 module.exports = {

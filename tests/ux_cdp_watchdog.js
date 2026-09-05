@@ -11,6 +11,7 @@
 
 const { spawn } = require('child_process');
 const http = require('http');
+const path = require('path');
 const assert = require('assert');
 const WebSocket = require('ws');
 const { findBrowserPath } = require('./lib/browser_launcher');
@@ -23,9 +24,21 @@ const shadowMatch = require('../games/shadowMatch');
 const CDP_PORT = 9448;
 const SERVER_URL = 'http://127.0.0.1:8080';
 let chromeProc = null;
+let serverProc = null;
 
 function wait(ms) {
   return new Promise(r => setTimeout(r, ms));
+}
+
+function checkServerAlive(url) {
+  return new Promise((resolve) => {
+    const req = http.get(url, () => resolve(true));
+    req.on('error', () => resolve(false));
+    req.setTimeout(1000, () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
 }
 
 function createTarget(url, port = CDP_PORT) {
@@ -318,6 +331,13 @@ async function runWatchdog() {
   // 第一步：参数贯通测试（纯逻辑级）
   testParameterPipeline();
 
+  // 检查测试服务器是否在线，若未启动则自动唤起进程，并在测试结束后清理（防冷启动失败）
+  const isServerOnline = await checkServerAlive(SERVER_URL);
+  if (!isServerOnline) {
+    serverProc = spawn(process.execPath, [path.join(__dirname, '../server.js')], { stdio: 'ignore' });
+    await wait(1500);
+  }
+
   // 第二步 & 第三步：真机 Chromium DOM 挂载测试
   const browserPath = findBrowserPath();
   if (!browserPath) {
@@ -369,6 +389,9 @@ async function runWatchdog() {
   } finally {
     if (chromeProc) {
       chromeProc.kill();
+    }
+    if (serverProc) {
+      serverProc.kill();
     }
   }
 }

@@ -180,7 +180,10 @@ function startRound(room, io, broadcastRoom) {
     maxRounds: room.maxRounds,
     mode: puzzle.mode,
     prompt: puzzle.prompt,
-    characters: puzzle.characters,
+    // 剥离 id 标记：'twin_1'/'twin_2'/'odd_target' 等字段随题广播等于把答案直接
+    // 发给每个客户端，任何玩家开 DevTools 即可 100% 答对（审计 C2）。
+    // 服务端 room.currentPuzzle 仍保留完整 id 用于结算判定。
+    characters: puzzle.characters.map(({ id, ...rest }) => rest),
     timeLimit: 8
   });
 
@@ -328,7 +331,19 @@ function onPlayerRemoved(room, player, io, broadcastRoom) {
 
 
 function getPublicState(room) {
-  return {};
+  const p = room.currentPuzzle;
+  return {
+    gameType: 'twin-finder',
+    status: room.status,
+    round: room.round,
+    maxRounds: room.maxRounds,
+    timeLeft: room.timeLeft,
+    mode: p ? p.mode : null,
+    prompt: p ? p.prompt : null,
+    // 剥离答案 id 标记，只下发外观属性（审计 C2 / L1）
+    characters: p && p.characters ? p.characters.map(({ id, ...rest }) => rest) : [],
+    answeredTokens: Object.keys(room.playerAnswers || {})
+  };
 }
 
 module.exports = {
