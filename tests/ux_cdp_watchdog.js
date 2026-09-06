@@ -382,7 +382,16 @@ async function runWatchdog() {
 
     await wsSend('Page.enable');
     await wsSend('Runtime.enable');
-    await wait(1500);
+    
+    // 智能等待页面加载完成（杜绝 document.body 为 null 的竞态条件）
+    const startWait = Date.now();
+    while (Date.now() - startWait < 6000) {
+      const chk = await wsSend('Runtime.evaluate', {
+        expression: 'Boolean(document && document.body && document.readyState === "complete")'
+      });
+      if (chk?.result?.value === true) break;
+      await wait(100);
+    }
 
     // 运行第二步、第三步与第四步
     await testDomAndHciDimensions(wsSend);
