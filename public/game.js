@@ -1,5 +1,16 @@
 const socket = io();
 
+// =====================【维度一优化：统一游戏动作分流通信】=====================
+// 💡 小白通俗解释：
+// 以前前端向服务端发送游戏动作时，每次都要记几十个不同的 socket 事件名字；
+// 现在封装统一的 sendGameAction(action, payload)，
+// 既能发送结构化的 'game_action' 统一通道，又能同时兼容原有独立事件通道，双轨运行，零破坏。
+function sendGameAction(action, payload = {}) {
+  if (!socket) return;
+  socket.emit('game_action', { action, payload });
+  socket.emit(action, payload);
+}
+
 // =====================【安全存储工具】=====================
 // 统一包裹 localStorage/sessionStorage：旧版 Safari 隐私模式 / 禁用存储时会抛
 // QuotaExceededError，裸调用会导致整个脚本在加载早期中断（页面白屏）（审计 R2-18）

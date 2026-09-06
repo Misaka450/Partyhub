@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const compression = require('compression'); // 引入 HTTP 响应压缩中间件，大幅提升静态资源与页面加载速度
 
 const drawGuessEngine = require('./games/drawGuess');
 const undercoverEngine = require('./games/undercover');
@@ -26,6 +27,7 @@ const trainRouteEngine = require('./games/trainRoute');
 const holePunchEngine = require('./games/holePunch');
 const changeMasterEngine = require('./games/changeMaster');
 const numberGuessEngine = require('./games/numberGuess');
+const { attachGameDispatcher } = require('./gameDispatcher'); // 引入游戏事件统一调度分发器（维度一架构解耦）
 
 const app = express();
 
@@ -137,7 +139,19 @@ function getIceServers(userToken = 'guest') {
   return iceServers;
 }
 
-app.use(express.static(path.join(__dirname, 'public')));
+// ===== 维度二优化：网络传输压缩与静态资源协商缓存 =====
+// 1. 开启 Gzip/Brotli 文本压缩：对 HTML、CSS、JS、JSON 资源进行实时压缩，通常可缩减 70%~80% 传输体积，首屏秒开
+app.use(compression({
+  threshold: 1024, // 仅对大于 1KB 的资源进行压缩，避免对微小数据浪费 CPU
+  level: 6         // 压缩级别 6（兼顾高压缩率与极低 CPU 开销的最佳黄金点）
+}));
+
+// 2. 静态资源智能托管：开启 ETag 与强弱缓存结合
+app.use(express.static(path.join(__dirname, 'public'), {
+  maxAge: '1d',     // 静态资源在客户端缓存 1 天，减少重复下载
+  etag: true,       // 开启 ETag 协商缓存（文件没变时直接返回 304，节省网络带宽）
+  lastModified: true
+}));
 
 // 提供 ICE/TURN 服务器配置接口，供前端语音模块随时拉取
 app.get('/api/ice-servers', (req, res) => {
@@ -815,226 +829,17 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('select_word', ({ word }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'draw-guess' || room.status !== 'SELECTING') return;
-    safeEngineCall(drawGuessEngine.selectWord, room, socket.id, word, io, broadcastRoom);
-  });
-
-  // =====================【谁是卧底】=====================
-  socket.on('uc_finish_speech', () => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'undercover') return;
-    safeEngineCall(undercoverEngine.finishCurrentSpeech, room, currentPlayerToken, io, broadcastRoom);
-  });
-
-  socket.on('uc_cast_vote', ({ targetToken }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'undercover') return;
-    safeEngineCall(undercoverEngine.castVote, room, currentPlayerToken, targetToken, io, broadcastRoom);
-  });
-
-  // =====================【阿瓦隆】=====================
-  socket.on('avalon_select_member', ({ memberToken }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'avalon') return;
-    safeEngineCall(avalonEngine.selectTeamMember, room, currentPlayerToken, memberToken, io, broadcastRoom);
-  });
-
-  socket.on('avalon_submit_team', ({ teamTokens }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'avalon') return;
-    safeEngineCall(avalonEngine.submitTeam, room, currentPlayerToken, teamTokens, io, broadcastRoom);
-  });
-
-  socket.on('avalon_finish_speech', () => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'avalon') return;
-    safeEngineCall(avalonEngine.finishCurrentSpeech, room, currentPlayerToken, io, broadcastRoom);
-  });
-
-  socket.on('avalon_team_vote', ({ approve }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'avalon') return;
-    safeEngineCall(avalonEngine.castTeamVote, room, currentPlayerToken, approve, io, broadcastRoom);
-  });
-
-  socket.on('avalon_quest_vote', ({ isSuccess }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'avalon') return;
-    safeEngineCall(avalonEngine.castQuestVote, room, currentPlayerToken, isSuccess, io, broadcastRoom);
-  });
-
-  socket.on('avalon_assassinate', ({ targetToken }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'avalon') return;
-    safeEngineCall(avalonEngine.assassinatePlayer, room, currentPlayerToken, targetToken, io, broadcastRoom);
-  });
-
-  // =====================【UNO】=====================
-  socket.on('uno_play_card', ({ cardId, chosenColor }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'uno') return;
-    safeEngineCall(unoEngine.playCard, room, currentPlayerToken, cardId, chosenColor, io, broadcastRoom);
-  });
-
-  socket.on('uno_draw_card', () => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'uno') return;
-    safeEngineCall(unoEngine.drawCardAction, room, currentPlayerToken, io, broadcastRoom);
-  });
-
-  socket.on('uno_pass_turn', () => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'uno') return;
-    safeEngineCall(unoEngine.passTurnAction, room, currentPlayerToken, io, broadcastRoom);
-  });
-
-  socket.on('uno_call_uno', () => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'uno') return;
-    safeEngineCall(unoEngine.callUno, room, currentPlayerToken, io);
-  });
-
-  socket.on('uno_catch_uno', ({ targetToken }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'uno') return;
-    safeEngineCall(unoEngine.catchUno, room, currentPlayerToken, targetToken, io, broadcastRoom);
-  });
-
-  // =====================【新游戏事件调度】=====================
-  // 瞬间数羊
-  socket.on('flash_submit_answer', ({ option }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'flash-counter') return;
-    safeEngineCall(flashCounterEngine.submitAnswer, room, currentPlayerToken, option, io, broadcastRoom);
-  });
-
-  // 拆弹轮盘赌
-  socket.on('bomb_cut_wire', ({ wireId }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'bomb-roulette') return;
-    safeEngineCall(bombRouletteEngine.cutWire, room, currentPlayerToken, wireId, io, broadcastRoom);
-  });
-
-  // 密码破解大师 (几A几B)
-  socket.on('bc_submit_guess', ({ guess }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'bulls-and-cows') return;
-    const player = room.players.find(p => p.token === currentPlayerToken);
-    if (!player) return;
-    // 500ms 频控：每次猜测都会全量回传历史并全房广播，
-    // 不限频可被恶意客户端用于 O(n²) 内存/带宽放大（审计 R2-11）
-    const nowGuessAt = Date.now();
-    if (player.lastGuessAt && nowGuessAt - player.lastGuessAt < 500) return;
-    player.lastGuessAt = nowGuessAt;
-    safeEngineCall(bullsAndCowsEngine.submitGuess, room, currentPlayerToken, guess, io, broadcastRoom);
-  });
-
-  // 决战 24 点
-  socket.on('m24_submit_solution', ({ expression }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'math-24') return;
-    safeEngineCall(math24Engine.submitSolution, room, currentPlayerToken, expression, io, broadcastRoom);
-  });
-
-  socket.on('m24_skip_puzzle', () => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'math-24') return;
-    if (math24Engine.skipPuzzleAction) {
-      safeEngineCall(math24Engine.skipPuzzleAction, room, currentPlayerToken, io, broadcastRoom);
-    }
-  });
-
-  // 瞬间几何数方块
-  socket.on('cube_submit_answer', ({ option }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'cube-count') return;
-    safeEngineCall(cubeCountEngine.submitAnswer, room, currentPlayerToken, option, io, broadcastRoom);
-  });
-
-  // 成语/词汇炸弹
-  socket.on('word_bomb_submit', ({ word }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'word-bomb') return;
-    safeEngineCall(wordBombEngine.submitWord, room, currentPlayerToken, word, io, broadcastRoom);
-  });
-
-  // 切披萨 50:50
-  socket.on('slice_cut_submit', ({ p1, p2 }) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'perfect-slice') return;
-    safeEngineCall(perfectSliceEngine.submitSlice, room, currentPlayerToken, p1, p2, io, broadcastRoom);
-  });
-
-  // 盲压 5 秒
-  socket.on('hold_submit_time', (payload) => {
-    const room = rooms.get(currentRoomId);
-    if (!room || room.gameType !== 'hold-five') return;
-    safeEngineCall(holdFiveEngine.submitHoldTime, room, currentPlayerToken, payload, io, broadcastRoom);
-  });
-
-  // 1. 颜色与文字大陷阱
-  socket.on('stroop_submit_answer', ({ answerId }) => {
-    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
-    if (!room || !player || room.gameType !== 'stroop-trap') return;
-    safeEngineCall(stroopTrapEngine.submitAnswer, room, player, answerId, io, broadcastRoom);
-  });
-
-  // 2. 谁是多胞胎 / 找不同
-  socket.on('twin_submit_answer', ({ selectedIndex }) => {
-    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
-    if (!room || !player || room.gameType !== 'twin-finder') return;
-    safeEngineCall(twinFinderEngine.submitAnswer, room, player, selectedIndex, io, broadcastRoom);
-  });
-
-  // 3. 聚光灯拼图 / 影子猜物
-  socket.on('shadow_submit_answer', ({ answerId }) => {
-    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
-    if (!room || !player || room.gameType !== 'shadow-match') return;
-    safeEngineCall(shadowMatchEngine.submitAnswer, room, player, answerId, io, broadcastRoom);
-  });
-
-  // 4. 谁不见了 / 偷吃怪
-  socket.on('disappear_submit_answer', ({ answerId }) => {
-    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
-    if (!room || !player || room.gameType !== 'who-disappeared') return;
-    safeEngineCall(whoDisappearedEngine.submitAnswer, room, player, answerId, io, broadcastRoom);
-  });
-
-  // 5. 西蒙说 / 节拍记忆
-  socket.on('simon_submit_step', ({ color }) => {
-    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
-    if (!room || !player || room.gameType !== 'simon-memory') return;
-    safeEngineCall(simonMemoryEngine.submitStep, room, player, color, io, broadcastRoom);
-  });
-
-  // 7. 轨道连连通 / 小火车快跑
-  socket.on('train_submit_answer', ({ trackId }) => {
-    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
-    if (!room || !player || room.gameType !== 'train-route') return;
-    safeEngineCall(trainRouteEngine.submitAnswer, room, player, trackId, io, broadcastRoom);
-  });
-
-  // 9. 折纸打孔展开图
-  socket.on('hole_submit_answer', ({ optionId }) => {
-    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
-    if (!room || !player || room.gameType !== 'hole-punch') return;
-    safeEngineCall(holePunchEngine.submitAnswer, room, player, optionId, io, broadcastRoom);
-  });
-
-  // 11. 找零钱大师
-  socket.on('change_submit_counts', ({ counts }) => {
-    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
-    if (!room || !player || room.gameType !== 'change-master') return;
-    safeEngineCall(changeMasterEngine.submitChange, room, player, counts, io, broadcastRoom);
-  });
-
-  // 14. 盲猜数量 / 谁最接近
-  socket.on('number_submit_guess', ({ guess }) => {
-    const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
-    if (!room || !player || room.gameType !== 'number-guess') return;
-    safeEngineCall(numberGuessEngine.submitGuess, room, player, guess, io, broadcastRoom);
+  // ===== 维度一优化：游戏动作插件式统一调度与分发 (Game Action Dispatcher) =====
+  // 统一挂载全部 21 款小游戏的事件监听与通用 game_action 通道，消除平铺冗余，实现逻辑解耦
+  attachGameDispatcher(socket, {
+    getRoomContext: () => {
+      const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
+      return { room, player, roomId: currentRoomId, playerToken: currentPlayerToken };
+    },
+    engines: GAME_ENGINES,
+    io,
+    broadcastRoom,
+    safeEngineCall
   });
 
   // =====================【实时语音 WebRTC 信令中继】=====================

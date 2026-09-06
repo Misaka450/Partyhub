@@ -19,7 +19,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/style.css">
+  
+  <!-- 维度二优化：预加载关键 CSS 与核心脚本，提升首屏与弱网环境下的加载速度 -->
+  <link rel="preload" href="/style.css?v=1.1.0" as="style">
+  <link rel="preload" href="/game.js?v=1.1.0" as="script">
+  <!-- 开启版本号管理：配合 ETag 强缓存，避免代码更新后浏览器强刷问题 -->
+  <link rel="stylesheet" href="/style.css?v=1.1.0">
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
@@ -1688,8 +1693,9 @@
     </div>
   </div>
 
-  <script src="/qrcode.min.js"></script>
-  <script src="/voice.js"></script>
-  <script src="/game.js"></script>
+  <!-- 静态资源版本缓存防穿透 -->
+  <script src="/qrcode.min.js?v=1.1.0"></script>
+  <script src="/voice.js?v=1.1.0"></script>
+  <script src="/game.js?v=1.1.0"></script>
 </body>
 </html>

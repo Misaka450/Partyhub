@@ -12,6 +12,8 @@
 const { spawn } = require('child_process');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const assert = require('assert');
 const WebSocket = require('ws');
 const { findBrowserPath } = require('./lib/browser_launcher');
@@ -182,7 +184,11 @@ async function testDomAndHciDimensions(wsSend) {
     returnByValue: true
   });
 
-  const m = metrics.result.value;
+  if (!metrics || !metrics.result || !metrics.result.value) {
+    console.error('⚠️ [Watchdog 调试] Runtime.evaluate 返回空或异常:', JSON.stringify(metrics));
+  }
+
+  const m = metrics?.result?.value || {};
 
   // 2.1 影子猜物舞台：杜绝 180×180
   assert.ok(m.shadowBox.w >= 360, `影子舞台宽度需 >= 360px，实测 ${m.shadowBox.w}px`);
@@ -344,9 +350,11 @@ async function runWatchdog() {
     throw new Error('未探测到可用 Chromium 浏览器');
   }
 
+  const tmpUserDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cdp-profile-'));
   chromeProc = spawn(browserPath, [
     '--headless',
     `--remote-debugging-port=${CDP_PORT}`,
+    `--user-data-dir=${tmpUserDataDir}`,
     '--no-sandbox',
     '--disable-gpu',
     '--window-size=412,892',
@@ -392,6 +400,11 @@ async function runWatchdog() {
     }
     if (serverProc) {
       serverProc.kill();
+    }
+    if (tmpUserDataDir) {
+      try {
+        fs.rmSync(tmpUserDataDir, { recursive: true, force: true });
+      } catch (e) {}
     }
   }
 }
