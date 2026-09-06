@@ -8,6 +8,9 @@ yarn-error.log*
 .vscode/
 .idea/
 
+# ---- 本地清理归档安全备份目录 ----
+.backup_cleanup_*/
+
 # ---- UI 自动化测试：浏览器临时用户目录 + 产出截图与报告（避免大文件污染版本库，审计 R2-58）----
 .tmp_edge_profile_verify/
 .tmp_edge_profile/
