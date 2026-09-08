@@ -1213,7 +1213,7 @@ socket.on('joined_successfully', (data) => {
     }
   }
 
-  initCanvas();
+  if (typeof initCanvas === 'function') initCanvas();
   updateGameStageView(currentGameType);
 });
 
@@ -1506,6 +1506,17 @@ const GLOBAL_GAME_NAMES = {
   'change-master': '💵 找零钱大师',
   'number-guess': '🔢 盲猜谁最接近'
 };
+
+function resetAllGameStages() {
+  const allStages = [
+    stageDrawGuess, stageUndercover, stageAvalon, stageUno,
+    stageFlashCounter, stageBombRoulette, stageBullsAndCows,
+    stageMath24, stageCubeCount, stageWordBomb, stagePerfectSlice, stageHoldFive,
+    stageStroopTrap, stageTwinFinder, stageShadowMatch, stageWhoDisappeared,
+    stageSimonMemory, stageTrainRoute, stageHolePunch, stageChangeMaster, stageNumberGuess
+  ];
+  allStages.forEach(s => s && s.classList.add('hidden'));
+}
 
 function updateGameStageView(gameType) {
   currentGameType = gameType;
