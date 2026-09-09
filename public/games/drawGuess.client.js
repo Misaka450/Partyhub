@@ -44,7 +44,7 @@
 
   function ensureDom() {
     if (!canvasContainer) canvasContainer = document.getElementById('canvas-container');
-    if (!canvas) canvas = document.getElementById('paint-canvas');
+    if (!canvas) canvas = document.getElementById('game-canvas') || document.getElementById('paint-canvas');
     if (!ctx && canvas) ctx = canvas.getContext('2d');
     if (!drawGuessBar) drawGuessBar = document.getElementById('draw-guess-bar');
     if (!drawGuessForm) drawGuessForm = document.getElementById('draw-guess-form');

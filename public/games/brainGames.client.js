@@ -528,16 +528,12 @@ socket.on('stroop_game_over', (data) => {
   });
 });
 
-});
-
 socket.on('shadow_game_over', (data) => {
   showGameOverModal({
     title: '🔦 影子猜物 决出胜者！',
     desc: '洞察入微，聚光灯下的最强大脑！',
     podium: data.podium || data.scores || []
   });
-});
-
 });
 
 socket.on('train_game_over', (data) => {
