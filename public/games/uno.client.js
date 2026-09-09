@@ -148,5 +148,9 @@ socket.on('uno_game_over', (data) => {
   });
 });
 
+window.renderUnoState = renderUnoState;
+window.PartyGames['uno'] = {
+  renderState: renderUnoState
+};
 
 })();

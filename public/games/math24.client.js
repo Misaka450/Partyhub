@@ -214,5 +214,9 @@ socket.on('m24_game_over', (data) => {
   });
 });
 
+window.renderMath24State = renderMath24State;
+window.PartyGames['math-24'] = {
+  renderState: renderMath24State
+};
 
 })();
