@@ -29,6 +29,7 @@
   --accent-lime: #30D158;   /* System Green */
   --accent-purple: #BF5AF2; /* System Purple */
   --accent-orange: #FF9F0A; /* System Orange */
+  --accent-core: #0A84FF;   /* 核心高亮强调色兼容别名 */
 
   /* 游戏品类微章胶囊 (Apple Translucent Badges) */
   --badge-party-bg: rgba(191, 90, 242, 0.12);
@@ -108,6 +109,7 @@
   --accent-lime: #34C759;
   --accent-purple: #AF52DE;
   --accent-orange: #FF9500;
+  --accent-core: #0071E3;   /* 核心高亮强调色兼容别名 */
 
   /* 游戏品类微章胶囊 (Apple Translucent Badges) */
   --badge-party-bg: rgba(175, 82, 222, 0.08);
@@ -2418,6 +2420,12 @@ html, body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 6px 20px var(--success-shadow) !important;
 }
 
+.btn-arcade-start:active,
+.btn-arcade-ready:active {
+  transform: scale(0.975) !important;
+  opacity: 0.92 !important;
+}
+
 .btn-glyph {
   font-size: 0.95rem !important;
   line-height: 1 !important;
@@ -4156,6 +4164,18 @@ html, body {
 }
 .btn-key:hover { border-color: var(--primary); color: var(--primary); transform: scale(1.02); }
 .btn-key:active { transform: scale(0.96); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15); }
+.btn-key-action { background: var(--primary-subtle); border-color: var(--primary); color: var(--primary); }
+
+/* ------------------------- 【决战 24 点】 ------------------------- */
+.m24-arena {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding-bottom: 6px;
+}
 .m24-poker-deck { flex-shrink: 0; }
 .m24-deck-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
 .m24-tag { font-size: 0.8rem; font-weight: 800; color: var(--text-main); }
