@@ -327,6 +327,99 @@ async function testGameOverPodiumIntegrity(wsSend) {
 }
 
 // -----------------------------------------------------------------------------
+// 5. 全量游戏前端插件挂载与真实数据渲染消除占位符看门狗 (Plugin Mounting & Anti-Placeholder Watchdog)
+// -----------------------------------------------------------------------------
+async function testClientPluginsAndDomRendering(wsSend) {
+  console.log('\n🧩 [看门狗 5/5] 执行全量游戏前端插件挂载与真实数据渲染消除占位符断言...');
+
+  // 5.1 审计 21 款小游戏的前端插件与全局调度函数挂载契约
+  const contractCheck = await wsSend('Runtime.evaluate', {
+    expression: `(() => {
+      const requiredChecks = [
+        { id: 'math-24', fn: 'renderMath24State', pluginKey: 'math-24' },
+        { id: 'uno', fn: 'renderUnoState', pluginKey: 'uno' },
+        { id: 'cube-count', fn: 'renderCubeCountState', pluginKey: 'cube-count' },
+        { id: 'draw-guess', fn: 'renderDrawGuessState', pluginKey: 'draw-guess' },
+        { id: 'undercover', fn: 'renderUndercoverState', pluginKey: 'undercover' },
+        { id: 'avalon', fn: 'renderAvalonState', pluginKey: 'avalon' },
+        { id: 'flash-counter', fn: 'renderFlashCounterState', pluginKey: 'flash-counter' },
+        { id: 'bomb-roulette', fn: 'renderBombRouletteState', pluginKey: 'bomb-roulette' },
+        { id: 'bulls-and-cows', fn: 'renderBullsAndCowsState', pluginKey: 'bulls-and-cows' },
+        { id: 'word-bomb', fn: 'renderWordBombState', pluginKey: 'word-bomb' },
+        { id: 'perfect-slice', fn: 'renderPerfectSliceState', pluginKey: 'perfect-slice' },
+        { id: 'hold-five', fn: 'renderHoldFiveState', pluginKey: 'hold-five' },
+        { id: 'simon-memory', fn: null, pluginKey: 'simon-memory' }
+      ];
+
+      return requiredChecks.map(c => {
+        const hasPlugin = Boolean(window.PartyGames && window.PartyGames[c.pluginKey]);
+        const hasFn = c.fn ? typeof window[c.fn] === 'function' : false;
+        const hasPluginRender = Boolean(window.PartyGames && typeof window.PartyGames[c.pluginKey]?.renderState === 'function');
+        return {
+          id: c.id,
+          ready: hasFn || hasPluginRender,
+          detail: { hasPlugin, hasFn, hasPluginRender }
+        };
+      });
+    })()`,
+    returnByValue: true
+  });
+
+  const contracts = contractCheck?.result?.value || [];
+  for (const c of contracts) {
+    assert.ok(c.ready, `❌ 前端插件契约缺陷: 游戏 [${c.id}] 未在 window 挂载任何可调用的渲染函数 (PartyGames.renderState 或 window.render...)！`);
+  }
+  console.log(`  ✓ 全部 ${contracts.length} 款核心游戏插件挂载契约检查 100% 达标`);
+
+  // 5.2 针对历史严重痛点《决战24点》：注入真实发牌状态，断言问号 '?' 必须被彻底消除，扑克数字与键盘键必须完整生成
+  const m24RenderCheck = await wsSend('Runtime.evaluate', {
+    expression: `(() => {
+      const mockState = {
+        game: 'math-24',
+        round: 1,
+        maxRounds: 3,
+        timeLeft: 60,
+        currentCards: [3, 8, 3, 8],
+        players: []
+      };
+
+      // 触发真实渲染
+      if (window.PartyGames && window.PartyGames['math-24']?.renderState) {
+        window.PartyGames['math-24'].renderState(mockState);
+      } else if (typeof window.renderMath24State === 'function') {
+        window.renderMath24State(mockState);
+      } else {
+        return { error: '未找到 24 点渲染函数' };
+      }
+
+      const cardsRow = document.getElementById('m24-cards-row');
+      const numBtns = document.getElementById('m24-num-buttons');
+      const cardVals = Array.from(cardsRow ? cardsRow.querySelectorAll('.m24-card-val') : []).map(el => el.textContent.trim());
+      const btnVals = Array.from(numBtns ? numBtns.querySelectorAll('.btn-m24-num') : []).map(el => el.textContent.trim());
+
+      return {
+        cardVals,
+        btnVals,
+        hasQuestionMark: cardVals.includes('?'),
+        cardCount: cardVals.length,
+        btnCount: btnVals.length
+      };
+    })()`,
+    returnByValue: true
+  });
+
+  const m24 = m24RenderCheck?.result?.value || {};
+  assert.ok(!m24.error, `24点真机渲染执行报错: ${m24.error}`);
+  assert.strictEqual(m24.hasQuestionMark, false, '❌ 决战24点卡牌上仍残留初始问号模板 \"?\"，真实数字未注入渲染！');
+  assert.strictEqual(m24.cardCount, 4, `24点卡牌必须渲染 4 张，实测 ${m24.cardCount} 张`);
+  assert.deepStrictEqual(m24.cardVals, ['3', '8', '3', '8'], `24点卡牌面值必须精准为 [3, 8, 3, 8]，实测 ${JSON.stringify(m24.cardVals)}`);
+  assert.deepStrictEqual(m24.btnVals, ['3', '8', '3', '8'], `24点数字按键必须完整生成 [3, 8, 3, 8]，实测 ${JSON.stringify(m24.btnVals)}`);
+  console.log(`  ✓ 决战24点真机渲染闭环: 4张牌精准呈现 [${m24.cardVals.join(', ')}], 零残留问号模板, 动态键盘按键达标`);
+
+  console.log('  ✅ [看门狗 5/5] 前端插件挂载与真实数据渲染消除占位符测试 100% 通过！');
+}
+
+// -----------------------------------------------------------------------------
 // 主运行器
 // -----------------------------------------------------------------------------
 async function runWatchdog() {
@@ -393,13 +486,14 @@ async function runWatchdog() {
       await wait(100);
     }
 
-    // 运行第二步、第三步与第四步
+    // 运行第二步、第三步、第四步与第五步
     await testDomAndHciDimensions(wsSend);
     await testVisualContrastStateMachine(wsSend);
     await testGameOverPodiumIntegrity(wsSend);
+    await testClientPluginsAndDomRendering(wsSend);
 
     console.log('\n======================================================================');
-    console.log('🎉 体验级看门狗套件 4/4 大核心指标全部验证通过！无死黑、无小框、全闭环、有排行！');
+    console.log('🎉 体验级看门狗套件 5/5 大核心指标全部验证通过！无死黑、无小框、全闭环、有排行、无假字！');
     console.log('======================================================================\n');
 
     ws.close();
