@@ -1565,9 +1565,10 @@ html, body {
   stroke-width: 2.2;
 }
 
-/* --------------------------------------------------------------------------
-   1. 登录通行证界面 (Apple ID / Arcade Pass)
-   -------------------------------------------------------------------------- */
+
+/* ==========================================================================
+   APPLE HIG INSET-GROUPED WELCOME SHEET & ULTRA REFINED COMPONENTS
+   ========================================================================== */
 
 .login-wrapper {
   display: flex !important;
@@ -1577,35 +1578,40 @@ html, body {
   height: 100% !important;
   min-height: 100vh !important;
   min-height: 100dvh !important;
-  padding: 16px !important;
+  padding: 24px 16px !important;
   position: relative !important;
   overflow-y: auto !important;
+  box-sizing: border-box !important;
 }
 
 .login-card {
   background: var(--bg-card) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  backdrop-filter: blur(36px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 24px !important;
-  padding: 24px 20px !important;
+  border-radius: 26px !important;
+  padding: 28px 24px 24px 24px !important;
   width: 100% !important;
-  max-width: 360px !important;
-  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  max-width: 400px !important;
+  box-shadow: 0 16px 44px -4px rgba(0, 0, 0, 0.45), inset 0 0.5px 0 0 rgba(255, 255, 255, 0.18) !important;
   position: relative !important;
   overflow: hidden !important;
   text-align: left !important;
   margin: auto !important;
 }
 
+[data-theme="light"] .login-card {
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.08), inset 0 0.5px 0 0 rgba(255, 255, 255, 0.9) !important;
+}
+
 .login-card::before {
-  display: none !important; /* 彻底清除彩虹流光 */
+  display: none !important;
 }
 
 .card-corner-theme {
   position: absolute !important;
-  top: 18px !important;
-  right: 18px !important;
+  top: 20px !important;
+  right: 20px !important;
   z-index: 10 !important;
 }
 
@@ -1613,117 +1619,107 @@ html, body {
   display: inline-flex !important;
   align-items: center !important;
   gap: 5px !important;
-  padding: 5px 11px !important;
+  padding: 4px 10px !important;
   background: var(--bg-surface) !important;
   border: 1px solid var(--border) !important;
   border-radius: 999px !important;
-  color: var(--text-sub) !important;
+  color: var(--text-muted) !important;
   font-size: 0.76rem !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
   cursor: pointer !important;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  transition: all 0.12s ease !important;
+  transition: all 0.15s ease !important;
 }
 
 .theme-switch-btn:hover {
-  border-color: var(--primary) !important;
-  color: var(--primary) !important;
-  transform: scale(1.03) !important;
+  color: var(--text-main) !important;
+  border-color: var(--border-strong) !important;
 }
 
 .pass-header {
-  margin-bottom: 16px !important;
-  padding-right: 70px !important;
+  margin-bottom: 24px !important;
+  padding-right: 60px !important;
 }
 
 .pass-chip-row {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
-  margin-bottom: 6px !important;
+  gap: 6px !important;
+  margin-bottom: 8px !important;
 }
 
 .pass-chip-meta {
-  font-family: var(--font-mono) !important;
-  font-size: 0.68rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.08em !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
+  font-size: 0.65rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
   color: var(--primary) !important;
   background: var(--primary-subtle) !important;
-  padding: 2px 8px !important;
+  padding: 2px 7px !important;
   border-radius: 6px !important;
-  border: 1px solid rgba(10, 132, 255, 0.28) !important;
+  border: 1px solid rgba(10, 132, 255, 0.2) !important;
 }
 
 .pass-chip-id {
   font-family: var(--font-mono) !important;
-  font-size: 0.68rem !important;
+  font-size: 0.65rem !important;
   font-weight: 600 !important;
   color: var(--success) !important;
-  letter-spacing: 0.06em !important;
+  letter-spacing: 0.04em !important;
 }
 
 .pass-main-title {
-  font-size: 1.42rem !important;
+  font-size: 1.55rem !important;
   font-weight: 700 !important;
   color: var(--text-main) !important;
-  letter-spacing: -0.024em !important;
-  margin: 0 0 3px 0 !important;
+  letter-spacing: -0.026em !important;
+  margin: 0 0 4px 0 !important;
   line-height: 1.2 !important;
 }
 
 .pass-sub-desc {
-  font-size: 0.8rem !important;
+  font-size: 0.84rem !important;
   font-weight: 400 !important;
   color: var(--text-muted) !important;
   margin: 0 !important;
+  line-height: 1.35 !important;
 }
 
-/* 玩家形象与昵称卡槽 */
-.pass-player-dock {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-  background: var(--bg-sub) !important;
+/* 仿 iOS Inset-Grouped 表单容器 (沉静优雅微色阶) */
+.pass-player-dock, .pass-room-dock {
+  background: var(--bg-surface) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 16px !important;
-  padding: 10px 12px !important;
-  margin-bottom: 12px !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-}
-
-.avatar-interactive-slot {
-  position: relative !important;
-  cursor: pointer !important;
-  flex-shrink: 0 !important;
+  border-radius: 18px !important;
+  padding: 12px 14px !important;
+  margin-bottom: 14px !important;
+  box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
 }
 
 .avatar-display {
-  width: 46px !important;
-  height: 46px !important;
-  background: var(--bg-surface) !important;
-  border: 1.5px solid var(--border) !important;
+  width: 48px !important;
+  height: 48px !important;
+  background: var(--bg-sub) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 14px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   font-size: 1.85rem !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
-  transition: all 0.16s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.15) !important;
+  transition: transform 0.2s var(--ease-spring) !important;
 }
 
 .avatar-interactive-slot:hover .avatar-display {
   transform: scale(1.05) !important;
   border-color: var(--primary) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px var(--primary-shadow) !important;
 }
 
 .avatar-badge-edit {
   position: absolute !important;
-  bottom: -3px !important;
-  right: -3px !important;
+  bottom: -2px !important;
+  right: -2px !important;
   width: 18px !important;
   height: 18px !important;
   background: var(--primary) !important;
@@ -1733,92 +1729,59 @@ html, body {
   align-items: center !important;
   justify-content: center !important;
   font-size: 0.65rem !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25) !important;
-  border: 1.5px solid var(--bg-surface) !important;
-}
-
-.player-name-dock {
-  flex: 1 !important;
-  min-width: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 3px !important;
+  border: 2px solid var(--bg-card) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
 }
 
 .dock-label {
   font-size: 0.68rem !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   color: var(--text-muted) !important;
   letter-spacing: 0.04em !important;
   text-transform: uppercase !important;
   display: block !important;
-}
-
-.name-input-wrapper {
-  display: flex !important;
-  align-items: stretch !important;
-  gap: 6px !important;
-  width: 100% !important;
+  margin-bottom: 4px !important;
 }
 
 .name-input-wrapper input {
   flex: 1 !important;
   min-width: 0 !important;
-  padding: 7px 11px !important;
-  font-size: 0.88rem !important;
-  font-weight: 600 !important;
+  padding: 8px 12px !important;
+  font-size: 0.92rem !important;
+  font-weight: 500 !important;
   background: var(--bg-input) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 10px !important;
+  border-radius: 11px !important;
   color: var(--text-main) !important;
   outline: none !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06) !important;
-  transition: all 0.12s ease !important;
 }
 
 .name-input-wrapper input:focus {
   border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.28) !important;
-  background: var(--bg-surface) !important;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.25) !important;
 }
 
 .btn-dice-random {
   flex-shrink: 0 !important;
-  padding: 0 10px !important;
-  font-size: 0.74rem !important;
+  padding: 0 11px !important;
+  font-size: 0.78rem !important;
   font-weight: 600 !important;
-  border-radius: 10px !important;
+  border-radius: 11px !important;
   background: var(--bg-surface) !important;
   border: 1px solid var(--border) !important;
-  color: var(--text-main) !important;
+  color: var(--primary) !important;
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 4px !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
-  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
-  white-space: nowrap !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.15s ease !important;
 }
 
 .btn-dice-random:hover {
-  border-color: var(--primary) !important;
-  color: var(--primary) !important;
-  transform: scale(1.02) !important;
-}
-
-.btn-dice-random:active {
-  transform: scale(0.96) !important;
-}
-
-/* 房间号接入卡槽 */
-.pass-room-dock {
-  background: var(--bg-sub) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 16px !important;
-  padding: 10px 12px !important;
-  margin-bottom: 16px !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+  background: var(--primary-subtle) !important;
 }
 
 .room-input-wrapper {
@@ -1827,24 +1790,22 @@ html, body {
   gap: 4px !important;
   background: var(--bg-input) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 10px !important;
-  padding: 2px 6px !important;
+  border-radius: 11px !important;
+  padding: 3px 8px !important;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06) !important;
-  margin-top: 3px !important;
-  transition: all 0.12s ease !important;
 }
 
 .room-input-wrapper:focus-within {
   border-color: var(--primary) !important;
-  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.28) !important;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.25) !important;
 }
 
 .room-hash-prefix {
   font-family: var(--font-mono) !important;
   font-size: 0.95rem !important;
-  font-weight: 700 !important;
-  color: var(--primary) !important;
-  padding-left: 5px !important;
+  font-weight: 600 !important;
+  color: var(--text-muted) !important;
+  padding-left: 4px !important;
   flex-shrink: 0 !important;
 }
 
@@ -1854,9 +1815,9 @@ html, body {
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
-  padding: 6px 4px !important;
-  font-size: 0.92rem !important;
-  font-weight: 700 !important;
+  padding: 7px 4px !important;
+  font-size: 0.94rem !important;
+  font-weight: 600 !important;
   font-family: var(--font-mono) !important;
   color: var(--text-main) !important;
   outline: none !important;
@@ -1869,61 +1830,46 @@ html, body {
   background: var(--bg-surface) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-main) !important;
-  font-size: 0.9rem !important;
+  font-size: 0.85rem !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
-  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
-}
-
-.btn-dice-room:hover {
-  border-color: var(--primary) !important;
-  transform: scale(1.05) !important;
-}
-
-.btn-dice-room:active {
-  transform: scale(0.95) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.15s ease !important;
 }
 
 .quick-room-chips {
   display: flex !important;
   align-items: center !important;
   gap: 6px !important;
-  margin-top: 8px !important;
+  margin-top: 10px !important;
 }
 
 .chip-label {
-  font-size: 0.68rem !important;
-  font-weight: 600 !important;
+  font-size: 0.7rem !important;
   color: var(--text-muted) !important;
-  letter-spacing: 0.02em !important;
 }
 
 .quick-room-btn {
-  background: var(--bg-surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 8px !important;
-  padding: 3px 9px !important;
+  background: var(--bg-sub) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 999px !important;
+  padding: 3px 10px !important;
   font-family: var(--font-mono) !important;
-  font-size: 0.74rem !important;
-  font-weight: 700 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
   color: var(--text-sub) !important;
   cursor: pointer !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
-  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.15s ease !important;
 }
 
 .quick-room-btn:hover {
-  border-color: var(--primary) !important;
+  background: var(--primary-subtle) !important;
   color: var(--primary) !important;
-  transform: scale(1.04) !important;
-}
-
-.quick-room-btn:active {
-  transform: scale(0.96) !important;
+  border-color: var(--primary) !important;
 }
 
 .room-slogan-tip {
@@ -1931,44 +1877,45 @@ html, body {
   align-items: center !important;
   justify-content: center !important;
   gap: 6px !important;
-  margin-top: 9px !important;
-  padding: 5px 8px !important;
-  background: var(--bg-surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 8px !important;
-  font-size: 0.72rem !important;
+  margin-top: 10px !important;
+  padding: 6px 10px !important;
+  background: var(--bg-pill) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 9px !important;
+  font-size: 0.74rem !important;
   color: var(--text-muted) !important;
-  font-weight: 500 !important;
+  font-weight: 400 !important;
 }
 
-/* 进入大厅主按键 */
+/* 50px 黄金触控高度 Primary Action Button */
 .btn-arcade-enter {
   width: 100% !important;
-  padding: 12px 18px !important;
-  font-size: 0.98rem !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.01em !important;
-  background: linear-gradient(180deg, var(--primary) 0%, #0062C4 100%) !important;
+  height: 48px !important;
+  padding: 0 20px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.015em !important;
+  background: var(--primary) !important;
   color: #fff !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border: none !important;
   border-radius: 14px !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 16px var(--primary-shadow) !important;
+  box-shadow: 0 4px 16px var(--primary-shadow), inset 0 0.5px 0 0 rgba(255, 255, 255, 0.4) !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
-  transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.15s ease !important;
+  transition: transform 0.12s var(--ease-spring), opacity 0.12s ease !important;
 }
 
 .btn-arcade-enter:hover {
-  background: linear-gradient(180deg, var(--primary-hover) 0%, var(--primary) 100%) !important;
-  transform: scale(1.015) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 6px 20px var(--primary-shadow) !important;
+  background: var(--primary-hover) !important;
+  transform: scale(1.012) !important;
 }
 
 .btn-arcade-enter:active {
-  transform: scale(0.975) !important;
+  transform: scale(0.978) !important;
+  opacity: 0.9 !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -2857,91 +2804,89 @@ html, body {
 
 
 /* --------------------------------------------------------------------------
-   8. Apple Arcade 游戏卡带 Bento Grid (Apple Arcade Bento Grid Cards)
+   8. Apple Arcade 游戏卡带 Bento Grid (Ultra Refined Spec)
    -------------------------------------------------------------------------- */
 
 .game-tiles-grid {
   display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important;
-  gap: 8px !important;
-  margin-bottom: 12px !important;
+  gap: 10px !important;
+  margin-bottom: 14px !important;
   width: 100% !important;
 }
 
 @media (min-width: 768px) {
   .game-tiles-grid {
     grid-template-columns: repeat(4, 1fr) !important;
-    gap: 10px !important;
+    gap: 12px !important;
   }
 }
 
 .game-tile {
   background: var(--bg-surface) !important;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 0) !important;
-  background-size: 10px 10px !important;
   border: 1px solid var(--border) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.15), var(--shadow-sm) !important;
-  border-radius: 15px !important;
-  padding: 7px 9px !important;
+  border-radius: 16px !important;
+  padding: 9px 10px !important;
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
+  gap: 10px !important;
   cursor: pointer !important;
   position: relative !important;
   text-align: left !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.04) !important;
   transition: transform var(--duration-hover) var(--ease-spring), box-shadow var(--duration-hover) var(--ease-spring), border-color 0.2s ease !important;
   overflow: hidden !important;
   min-width: 0 !important;
 }
 
 [data-theme="light"] .game-tile {
-  background-image: radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 0) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), var(--shadow-sm) !important;
+  box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.9), 0 2px 8px rgba(0, 0, 0, 0.03) !important;
 }
 
 .game-tile:hover {
   border-color: var(--border-strong) !important;
-  transform: translateY(-2px) scale(1.018) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), var(--shadow-md) !important;
+  transform: translateY(-2px) scale(1.015) !important;
+  box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.25), 0 8px 24px -4px rgba(0, 0, 0, 0.2) !important;
 }
 
 .game-tile:active {
-  transform: scale(0.965) translateY(1px) !important;
+  transform: scale(0.968) !important;
   transition-duration: var(--duration-press) !important;
 }
 
 .game-tile.active {
+  background: var(--primary-subtle) !important;
   border-color: var(--primary) !important;
-  background-color: var(--primary-subtle) !important;
-  box-shadow: 0 0 0 1.5px var(--primary), 0 6px 20px var(--primary-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 0 1.5px var(--primary), 0 8px 24px -2px var(--primary-glow), inset 0 0.5px 0 0 rgba(255, 255, 255, 0.35) !important;
 }
 
 .game-tile.active::after {
   content: '' !important;
   position: absolute !important;
-  top: 6px !important;
-  right: 6px !important;
+  top: 7px !important;
+  right: 7px !important;
   width: 6px !important;
   height: 6px !important;
   border-radius: 50% !important;
   background: var(--primary) !important;
-  box-shadow: 0 0 8px var(--primary) !important;
+  box-shadow: 0 0 6px var(--primary) !important;
 }
 
+/* 图标盒：纯粹中性灰阶磨砂浮岛，彻底摒弃塑料刺眼的彩虹底色 */
 .tile-icon-box {
-  width: 34px !important;
-  height: 34px !important;
-  border-radius: 10px !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 11px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 1.3rem !important;
+  font-size: 1.35rem !important;
   flex-shrink: 0 !important;
   background: var(--bg-sub) !important;
   border: 1px solid var(--border-subtle) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: inset 0 0.5px 0 0 rgba(255, 255, 255, 0.15), 0 1px 3px rgba(0, 0, 0, 0.08) !important;
 }
 
 .tile-content {
@@ -2949,45 +2894,49 @@ html, body {
   flex: 1 !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 1px !important;
+  gap: 2px !important;
 }
 
 .tile-title-row {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 3px !important;
+  gap: 4px !important;
   width: 100% !important;
 }
 
 .tile-title {
-  font-size: 0.8rem !important;
-  font-weight: 700 !important;
+  font-size: 0.84rem !important;
+  font-weight: 650 !important;
   color: var(--text-main) !important;
   white-space: nowrap !important;
-  letter-spacing: -0.01em !important;
+  letter-spacing: -0.015em !important;
   line-height: 1.2 !important;
 }
 
+/* 统一为优雅的克制单色微章，消除彩虹马戏团混乱 */
 .tile-badge {
   font-size: 0.58rem !important;
   font-weight: 600 !important;
-  padding: 1px 5px !important;
+  padding: 1.5px 5px !important;
   border-radius: 999px !important;
   white-space: nowrap !important;
-  letter-spacing: 0.02em !important;
+  letter-spacing: 0.04em !important;
   flex-shrink: 0 !important;
   line-height: 1.1 !important;
+  background: var(--bg-pill) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid var(--border-subtle) !important;
 }
 
 .tile-meta {
-  font-size: 0.65rem !important;
+  font-size: 0.68rem !important;
   font-weight: 400 !important;
   color: var(--text-muted) !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  line-height: 1.1 !important;
+  line-height: 1.15 !important;
 }
 
 /* ==========================================================================
