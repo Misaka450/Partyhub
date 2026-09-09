@@ -207,9 +207,7 @@ const stageWordBomb = document.getElementById('stage-word-bomb');
 const stagePerfectSlice = document.getElementById('stage-perfect-slice');
 const stageHoldFive = document.getElementById('stage-hold-five');
 const stageStroopTrap = document.getElementById('stage-stroop-trap');
-const stageTwinFinder = document.getElementById('stage-twin-finder');
 const stageShadowMatch = document.getElementById('stage-shadow-match');
-const stageWhoDisappeared = document.getElementById('stage-who-disappeared');
 const stageSimonMemory = document.getElementById('stage-simon-memory');
 const stageTrainRoute = document.getElementById('stage-train-route');
 const stageHolePunch = document.getElementById('stage-hole-punch');
@@ -1376,9 +1374,7 @@ const GAME_CAPACITY = {
   'perfect-slice': { min: 1, max: 8, name: '完美切分' },
   'hold-five': { min: 1, max: 8, name: '盲压挑战' },
   'stroop-trap': { min: 1, max: 8, name: '色彩陷阱' },
-  'twin-finder': { min: 1, max: 8, name: '寻找孪生' },
   'shadow-match': { min: 1, max: 8, name: '剪影匹配' },
-  'who-disappeared': { min: 1, max: 8, name: '消失的角色' },
   'simon-memory': { min: 1, max: 8, name: '节拍记忆' },
   'train-route': { min: 1, max: 8, name: '轨道拼装' },
   'hole-punch': { min: 1, max: 8, name: '折纸打孔' },
@@ -1497,9 +1493,7 @@ const GLOBAL_GAME_NAMES = {
   'perfect-slice': '🍕 切披萨 50:50',
   'hold-five': '⏱️ 盲压挑战',
   'stroop-trap': '🎯 颜色大陷阱',
-  'twin-finder': '👀 谁是多胞胎',
   'shadow-match': '🔦 影子猜物',
-  'who-disappeared': '👾 偷吃怪谁没了',
   'simon-memory': '🎶 西蒙节拍记忆',
   'train-route': '🚂 轨道小火车',
   'hole-punch': '📄 折纸打孔展开',
@@ -1512,7 +1506,7 @@ function resetAllGameStages() {
     stageDrawGuess, stageUndercover, stageAvalon, stageUno,
     stageFlashCounter, stageBombRoulette, stageBullsAndCows,
     stageMath24, stageCubeCount, stageWordBomb, stagePerfectSlice, stageHoldFive,
-    stageStroopTrap, stageTwinFinder, stageShadowMatch, stageWhoDisappeared,
+    stageStroopTrap, stageShadowMatch,
     stageSimonMemory, stageTrainRoute, stageHolePunch, stageChangeMaster, stageNumberGuess
   ];
   allStages.forEach(s => s && s.classList.add('hidden'));
@@ -1542,9 +1536,7 @@ function updateGameStageView(gameType) {
     'perfect-slice': { icon: '🍕', title: '切披萨 50:50', desc: '一刀切开不规则图形，面积越接近 50:50 得分越高！' },
     'hold-five': { icon: '⏱️', title: '盲压挑战', desc: '每轮随机抽取 3~10 秒目标时间，无秒表提示，凭内心生物钟精准松手！' },
     'stroop-trap': { icon: '🎯', title: '颜色大陷阱', desc: '根据文字颜色或字义快速抢答，打破大脑斯特鲁普认知冲突！' },
-    'twin-finder': { icon: '👀', title: '谁是多胞胎', desc: '在萌宠群中敏锐找出唯一的双胞胎或独一无二的怪兽！' },
     'shadow-match': { icon: '🔦', title: '影子猜物', desc: '聚光灯扫过黑暗剪影，在最模糊的阶段快速抢答真相！' },
-    'who-disappeared': { icon: '👾', title: '偷吃怪谁没了', desc: '短时记忆餐盘美味，幕布拉起后找出被偷吃的一样！' },
     'simon-memory': { icon: '🎶', title: '西蒙节拍记忆', desc: '观察四色光点闪烁节拍，按顺序完美复现全部音符！' },
     'train-route': { icon: '🚂', title: '轨道小火车', desc: '选择关键轨道拼图碎片，让小火车顺利通向终点站！' },
     'hole-punch': { icon: '📄', title: '折纸打孔展开', desc: '折叠打孔后展开，脑内镜像还原真实的孔洞分布图！' },
@@ -1577,7 +1569,7 @@ function updateGameStageView(gameType) {
     stageDrawGuess, stageUndercover, stageAvalon, stageUno,
     stageFlashCounter, stageBombRoulette, stageBullsAndCows,
     stageMath24, stageCubeCount, stageWordBomb, stagePerfectSlice, stageHoldFive,
-    stageStroopTrap, stageTwinFinder, stageShadowMatch, stageWhoDisappeared,
+    stageStroopTrap, stageShadowMatch,
     stageSimonMemory, stageTrainRoute, stageHolePunch, stageChangeMaster, stageNumberGuess
   ];
   allStages.forEach(s => s && s.classList.add('hidden'));
@@ -1596,9 +1588,7 @@ function updateGameStageView(gameType) {
     'perfect-slice': stagePerfectSlice,
     'hold-five': stageHoldFive,
     'stroop-trap': stageStroopTrap,
-    'twin-finder': stageTwinFinder,
     'shadow-match': stageShadowMatch,
-    'who-disappeared': stageWhoDisappeared,
     'simon-memory': stageSimonMemory,
     'train-route': stageTrainRoute,
     'hole-punch': stageHolePunch,
@@ -1625,7 +1615,7 @@ const settingElementIds = [
   'wb-lives', 'wb-time',
   'ps-rounds', 'ps-tolerance',
   'hf-rounds', 'hf-target',
-  'st-rounds', 'tf-rounds', 'sm-rounds', 'wd-rounds',
+  'st-rounds', 'sm-rounds',
   'simon-rounds', 'tr-rounds', 'hp-rounds', 'cm-rounds', 'ng-rounds'
 ];
 
@@ -1639,9 +1629,7 @@ function collectCurrentRoomSettings() {
   else if (currentGameType === 'hold-five') maxRounds = parseInt(document.getElementById('hf-rounds')?.value || 3);
   else if (currentGameType === 'bulls-and-cows') maxRounds = parseInt(document.getElementById('bc-rounds')?.value || 8);
   else if (currentGameType === 'stroop-trap') maxRounds = parseInt(document.getElementById('st-rounds')?.value || 3);
-  else if (currentGameType === 'twin-finder') maxRounds = parseInt(document.getElementById('tf-rounds')?.value || 3);
   else if (currentGameType === 'shadow-match') maxRounds = parseInt(document.getElementById('sm-rounds')?.value || 3);
-  else if (currentGameType === 'who-disappeared') maxRounds = parseInt(document.getElementById('wd-rounds')?.value || 3);
   else if (currentGameType === 'simon-memory') maxRounds = parseInt(document.getElementById('simon-rounds')?.value || 3);
   else if (currentGameType === 'train-route') maxRounds = parseInt(document.getElementById('tr-rounds')?.value || 3);
   else if (currentGameType === 'hole-punch') maxRounds = parseInt(document.getElementById('hp-rounds')?.value || 3);
@@ -1674,7 +1662,6 @@ function collectCurrentRoomSettings() {
     m24Time: parseInt(document.getElementById('m24-time')?.value || 45),
     cubeDiff: document.getElementById('cc-diff')?.value || 'standard',
     stroopDiff: document.getElementById('st-diff')?.value || 'normal',
-    twinDiff: document.getElementById('tf-diff')?.value || 'normal',
     wbLives: parseInt(document.getElementById('wb-lives')?.value || 3),
     wbTime: parseInt(document.getElementById('wb-time')?.value || 10),
     sliceTolerance: parseFloat(document.getElementById('ps-tolerance')?.value || 2.0),
@@ -1906,7 +1893,7 @@ socket.on('room_state', (state) => {
     stageDrawGuess, stageUndercover, stageAvalon, stageUno,
     stageFlashCounter, stageBombRoulette, stageBullsAndCows,
     stageMath24, stageCubeCount, stageWordBomb, stagePerfectSlice, stageHoldFive,
-    stageStroopTrap, stageTwinFinder, stageShadowMatch, stageWhoDisappeared,
+    stageStroopTrap, stageShadowMatch,
     stageSimonMemory, stageTrainRoute, stageHolePunch, stageChangeMaster, stageNumberGuess
   ];
 
@@ -1990,9 +1977,7 @@ socket.on('room_state', (state) => {
       'perfect-slice': stagePerfectSlice,
       'hold-five': stageHoldFive,
       'stroop-trap': stageStroopTrap,
-      'twin-finder': stageTwinFinder,
       'shadow-match': stageShadowMatch,
-      'who-disappeared': stageWhoDisappeared,
       'simon-memory': stageSimonMemory,
       'train-route': stageTrainRoute,
       'hole-punch': stageHolePunch,

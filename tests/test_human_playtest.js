@@ -166,13 +166,21 @@ async function runHumanPlaytest() {
 
     // 4. 验证大厅席位
     console.log('\n[步骤 4] 拟人观察大厅席位状态与游戏列表...');
-    const lobbyStatus = await alice.eval(`(() => {
-      const seats = Array.from(document.querySelectorAll('.player-seat-card .seat-name')).map(el => el.textContent.trim());
-      return {
-        seats,
-        isGameSelectVisible: !document.getElementById('host-game-select-box').classList.contains('hidden')
-      };
-    })()`);
+    // 等待大厅席位同步完成（避免网络抖动或渲染延迟）
+    let lobbyStatus = { seats: [] };
+    for (let i = 0; i < 20; i++) {
+      lobbyStatus = await alice.eval(`(() => {
+        const seats = Array.from(document.querySelectorAll('.player-seat-card .seat-name')).map(el => el.textContent.trim());
+        return {
+          seats,
+          isGameSelectVisible: !document.getElementById('host-game-select-box').classList.contains('hidden')
+        };
+      })()`);
+      const hasAlice = lobbyStatus.seats.some(s => s.includes('小马爱丽丝'));
+      const hasBob = lobbyStatus.seats.some(s => s.includes('小马鲍勃'));
+      if (hasAlice && hasBob) break;
+      await wait(200);
+    }
     console.log(`  ✓ 席位已就绪: ${JSON.stringify(lobbyStatus.seats)}`);
     const hasAlice = lobbyStatus.seats.some(s => s.includes('小马爱丽丝'));
     const hasBob = lobbyStatus.seats.some(s => s.includes('小马鲍勃'));
@@ -234,8 +242,13 @@ async function runHumanPlaytest() {
     ws1.close();
     ws2.close();
   } finally {
-    chromeProc.kill('SIGKILL');
-    fs.rmSync(tmpUserDataDir, { recursive: true, force: true });
+    try { chromeProc.kill('SIGKILL'); } catch (e) {}
+    await wait(300);
+    if (tmpUserDataDir) {
+      try {
+        fs.rmSync(tmpUserDataDir, { recursive: true, force: true });
+      } catch (e) {}
+    }
   }
 }
 

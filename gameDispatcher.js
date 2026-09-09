@@ -5,11 +5,11 @@
  * 
  * 💡 为什么需要这个模块？（小白开发者通俗解释）：
  * 原本在 server.js 中，每一个小游戏的操作（例如出牌、按抢答、切披萨等）都需要
- * 手动写一个 socket.on(...)，21 款小游戏写了 30 多处，导致 server.js 膨胀到 1000 多行，
+ * 手动写一个 socket.on(...)，19 款小游戏写了 30 多处，导致 server.js 膨胀到 1000 多行，
  * 而且每处都在重复做 "判断房间在不在"、"判断玩家在不在" 等枯燥校验。
  * 
  * 本模块就像一个【智能总服务台】：
- * 1. 统一登记所有 21 款小游戏的动作规则（动作名 -> 对应引擎函数）；
+ * 1. 统一登记所有 19 款小游戏的动作规则（动作名 -> 对应引擎函数）；
  * 2. 自动帮你做前置安全检查（房间是否存在、玩家是否合法、游戏类型是否吻合）；
  * 3. 既支持原有单独事件监听（100% 兼容老代码），又提供统一的 'game_action' 通道；
  * 4. 让 server.js 变得极为干净、清爽且易于维护！
@@ -202,27 +202,11 @@ function createActionRegistry(engines) {
       }
     },
 
-    // ---------- 谁是多胞胎 / 找不同 ----------
-    'twin_submit_answer': {
-      gameType: 'twin-finder',
-      handler: (ctx, payload) => {
-        ctx.safeCall(engines['twin-finder'].submitAnswer, ctx.room, ctx.player, payload?.selectedIndex, ctx.io, ctx.broadcastRoom);
-      }
-    },
-
     // ---------- 聚光灯拼图 / 影子猜物 ----------
     'shadow_submit_answer': {
       gameType: 'shadow-match',
       handler: (ctx, payload) => {
         ctx.safeCall(engines['shadow-match'].submitAnswer, ctx.room, ctx.player, payload?.answerId, ctx.io, ctx.broadcastRoom);
-      }
-    },
-
-    // ---------- 谁不见了 / 偷吃怪 ----------
-    'disappear_submit_answer': {
-      gameType: 'who-disappeared',
-      handler: (ctx, payload) => {
-        ctx.safeCall(engines['who-disappeared'].submitAnswer, ctx.room, ctx.player, payload?.answerId, ctx.io, ctx.broadcastRoom);
       }
     },
 

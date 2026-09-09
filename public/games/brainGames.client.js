@@ -3,9 +3,7 @@
  * ============================================================================
  * 【9款全新脑力系列小游戏  独立前端客户端模块集】
  * 1. 颜色与文字大陷阱 (stroop-trap)
- * 2. 谁是多胞胎 / 找不同 (twin-finder)
  * 3. 聚光灯拼图 / 影子猜物 (shadow-match)
- * 4. 谁不见了 / 偷吃怪 (who-disappeared)
  * 6. 轨道连连通 / 小火车快跑 (train-route)
  * 7. 几何折纸打孔展开 (hole-punch)
  * 8. 找零钱大师 (change-master)
@@ -110,79 +108,6 @@ socket.on('stroop_round_result', (data) => {
   showRevealModal(topText, '', 3500, summaryHtml);
 });
 
-// ------------------------- 2. 谁是多胞胎 / 找不同 -------------------------
-const twinPromptBanner = document.getElementById('twin-prompt-banner');
-const twinCardsGrid = document.getElementById('twin-cards-grid');
-const twinFeedbackBadge = document.getElementById('twin-feedback-badge');
-
-socket.on('twin_new_puzzle', (data) => {
-  displayRoundTag?.classList.remove('hidden');
-  if (displayRound) displayRound.textContent = `第 ${data.round}/${data.maxRounds} 轮`;
-  if (twinPromptBanner) twinPromptBanner.textContent = data.prompt;
-  if (twinFeedbackBadge) twinFeedbackBadge.classList.add('hidden');
-
-  if (twinCardsGrid) {
-    twinCardsGrid.innerHTML = '';
-    data.characters.forEach((char, idx) => {
-      const card = document.createElement('div');
-      card.className = 'twin-char-card';
-      card.style.backgroundColor = char.bgColor;
-      card.innerHTML = `
-        <div class="twin-avatar-face">${char.head}</div>
-        <div class="twin-props-row">
-          <span>${char.accessory}</span>
-          <span>${char.handItem}</span>
-        </div>
-      `;
-      card.onclick = () => {
-        socket.emit('twin_submit_answer', { selectedIndex: idx });
-        card.classList.add('selected');
-        twinCardsGrid.querySelectorAll('.twin-char-card').forEach(c => c.style.pointerEvents = 'none');
-        playSound('card');
-      };
-      twinCardsGrid.appendChild(card);
-    });
-  }
-  playSound('tick');
-});
-
-socket.on('twin_answer_feedback', (data) => {
-  if (!twinFeedbackBadge) return;
-  twinFeedbackBadge.classList.remove('hidden');
-  if (data.isCorrect) {
-    twinFeedbackBadge.textContent = `👀 火眼金睛！猜对了 (+${data.scoreGain}分)`;
-    twinFeedbackBadge.style.background = 'var(--success-subtle)';
-    twinFeedbackBadge.style.color = 'var(--success)';
-    playSound('pop');
-  } else {
-    twinFeedbackBadge.textContent = `✕ 没看准，差一点点！`;
-    twinFeedbackBadge.style.background = 'var(--danger-subtle)';
-    twinFeedbackBadge.style.color = 'var(--danger)';
-    playSound('error');
-  }
-});
-
-socket.on('twin_round_result', (data) => {
-  playSound('fanfare');
-  if (twinCardsGrid && data.correctIndices) {
-    const cards = twinCardsGrid.querySelectorAll('.twin-char-card');
-    data.correctIndices.forEach(idx => {
-      if (cards[idx]) cards[idx].classList.add('correct');
-    });
-  }
-  let summaryHtml = '<div style="display:grid;gap:6px;margin-top:6px;text-align:left">';
-  data.results.forEach((p, idx) => {
-    summaryHtml += `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;font-size:0.82rem">
-        <span>${idx === 0 ? '👑 ' : ''}${escapeHtml(p.avatar)} <b>${escapeHtml(p.name)}</b></span>
-        <span style="font-weight:700;color:${p.isCorrect ? 'var(--success)' : 'var(--text-muted)'}">${p.isCorrect ? `+${p.scoreGain}分` : '未得分'}</span>
-      </div>
-    `;
-  });
-  summaryHtml += '</div>';
-  showRevealModal(`🔍 答案揭晓！`, '', 3500, summaryHtml);
-});
-
 // ------------------------- 3. 影子猜物 / 聚光灯拼图 -------------------------
 const shadowEmojiItem = document.getElementById('shadow-emoji-item');
 const shadowOptionsGrid = document.getElementById('shadow-options-grid');
@@ -252,106 +177,6 @@ socket.on('shadow_round_result', (data) => {
   summaryHtml += '</div>';
   // showRevealModal 首参走 textContent，无需预转义，防止 & < 显示为实体字符（审计 L2）
   showRevealModal(`🔦 揭晓：【${data.targetEmoji} ${data.targetName}】`, '', 3500, summaryHtml);
-});
-
-// ------------------------- 4. 谁不见了 / 偷吃怪 -------------------------
-const disappearPlate = document.getElementById('disappear-plate');
-const disappearOptionsGrid = document.getElementById('disappear-options-grid');
-const disappearStatusTag = document.getElementById('disappear-status-tag');
-const disappearFeedbackBadge = document.getElementById('disappear-feedback-badge');
-
-function handleDisappearMemory(data) {
-  displayRoundTag?.classList.remove('hidden');
-  if (displayRound) displayRound.textContent = `第 ${data.round}/${data.maxRounds} 轮`;
-  if (disappearFeedbackBadge) disappearFeedbackBadge.classList.add('hidden');
-  if (disappearOptionsGrid) disappearOptionsGrid.classList.add('hidden');
-
-  if (disappearStatusTag) disappearStatusTag.textContent = '👀 记忆阶段：仔细记住餐盘上的所有美食！';
-
-  const items = data.items || data.initialItems || [];
-  if (disappearPlate) {
-    disappearPlate.innerHTML = '';
-    items.forEach(item => {
-      const food = document.createElement('div');
-      food.className = 'disappear-food-item';
-      food.textContent = item.emoji;
-      food.title = item.name;
-      disappearPlate.appendChild(food);
-    });
-  }
-  playSound('tick');
-}
-
-socket.on('disappear_memory_start', handleDisappearMemory);
-socket.on('disappear_start_memorize', handleDisappearMemory);
-
-function handleDisappearGuess(data) {
-  if (disappearStatusTag) disappearStatusTag.textContent = '👾 嗷呜！哪个食物被偷吃了？快选！';
-  playSound('pop');
-
-  const remaining = data.remainingItems || data.items || [];
-  if (disappearPlate) {
-    disappearPlate.innerHTML = '';
-    remaining.forEach(item => {
-      const food = document.createElement('div');
-      food.className = 'disappear-food-item';
-      food.textContent = item.emoji;
-      food.title = item.name;
-      disappearPlate.appendChild(food);
-    });
-  }
-
-  if (disappearOptionsGrid) {
-    disappearOptionsGrid.classList.remove('hidden');
-    disappearOptionsGrid.innerHTML = '';
-    (data.options || []).forEach(opt => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'brain-opt-btn';
-      btn.textContent = `${opt.emoji} ${opt.name}`;
-      btn.onclick = () => {
-        socket.emit('disappear_submit_answer', { answerId: opt.id });
-        disappearOptionsGrid.querySelectorAll('button').forEach(b => b.disabled = true);
-        playSound('card');
-      };
-      disappearOptionsGrid.appendChild(btn);
-    });
-  }
-}
-
-socket.on('disappear_guess_start', handleDisappearGuess);
-socket.on('disappear_start_guess', handleDisappearGuess);
-
-socket.on('disappear_answer_feedback', (data) => {
-  if (!disappearFeedbackBadge) return;
-  disappearFeedbackBadge.classList.remove('hidden');
-  if (data.isCorrect) {
-    disappearFeedbackBadge.textContent = `✓ 记忆超群！猜中了 (+${data.scoreGain}分)`;
-    disappearFeedbackBadge.style.background = 'var(--success-subtle)';
-    disappearFeedbackBadge.style.color = 'var(--success)';
-    playSound('pop');
-  } else {
-    disappearFeedbackBadge.textContent = `✕ 记串味啦！不是这个`;
-    disappearFeedbackBadge.style.background = 'var(--danger-subtle)';
-    disappearFeedbackBadge.style.color = 'var(--danger)';
-    playSound('error');
-  }
-});
-
-socket.on('disappear_round_result', (data) => {
-  playSound('fanfare');
-  let summaryHtml = '<div style="display:grid;gap:6px;margin-top:6px;text-align:left">';
-  data.results.forEach((p, idx) => {
-    summaryHtml += `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;font-size:0.82rem">
-        <span>${idx === 0 ? '👑 ' : ''}${escapeHtml(p.avatar)} <b>${escapeHtml(p.name)}</b></span>
-        <span style="font-weight:700;color:${p.isCorrect ? 'var(--success)' : 'var(--text-muted)'}">${p.isCorrect ? `+${p.scoreGain}分` : '未得分'}</span>
-      </div>
-    `;
-  });
-  summaryHtml += '</div>';
-  // showRevealModal 首参走 textContent，无需预转义（审计 L2）
-  showRevealModal(`👾 消失的美食是：【${data.eatenItem?.emoji || ''} ${data.eatenItem?.name || ''}】`, '', 3500, summaryHtml);
 });
 
 // ------------------------- 5. 西蒙说 / 节拍记忆 (已抽离至 public/games/simonMemory.client.js) -------------------------
@@ -703,12 +528,6 @@ socket.on('stroop_game_over', (data) => {
   });
 });
 
-socket.on('twin_game_over', (data) => {
-  showGameOverModal({
-    title: '👀 找不同 / 多胞胎 决出胜者！',
-    desc: '火眼金睛，瞬间识破隐藏的双胞胎！',
-    podium: data.podium || data.scores || []
-  });
 });
 
 socket.on('shadow_game_over', (data) => {
@@ -719,12 +538,6 @@ socket.on('shadow_game_over', (data) => {
   });
 });
 
-socket.on('disappear_game_over', (data) => {
-  showGameOverModal({
-    title: '👾 谁不见了 / 偷吃怪 决出胜者！',
-    desc: '超强瞬时记忆，偷吃怪无所遁形！',
-    podium: data.podium || data.scores || []
-  });
 });
 
 socket.on('train_game_over', (data) => {

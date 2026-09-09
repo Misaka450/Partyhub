@@ -6,9 +6,7 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 
 const stroopTrap = require('../../games/stroopTrap');
-const twinFinder = require('../../games/twinFinder');
 const shadowMatch = require('../../games/shadowMatch');
-const whoDisappeared = require('../../games/whoDisappeared');
 const simonMemory = require('../../games/simonMemory');
 const trainRoute = require('../../games/trainRoute');
 const holePunch = require('../../games/holePunch');
@@ -40,38 +38,6 @@ test('stroopTrap.generateQuestion: 难度 colorBias 决定“看颜色/看字义
 });
 
 // ===================== 2. 谁是多胞胎 / 找不同 =====================
-test('twinFinder.generatePuzzle: 双胞胎模式下两只目标角色属性严格一致', () => {
-  for (let r = 1; r <= 5; r++) {
-    const p = twinFinder.generatePuzzle(r);
-    assert.ok(p.characters.length >= 6, '角色列表至少 6 个');
-    if (p.mode === 'TWINS') {
-      assert.strictEqual(p.correctIndices.length, 2, '双胞胎答案必须为 2 个下标');
-      const c1 = p.characters[p.correctIndices[0]];
-      const c2 = p.characters[p.correctIndices[1]];
-      assert.strictEqual(c1.head, c2.head, '头部特征必须一致');
-      assert.strictEqual(c1.bgColor, c2.bgColor, '背景颜色必须一致');
-      assert.strictEqual(c1.accessory, c2.accessory, '装饰配件必须一致');
-      assert.strictEqual(c1.handItem, c2.handItem, '手持物品必须一致');
-    } else if (p.mode === 'ODD_ONE') {
-      assert.strictEqual(p.correctIndices.length, 1, '找不同答案必须为 1 个下标');
-    }
-  }
-});
-
-test('twinFinder.generatePuzzle: 难度档位实际影响生成角色总数', () => {
-  // 第 1 轮时各档位角色数为确定值：easy=5 / normal=6 / hard=8（每档数量严格递增）
-  const easyCount = twinFinder.generatePuzzle(1, 'easy').characters.length;
-  const normalCount = twinFinder.generatePuzzle(1, 'normal').characters.length;
-  const hardCount = twinFinder.generatePuzzle(1, 'hard').characters.length;
-  assert.ok(easyCount < normalCount, `easy 角色数应少于 normal，实测 easy=${easyCount} normal=${normalCount}`);
-  assert.ok(normalCount < hardCount, `normal 角色数应少于 hard，实测 normal=${normalCount} hard=${hardCount}`);
-
-  // 默认难度档位归一到 normal
-  const room = {};
-  twinFinder.initRoomState(room);
-  assert.strictEqual(room.twinDiff, 'normal', '未配置难度时应默认 normal');
-});
-
 // ===================== 3. 影子猜物 / 聚光灯拼图 =====================
 test('shadowMatch.generateShadowPuzzle: 剪影谜题生成与候选项包含目标', () => {
   for (let r = 1; r <= 3; r++) {
@@ -84,18 +50,6 @@ test('shadowMatch.generateShadowPuzzle: 剪影谜题生成与候选项包含目�
 });
 
 // ===================== 4. 谁不见了 / 偷吃怪 =====================
-test('whoDisappeared.generateDisappearPuzzle: 初始盘包含目标，剩余盘剔除目标', () => {
-  for (let r = 1; r <= 3; r++) {
-    const puzzle = whoDisappeared.generateDisappearPuzzle(r);
-    assert.ok(puzzle.initialItems.length >= 5, '初始餐盘食物数量 >= 5');
-    assert.strictEqual(puzzle.remainingItems.length, puzzle.initialItems.length - 1, '剩余数量恰好少 1 个');
-    assert.ok(puzzle.initialItems.some(i => i.id === puzzle.eatenItem.id), '被吃掉的食物必在初始盘');
-    assert.ok(!puzzle.remainingItems.some(i => i.id === puzzle.eatenItem.id), '被吃掉的食物不能在剩余盘');
-    assert.strictEqual(puzzle.options.length, 4, '候选项为 4 个');
-    assert.ok(puzzle.options.some(o => o.id === puzzle.eatenItem.id), '候选项包含被吃掉的目标');
-  }
-});
-
 // ===================== 5. 西蒙节拍记忆 =====================
 test('simonMemory.generateSequence: 序列步数严格随轮次递增', () => {
   const seq1 = simonMemory.generateSequence(1);

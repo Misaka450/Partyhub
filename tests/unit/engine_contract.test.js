@@ -1,4 +1,4 @@
-// PartyHub 21 款游戏引擎统一规范与防作弊契约测试 (Node.js 内置 node:test)
+// PartyHub 19 款游戏引擎统一规范与防作弊契约测试 (Node.js 内置 node:test)
 // 覆盖审计建议：
 // 1. 全量引擎 onPlayerRemoved 统一签名、异常防护与作答清理契约
 // 2. 全量引擎 getPublicState 导出、非空与私密数据防泄露读包断言
@@ -20,9 +20,7 @@ const ALL_ENGINES = {
   'perfect-slice': require('../../games/perfectSlice'),
   'hold-five': require('../../games/holdFive'),
   'stroop-trap': require('../../games/stroopTrap'),
-  'twin-finder': require('../../games/twinFinder'),
   'shadow-match': require('../../games/shadowMatch'),
-  'who-disappeared': require('../../games/whoDisappeared'),
   'simon-memory': require('../../games/simonMemory'),
   'train-route': require('../../games/trainRoute'),
   'hole-punch': require('../../games/holePunch'),
@@ -73,14 +71,14 @@ function cleanupRoom(room) {
   if (room.roundTimeout) clearTimeout(room.roundTimeout);
 }
 
-test('引擎规范契约 1: 全部 21 款小游戏均导出标准的 initRoomState、getPublicState 契约函数', () => {
+test('引擎规范契约 1: 全部 19 款小游戏均导出标准的 initRoomState、getPublicState 契约函数', () => {
   for (const [name, engine] of Object.entries(ALL_ENGINES)) {
     assert.strictEqual(typeof engine.initRoomState, 'function', `【${name}】必须导出 initRoomState 函数`);
     assert.strictEqual(typeof engine.getPublicState, 'function', `【${name}】必须导出 getPublicState 函数`);
   }
 });
 
-test('引擎规范契约 2: 全部 21 款小游戏在 initRoomState 后 getPublicState 均返回合法非空对象', () => {
+test('引擎规范契约 2: 全部 19 款小游戏在 initRoomState 后 getPublicState 均返回合法非空对象', () => {
   for (const [name, engine] of Object.entries(ALL_ENGINES)) {
     const room = makeMockRoom(name);
     engine.initRoomState(room);
@@ -114,7 +112,7 @@ test('引擎规范契约 3: onPlayerRemoved 统一传 (room, removedIndex) 签�
     }, `【${name}】调用 onPlayerRemoved 不得抛出任何异常`);
 
     // 针对作答类引擎断言：已移除的 P1 答案记录必须已被清理（审计 M4 防回归）
-    if (['hole-punch', 'shadow-match', 'train-route', 'who-disappeared'].includes(name)) {
+    if (['hole-punch', 'shadow-match', 'train-route'].includes(name)) {
       assert.strictEqual(room.playerAnswers['token_P1'], undefined, `【${name}】离场玩家 token_P1 的答案记录必须被清理`);
     }
 
@@ -133,20 +131,6 @@ test('防作弊安全读包契约: 关键私密数据绝对不在 getPublicState
     assert.ok(Array.isArray(pub.flyingItems), 'FLASH_FLYING 阶段应包含 flyingItems 供断线重连补看');
     const leaked = pub.flyingItems.some(item => 'isTarget' in item);
     assert.strictEqual(leaked, false, 'flyingItems 下发前必须剔除 isTarget 答案标记 (审计 C3)');
-    cleanupRoom(room);
-  }
-
-  // 2. twin-finder: 角色特征中绝对不得包含 id='twin_1' 等答案标记，且不泄露 correctIndices
-  {
-    const room = makeMockRoom('twin-finder');
-    ALL_ENGINES['twin-finder'].initRoomState(room);
-    const puzzle = ALL_ENGINES['twin-finder'].generatePuzzle(1, 'normal');
-    room.currentPuzzle = puzzle;
-    room.status = 'TWIN_FINDING';
-    const pub = ALL_ENGINES['twin-finder'].getPublicState(room);
-    assert.strictEqual(pub.correctIndices, undefined, '公共状态不得携带 correctIndices 答案');
-    const idLeaked = (pub.characters || []).some(c => 'id' in c);
-    assert.strictEqual(idLeaked, false, '公共状态下发角色特征必须剥离 id 标记 (审计 C2)');
     cleanupRoom(room);
   }
 

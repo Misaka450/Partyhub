@@ -143,10 +143,6 @@ async function testDomAndHciDimensions(wsSend) {
           <button class="simon-btn simon-red" id="w-simon-btn"></button>
           <div class="simon-center-hub" id="w-simon-hub">3/3</div>
         </div>
-        <!-- 偷吃怪餐盘与食物 -->
-        <div class="disappear-plate-container" id="w-plate">
-          <div class="disappear-food-item" id="w-food">🍣</div>
-        </div>
       \`;
       document.body.appendChild(testRoot);
 
@@ -163,8 +159,6 @@ async function testDomAndHciDimensions(wsSend) {
       const holeCellR = getR('w-hole-cell');
       const simonDiskR = getR('w-simon-disk');
       const simonBtnR = getR('w-simon-btn');
-      const plateR = getR('w-plate');
-      const foodS = getS('w-food');
 
       return {
         shadowBox: { w: Math.round(shadowBoxR.width), h: Math.round(shadowBoxR.height) },
@@ -176,9 +170,7 @@ async function testDomAndHciDimensions(wsSend) {
         holeGrid: { w: Math.round(holeGridR.width), h: Math.round(holeGridR.height) },
         holeCell: { w: Math.round(holeCellR.width), h: Math.round(holeCellR.height) },
         simonDisk: { w: Math.round(simonDiskR.width), h: Math.round(simonDiskR.height) },
-        simonBtn: { w: Math.round(simonBtnR.width), h: Math.round(simonBtnR.height) },
-        plate: { w: Math.round(plateR.width), minH: Math.round(plateR.height) },
-        foodEmoji: { fontSize: foodS.fontSize }
+        simonBtn: { w: Math.round(simonBtnR.width), h: Math.round(simonBtnR.height) }
       };
     })()`,
     returnByValue: true
@@ -211,11 +203,6 @@ async function testDomAndHciDimensions(wsSend) {
   assert.ok(m.simonDisk.w >= 270, `西蒙圆盘需 >= 270px，实测 ${m.simonDisk.w}px`);
   assert.ok(m.simonBtn.w >= 110, `按键扇形触控靶心需 >= 110px，实测 ${m.simonBtn.w}px`);
   console.log(`  ✓ 西蒙节拍圆盘触控达标: 圆盘 ${m.simonDisk.w}px, 单键宽 ${m.simonBtn.w}px`);
-
-  // 2.5 偷吃怪餐盘
-  assert.ok(m.plate.w >= 360, `美食餐盘需 >= 360px，实测 ${m.plate.w}px`);
-  assert.ok(m.plate.minH >= 160, `餐盘最小高度需 >= 160px，实测 ${m.plate.minH}px`);
-  console.log(`  ✓ 偷吃怪餐盘容量达标: ${m.plate.w}px × ${m.plate.minH}px (食物: ${m.foodEmoji.fontSize})`);
 
   console.log('  ✅ [看门狗 2/3] DOM 视觉与人机工程测试 100% 通过！');
 }
@@ -332,7 +319,7 @@ async function testGameOverPodiumIntegrity(wsSend) {
 async function testClientPluginsAndDomRendering(wsSend) {
   console.log('\n🧩 [看门狗 5/5] 执行全量游戏前端插件挂载与真实数据渲染消除占位符断言...');
 
-  // 5.1 审计 21 款小游戏的前端插件与全局调度函数挂载契约
+  // 5.1 审计 19 款小游戏的前端插件与全局调度函数挂载契约
   const contractCheck = await wsSend('Runtime.evaluate', {
     expression: `(() => {
       const requiredChecks = [

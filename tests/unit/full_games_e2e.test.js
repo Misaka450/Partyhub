@@ -1,4 +1,4 @@
-// PartyHub 全部 21 款小游戏端到端全生命周期状态流转与终局结算 E2E 自动化测试
+// PartyHub 全部 19 款小游戏端到端全生命周期状态流转与终局结算 E2E 自动化测试
 const { test } = require('node:test');
 const assert = require('node:assert');
 
@@ -18,10 +18,8 @@ const shadowMatch = require('../../games/shadowMatch');
 const simonMemory = require('../../games/simonMemory');
 const stroopTrap = require('../../games/stroopTrap');
 const trainRoute = require('../../games/trainRoute');
-const twinFinder = require('../../games/twinFinder');
 const undercover = require('../../games/undercover');
 const uno = require('../../games/uno');
-const whoDisappeared = require('../../games/whoDisappeared');
 const wordBomb = require('../../games/wordBomb');
 
 function cleanTimers(room) {
@@ -254,27 +252,6 @@ test('Full Lifecycle: 切披萨 (perfectSlice)', () => {
   cleanTimers(room);
 });
 
-// 11. 双胞胎找茬 (twinFinder)
-test('Full Lifecycle: 双胞胎找茬 (twinFinder)', () => {
-  const room = createTestRoom('twin-finder', 2);
-  const io = createFakeIo();
-  const broadcast = () => {};
-
-  twinFinder.initRoomState(room);
-  twinFinder.startGame(room, io, broadcast);
-  cleanTimers(room);
-  assert.strictEqual(room.status, 'TWIN_FINDING');
-
-  const twinTargetIndex = room.currentPuzzle.correctIndices[0];
-  twinFinder.submitAnswer(room, room.players[0], twinTargetIndex, io, broadcast);
-  twinFinder.submitAnswer(room, room.players[1], twinTargetIndex, io, broadcast);
-  assert.strictEqual(room.status, 'TWIN_RESULT');
-
-  twinFinder.finishGame(room, io, broadcast);
-  assert.strictEqual(room.status, 'GAME_OVER');
-  cleanTimers(room);
-});
-
 // 12. 剪影识物 (shadowMatch)
 test('Full Lifecycle: 剪影识物 (shadowMatch)', () => {
   const room = createTestRoom('shadow-match', 2);
@@ -291,27 +268,6 @@ test('Full Lifecycle: 剪影识物 (shadowMatch)', () => {
   assert.strictEqual(room.status, 'SHADOW_RESULT');
 
   shadowMatch.finishGame(room, io, broadcast);
-  assert.strictEqual(room.status, 'GAME_OVER');
-  cleanTimers(room);
-});
-
-// 13. 谁被吃掉了 (whoDisappeared)
-test('Full Lifecycle: 谁被吃掉了 (whoDisappeared)', () => {
-  const room = createTestRoom('who-disappeared', 2);
-  const io = createFakeIo();
-  const broadcast = () => {};
-
-  whoDisappeared.initRoomState(room);
-  whoDisappeared.startGame(room, io, broadcast);
-  cleanTimers(room);
-  assert.strictEqual(room.status, 'DISAPPEAR_MEMORIZE');
-
-  room.status = 'DISAPPEAR_GUESS';
-  whoDisappeared.submitAnswer(room, room.players[0], room.currentPuzzle.eatenItem.id, io, broadcast);
-  whoDisappeared.submitAnswer(room, room.players[1], room.currentPuzzle.eatenItem.id, io, broadcast);
-  assert.strictEqual(room.status, 'DISAPPEAR_RESULT');
-
-  whoDisappeared.finishGame(room, io, broadcast);
   assert.strictEqual(room.status, 'GAME_OVER');
   cleanTimers(room);
 });

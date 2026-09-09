@@ -19,9 +19,7 @@ const wordBombEngine = require('./games/wordBomb');
 const perfectSliceEngine = require('./games/perfectSlice');
 const holdFiveEngine = require('./games/holdFive');
 const stroopTrapEngine = require('./games/stroopTrap');
-const twinFinderEngine = require('./games/twinFinder');
 const shadowMatchEngine = require('./games/shadowMatch');
-const whoDisappearedEngine = require('./games/whoDisappeared');
 const simonMemoryEngine = require('./games/simonMemory');
 const trainRouteEngine = require('./games/trainRoute');
 const holePunchEngine = require('./games/holePunch');
@@ -183,9 +181,7 @@ const GAME_ENGINES = {
   'perfect-slice': perfectSliceEngine,
   'hold-five': holdFiveEngine,
   'stroop-trap': stroopTrapEngine,
-  'twin-finder': twinFinderEngine,
   'shadow-match': shadowMatchEngine,
-  'who-disappeared': whoDisappearedEngine,
   'simon-memory': simonMemoryEngine,
   'train-route': trainRouteEngine,
   'hole-punch': holePunchEngine,
@@ -543,9 +539,7 @@ io.on('connection', (socket) => {
       'perfect-slice': '🍕 切披萨 50:50',
       'hold-five': '⏱️ 盲压挑战 (随机时间)',
       'stroop-trap': '🎯 颜色与文字陷阱',
-      'twin-finder': '👀 谁是多胞胎',
       'shadow-match': '🔦 影子猜物',
-      'who-disappeared': '👾 谁不见了/偷吃怪',
       'simon-memory': '🎶 西蒙节拍记忆',
       'train-route': '🚂 轨道小火车',
       'hole-punch': '📄 折纸打孔展开',
@@ -567,7 +561,7 @@ io.on('connection', (socket) => {
     flashSpeed: 'string', bombWires: 'number', bombTime: 'number',
     bcRounds: 'number', bcTime: 'number', m24Time: 'number',
     cubeDiff: 'string', wbLives: 'number', wbTime: 'number',
-    stroopDiff: 'string', twinDiff: 'string',
+    stroopDiff: 'string',
     sliceTolerance: 'number', fixedTargetSeconds: 'number'
   };
 
@@ -830,7 +824,7 @@ io.on('connection', (socket) => {
   });
 
   // ===== 维度一优化：游戏动作插件式统一调度与分发 (Game Action Dispatcher) =====
-  // 统一挂载全部 21 款小游戏的事件监听与通用 game_action 通道，消除平铺冗余，实现逻辑解耦
+  // 统一挂载全部 19 款小游戏的事件监听与通用 game_action 通道，消除平铺冗余，实现逻辑解耦
   attachGameDispatcher(socket, {
     getRoomContext: () => {
       const { room, player } = getRoomAndPlayer(currentRoomId, currentPlayerToken);
