@@ -6,7 +6,7 @@
        防双击误缩放改由 CSS touch-action: manipulation 处理（审计 R2-51） -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <!-- 网站图标：使用内嵌 SVG 避免 favicon.ico 404，支持彩色 Emoji 风格 logo -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%236366F1'/%3E%3Ctext x='32' y='42' font-size='34' text-anchor='middle' font-family='Segoe UI Emoji,Apple Color Emoji,sans-serif'%3E🎉%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230071E3'/%3E%3Ctext x='32' y='42' font-size='34' text-anchor='middle' font-family='Segoe UI Emoji,Apple Color Emoji,sans-serif'%3E🎉%3C/text%3E%3C/svg%3E">
   <title>Party Hub · 聚会游戏</title>
   <script>
     (function() {
@@ -21,10 +21,10 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   
   <!-- 维度二优化：预加载关键 CSS 与核心脚本，提升首屏与弱网环境下的加载速度 -->
-  <link rel="preload" href="/style.css?v=1.1.0" as="style">
-  <link rel="preload" href="/game.js?v=1.1.0" as="script">
+  <link rel="preload" href="/style.css?v=1.2.0" as="style">
+  <link rel="preload" href="/game.js?v=1.2.0" as="script">
   <!-- 开启版本号管理：配合 ETag 强缓存，避免代码更新后浏览器强刷问题 -->
-  <link rel="stylesheet" href="/style.css?v=1.1.0">
+  <link rel="stylesheet" href="/style.css?v=1.2.0">
   <script src="/socket.io/socket.io.js"></script>
   <!-- 站点访问统计 (Umami) -->
   <script defer src="https://umami.980823.xyz/script.js" data-website-id="f2370455-9fa1-428e-8525-424731a454bf"></script>
@@ -49,7 +49,7 @@
         <!-- 顶部身份铭牌 -->
         <div class="pass-header">
           <div class="pass-chip-row">
-            <span class="pass-chip-meta">ARCADE // PASS</span>
+            <span class="pass-chip-meta">GAME PASS // ID</span>
             <span class="pass-chip-id">ONLINE</span>
           </div>
           <h1 class="pass-main-title">Party Hub · 聚会大厅</h1>
@@ -203,7 +203,7 @@
             <div id="host-game-select-box" class="host-game-select-box">
               <div class="console-section-header">
                 <div class="section-title">
-                  <span>🎮 挑选游戏 (12款聚会游戏)</span>
+                  <span>🎮 挑选游戏 (21款精选游戏)</span>
                   <span class="count-hint" id="lobby-count">1人就绪</span>
                 </div>
                 <div class="category-nav-group">
@@ -1696,21 +1696,21 @@
   </div>
 
   <!-- 静态资源版本缓存防穿透 -->
-  <script src="/qrcode.min.js?v=1.1.0"></script>
-  <script src="/voice.js?v=1.1.0"></script>
+  <script src="/qrcode.min.js?v=1.2.0"></script>
+  <script src="/voice.js?v=1.2.0"></script>
   <!-- 核心大厅总线 -->
-  <script src="/game.js?v=1.1.0"></script>
+  <script src="/game.js?v=1.2.0"></script>
   <!-- 独立模块化小游戏插件 -->
-  <script src="/games/perfectSlice.client.js?v=1.1.0"></script>
-  <script src="/games/holdFive.client.js?v=1.1.0"></script>
-  <script src="/games/cubeCount.client.js?v=1.1.0"></script>
-  <script src="/games/simonMemory.client.js?v=1.1.0"></script>
-  <script src="/games/brainGames.client.js?v=1.1.0"></script>
-  <script src="/games/math24.client.js?v=1.1.0"></script>
-  <script src="/games/uno.client.js?v=1.1.0"></script>
-  <script src="/games/drawGuess.client.js?v=1.1.0"></script>
-  <script src="/games/undercover.client.js?v=1.1.0"></script>
-  <script src="/games/avalon.client.js?v=1.1.0"></script>
-  <script src="/games/partyArcade.client.js?v=1.1.0"></script>
+  <script src="/games/perfectSlice.client.js?v=1.2.0"></script>
+  <script src="/games/holdFive.client.js?v=1.2.0"></script>
+  <script src="/games/cubeCount.client.js?v=1.2.0"></script>
+  <script src="/games/simonMemory.client.js?v=1.2.0"></script>
+  <script src="/games/brainGames.client.js?v=1.2.0"></script>
+  <script src="/games/math24.client.js?v=1.2.0"></script>
+  <script src="/games/uno.client.js?v=1.2.0"></script>
+  <script src="/games/drawGuess.client.js?v=1.2.0"></script>
+  <script src="/games/undercover.client.js?v=1.2.0"></script>
+  <script src="/games/avalon.client.js?v=1.2.0"></script>
+  <script src="/games/partyArcade.client.js?v=1.2.0"></script>
 </body>
 </html>

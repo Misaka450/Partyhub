@@ -1,168 +1,168 @@
 /* ==========================================================================
-   PARTY HUB - NINTENDO 潮流波普潮玩电玩设计系统 (Nintendo Pop & Party Arcade)
+   PARTY HUB - APPLE HIG & LIQUID GLASS 设计系统 (Apple Arcade & HIG Style)
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. 设计变量体系 (Design Tokens)
+   1. 设计变量体系 (Design Tokens - Apple HIG & VisionOS / iOS 18 Spec)
    -------------------------------------------------------------------------- */
 
 :root,
 [data-theme="dark"] {
   --theme-mode: 'dark';
 
-  /* 字体系统 */
-  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* 字体系统 (Apple HIG Typography Stack) */
+  --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 
-  /* 核心波普主色 (Electric Neon Indigo & Cyber Violet) */
-  --primary: #6366F1;
-  --primary-hover: #7579F6;
-  --primary-active: #4F46E5;
-  --primary-shadow: #3730A3;
-  --primary-subtle: rgba(99, 102, 241, 0.16);
-  --primary-glow: rgba(99, 102, 241, 0.45);
+  /* Apple System Colors (Dark Mode) */
+  --primary: #0A84FF; /* Apple System Blue Dark */
+  --primary-hover: #409CFF;
+  --primary-active: #0071E3;
+  --primary-shadow: rgba(10, 132, 255, 0.28);
+  --primary-subtle: rgba(10, 132, 255, 0.12);
+  --primary-glow: rgba(10, 132, 255, 0.22);
 
-  /* 波普潮玩多巴胺对撞色 */
-  --accent-coral: #FF3366;
-  --accent-cyan: #00F0FF;
-  --accent-yellow: #FFD000;
-  --accent-lime: #00DF8F;
-  --accent-purple: #9D4EDD;
-  --accent-orange: #FF6B00;
+  /* Apple HIG System Accents */
+  --accent-coral: #FF375F; /* System Pink */
+  --accent-cyan: #64D2FF;  /* System Cyan */
+  --accent-yellow: #FFD60A; /* System Yellow */
+  --accent-lime: #30D158;   /* System Green */
+  --accent-purple: #BF5AF2; /* System Purple */
+  --accent-orange: #FF9F0A; /* System Orange */
 
-  /* 游戏品类专属潮玩渐变与徽标 */
-  --badge-party-bg: linear-gradient(135deg, rgba(168, 85, 247, 0.22) 0%, rgba(236, 72, 153, 0.22) 100%);
-  --badge-party-text: #F472B6;
-  --badge-party-border: rgba(244, 114, 182, 0.45);
+  /* 游戏品类微章胶囊 (Apple Translucent Badges) */
+  --badge-party-bg: rgba(191, 90, 242, 0.12);
+  --badge-party-text: #D08DF8;
+  --badge-party-border: rgba(191, 90, 242, 0.28);
 
-  --badge-action-bg: linear-gradient(135deg, rgba(255, 51, 102, 0.22) 0%, rgba(255, 107, 0, 0.22) 100%);
-  --badge-action-text: #FF6B8B;
-  --badge-action-border: rgba(255, 107, 139, 0.45);
+  --badge-action-bg: rgba(255, 69, 58, 0.12);
+  --badge-action-text: #FF6961;
+  --badge-action-border: rgba(255, 69, 58, 0.28);
 
-  --badge-puzzle-bg: linear-gradient(135deg, rgba(0, 240, 255, 0.22) 0%, rgba(59, 130, 246, 0.22) 100%);
-  --badge-puzzle-text: #38BDF8;
-  --badge-puzzle-border: rgba(56, 189, 248, 0.45);
+  --badge-puzzle-bg: rgba(100, 210, 255, 0.12);
+  --badge-puzzle-text: #70D7FF;
+  --badge-puzzle-border: rgba(100, 210, 255, 0.28);
 
-  /* 语义辅助色 (电玩高亮) */
-  --success: #00DF8F;
-  --success-shadow: #009E60;
-  --success-subtle: rgba(0, 223, 143, 0.16);
-  --danger: #FF3366;
-  --danger-shadow: #C70039;
-  --danger-subtle: rgba(255, 51, 102, 0.16);
-  --warning: #FFD000;
-  --warning-shadow: #B28F00;
-  --warning-subtle: rgba(255, 208, 0, 0.16);
-  --info: #00F0FF;
-  --info-subtle: rgba(0, 240, 255, 0.16);
+  /* 语义辅助色 (Apple Semantic Colors) */
+  --success: #30D158;
+  --success-shadow: rgba(48, 209, 88, 0.24);
+  --success-subtle: rgba(48, 209, 88, 0.12);
+  --danger: #FF453A;
+  --danger-shadow: rgba(255, 69, 58, 0.24);
+  --danger-subtle: rgba(255, 69, 58, 0.12);
+  --warning: #FFD60A;
+  --warning-shadow: rgba(255, 214, 10, 0.24);
+  --warning-subtle: rgba(255, 214, 10, 0.12);
+  --info: #64D2FF;
+  --info-subtle: rgba(100, 210, 255, 0.12);
 
-  /* 深色电玩夜场背景阶梯 (Deep Arcade Ink) */
-  --bg-base: #0B0F19;
-  --bg-sub: #111726;
-  --bg-surface: #172033;
-  --bg-surface-hover: #1F2C46;
-  --bg-card: rgba(23, 32, 51, 0.88);
-  --bg-input: #101726;
+  /* Apple Liquid Glass 阶梯 (Dark Mode OLED & Graphite Depth) */
+  --bg-base: #000000;
+  --bg-sub: #161618;
+  --bg-surface: rgba(28, 28, 30, 0.85);
+  --bg-surface-hover: rgba(44, 44, 46, 0.9);
+  --bg-card: rgba(28, 28, 30, 0.72);
+  --bg-input: rgba(44, 44, 46, 0.65);
   --bg-pill: rgba(255, 255, 255, 0.08);
-  --bg-backdrop: rgba(6, 9, 15, 0.85);
+  --bg-backdrop: rgba(0, 0, 0, 0.65);
 
   /* 文字与边框 */
   --text-main: #FFFFFF;
-  --text-sub: #CBD5E1;
-  --text-muted: #8896AB;
+  --text-sub: #EBEBF5;
+  --text-muted: #8E8E93;
 
   --border: rgba(255, 255, 255, 0.12);
   --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.24);
-  --border-focus: #6366F1;
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --border-focus: #0A84FF;
 
-  /* 3D 实体按键与卡带阴影 */
-  --shadow-sm: 0 2px 0 rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 4px 0 rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 6px 0 rgba(0, 0, 0, 0.5), 0 16px 40px rgba(0, 0, 0, 0.45);
-  --shadow-arcade: 0 4px 0 rgba(0, 0, 0, 0.4);
+  /* Apple 弥散高斯阴影与内高光 (Smooth Diffuse Shadows) */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18);
+  --shadow-arcade: 0 2px 8px rgba(0, 0, 0, 0.2);
 
   --canvas-bg: #FFFFFF;
-  --canvas-border: #2B3852;
+  --canvas-border: #38383A;
 }
 
 [data-theme="light"] {
   --theme-mode: 'light';
 
   /* 字体系统 */
-  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 
-  /* 核心波普主色 (Electric Royal Blue) */
-  --primary: #4F46E5;
-  --primary-hover: #5F56F5;
-  --primary-active: #3730A3;
-  --primary-shadow: #282475;
-  --primary-subtle: rgba(79, 70, 229, 0.12);
-  --primary-glow: rgba(79, 70, 229, 0.3);
+  /* Apple System Colors (Light Mode) */
+  --primary: #0071E3; /* Apple Signature Blue Light */
+  --primary-hover: #0077ED;
+  --primary-active: #005BB5;
+  --primary-shadow: rgba(0, 113, 227, 0.2);
+  --primary-subtle: rgba(0, 113, 227, 0.08);
+  --primary-glow: rgba(0, 113, 227, 0.18);
 
-  /* 波普潮玩多巴胺对撞色 */
-  --accent-coral: #E11D48;
-  --accent-cyan: #0284C7;
-  --accent-yellow: #D97706;
-  --accent-lime: #059669;
-  --accent-purple: #7C3AED;
-  --accent-orange: #EA580C;
+  /* Apple HIG System Accents */
+  --accent-coral: #FF2D55;
+  --accent-cyan: #32ADE6;
+  --accent-yellow: #FFCC00;
+  --accent-lime: #34C759;
+  --accent-purple: #AF52DE;
+  --accent-orange: #FF9500;
 
-  /* 游戏品类专属潮玩渐变与徽标 */
-  --badge-party-bg: linear-gradient(135deg, rgba(124, 58, 237, 0.12) 0%, rgba(219, 39, 119, 0.12) 100%);
-  --badge-party-text: #9333EA;
-  --badge-party-border: rgba(147, 51, 234, 0.35);
+  /* 游戏品类微章胶囊 (Apple Translucent Badges) */
+  --badge-party-bg: rgba(175, 82, 222, 0.08);
+  --badge-party-text: #8944AB;
+  --badge-party-border: rgba(175, 82, 222, 0.2);
 
-  --badge-action-bg: linear-gradient(135deg, rgba(225, 29, 72, 0.12) 0%, rgba(234, 88, 12, 0.12) 100%);
-  --badge-action-text: #E11D48;
-  --badge-action-border: rgba(225, 29, 72, 0.35);
+  --badge-action-bg: rgba(255, 59, 48, 0.08);
+  --badge-action-text: #D73327;
+  --badge-action-border: rgba(255, 59, 48, 0.2);
 
-  --badge-puzzle-bg: linear-gradient(135deg, rgba(2, 132, 199, 0.12) 0%, rgba(37, 99, 235, 0.12) 100%);
+  --badge-puzzle-bg: rgba(50, 173, 230, 0.08);
   --badge-puzzle-text: #0284C7;
-  --badge-puzzle-border: rgba(2, 132, 199, 0.35);
+  --badge-puzzle-border: rgba(50, 173, 230, 0.2);
 
   /* 语义辅助色 */
-  --success: #059669;
-  --success-shadow: #034E36;
-  --success-subtle: rgba(5, 150, 105, 0.12);
-  --danger: #E11D48;
-  --danger-shadow: #880B27;
-  --danger-subtle: rgba(225, 29, 72, 0.12);
-  --warning: #D97706;
-  --warning-shadow: #783E00;
-  --warning-subtle: rgba(217, 119, 6, 0.12);
-  --info: #0284C7;
-  --info-subtle: rgba(2, 132, 199, 0.12);
+  --success: #34C759;
+  --success-shadow: rgba(52, 199, 89, 0.18);
+  --success-subtle: rgba(52, 199, 89, 0.08);
+  --danger: #FF3B30;
+  --danger-shadow: rgba(255, 59, 48, 0.18);
+  --danger-subtle: rgba(255, 59, 48, 0.08);
+  --warning: #FF9500;
+  --warning-shadow: rgba(255, 149, 0, 0.18);
+  --warning-subtle: rgba(255, 149, 0, 0.08);
+  --info: #0071E3;
+  --info-subtle: rgba(0, 113, 227, 0.08);
 
-  /* 浅色波普工作室背景 (Pop Studio Light) */
-  --bg-base: #F4F6FC;
-  --bg-sub: #E7EDF8;
-  --bg-surface: #FFFFFF;
-  --bg-surface-hover: #F8FAFD;
-  --bg-card: rgba(255, 255, 255, 0.94);
-  --bg-input: #FFFFFF;
-  --bg-pill: rgba(15, 23, 42, 0.06);
-  --bg-backdrop: rgba(15, 23, 42, 0.45);
+  /* Apple 浅色陶瓷质感 (Apple Light Porcelain) */
+  --bg-base: #F5F5F7;
+  --bg-sub: #E8E8ED;
+  --bg-surface: rgba(255, 255, 255, 0.85);
+  --bg-surface-hover: rgba(255, 255, 255, 0.95);
+  --bg-card: rgba(255, 255, 255, 0.78);
+  --bg-input: rgba(255, 255, 255, 0.92);
+  --bg-pill: rgba(0, 0, 0, 0.04);
+  --bg-backdrop: rgba(0, 0, 0, 0.35);
 
   /* 文字与边框 */
-  --text-main: #0F172A;
-  --text-sub: #334155;
-  --text-muted: #64748B;
+  --text-main: #1D1D1F;
+  --text-sub: #515154;
+  --text-muted: #86868B;
 
-  --border: rgba(15, 23, 42, 0.12);
-  --border-subtle: rgba(15, 23, 42, 0.06);
-  --border-strong: rgba(15, 23, 42, 0.22);
-  --border-focus: #4F46E5;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-subtle: rgba(0, 0, 0, 0.04);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --border-focus: #0071E3;
 
-  /* 3D 实体按键与卡带阴影 */
-  --shadow-sm: 0 2px 0 rgba(15, 23, 42, 0.08);
-  --shadow-md: 0 4px 0 rgba(15, 23, 42, 0.1), 0 6px 16px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 6px 0 rgba(15, 23, 42, 0.12), 0 16px 32px rgba(15, 23, 42, 0.1);
-  --shadow-arcade: 0 4px 0 rgba(15, 23, 42, 0.1);
+  /* Apple 浅色弥散阴影 */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --shadow-arcade: 0 2px 8px rgba(0, 0, 0, 0.04);
 
   --canvas-bg: #FFFFFF;
-  --canvas-border: #CBD5E1;
+  --canvas-border: #D1D1D6;
 }
 
 /* --------------------------------------------------------------------------
@@ -199,22 +199,22 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* 动态环境氛围光背景 */
+/* 动态环境氛围光背景 (Apple VisionOS / macOS Sonoma Ambient Gradient) */
 body::before {
   content: '';
   position: fixed;
-  top: -20%;
+  top: -15%;
   left: 10%;
   width: 50vw;
   height: 50vw;
   max-width: 600px;
   max-height: 600px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(157, 78, 221, 0.08) 45%, transparent 70%);
+  background: radial-gradient(circle, rgba(10, 132, 255, 0.07) 0%, transparent 65%);
   border-radius: 50%;
-  filter: blur(60px);
+  filter: blur(80px);
   pointer-events: none;
   z-index: 0;
-  animation: ambientFloat1 18s ease-in-out infinite alternate;
+  animation: ambientFloat1 24s ease-in-out infinite alternate;
 }
 
 body::after {
@@ -226,12 +226,20 @@ body::after {
   height: 55vw;
   max-width: 650px;
   max-height: 650px;
-  background: radial-gradient(circle, rgba(0, 240, 255, 0.12) 0%, rgba(255, 51, 102, 0.08) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(191, 90, 242, 0.05) 0%, transparent 65%);
   border-radius: 50%;
-  filter: blur(70px);
+  filter: blur(90px);
   pointer-events: none;
   z-index: 0;
-  animation: ambientFloat2 22s ease-in-out infinite alternate;
+  animation: ambientFloat2 28s ease-in-out infinite alternate;
+}
+
+[data-theme="light"] body::before {
+  background: radial-gradient(circle, rgba(0, 113, 227, 0.05) 0%, transparent 65%);
+}
+
+[data-theme="light"] body::after {
+  background: radial-gradient(circle, rgba(175, 82, 222, 0.04) 0%, transparent 65%);
 }
 
 @keyframes ambientFloat1 {
@@ -244,10 +252,10 @@ body::after {
   100% { transform: translate(-30px, -40px) scale(1.15); }
 }
 
-/* 拟物潮玩 Toast 提示框 */
+/* Apple Dynamic Island / Capsule Toast 提示框 */
 .app-toast-container {
   position: fixed;
-  top: max(20px, env(safe-area-inset-top, 20px));
+  top: max(16px, env(safe-area-inset-top, 16px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 9999;
@@ -259,21 +267,29 @@ body::after {
 }
 
 .app-toast {
-  background: rgba(17, 24, 39, 0.95);
+  background: rgba(28, 28, 30, 0.88);
   color: #fff;
-  border: 2px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  padding: 10px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  padding: 8px 18px;
   border-radius: 9999px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.4), 0 12px 28px rgba(0, 0, 0, 0.4);
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   display: flex;
   align-items: center;
   gap: 8px;
-  animation: toastPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: toastPop 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   pointer-events: auto;
+}
+
+[data-theme="light"] .app-toast {
+  background: rgba(255, 255, 255, 0.88);
+  color: #1D1D1F;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 @keyframes toastPop {
@@ -343,95 +359,99 @@ body::after {
 }
 
 /* --------------------------------------------------------------------------
-   3. 通用控件与实体按键 (Arcade Tactile Buttons & Inputs)
+   3. 通用控件与触感按键 (Apple HIG Tactile Buttons & Inputs)
    -------------------------------------------------------------------------- */
 
 input[type="text"], select {
   width: 100%;
-  padding: 10px 14px;
+  padding: 9px 14px;
   background: var(--bg-input);
-  border: 2px solid var(--border);
-  border-radius: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   color: var(--text-main);
-  font-size: 0.92rem;
-  font-weight: 600;
+  font-size: 0.9rem;
+  font-weight: 500;
   outline: none;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
-  transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.16s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 input[type="text"]:focus, select:focus {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px var(--primary-subtle), inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 3.5px rgba(10, 132, 255, 0.28), inset 0 1px 2px rgba(0, 0, 0, 0.04);
   background: var(--bg-surface);
 }
 
-/* 实体按键系统 (Arcade Pushable Buttons) */
+/* Apple 实体微质感按键系统 (Apple Tactile Buttons) */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  font-weight: 700;
-  border: 2px solid transparent;
-  border-radius: 10px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 12px;
   cursor: pointer;
-  padding: 9px 18px;
-  font-size: 0.9rem;
+  padding: 8px 16px;
+  font-size: 0.88rem;
   color: #fff;
-  letter-spacing: -0.01em;
-  box-shadow: var(--shadow-arcade);
+  letter-spacing: -0.012em;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   position: relative;
-  /* 关闭移动端系统自带的灰色点击遮罩，避免遮挡我们自定义的按压动效 */
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s ease;
+  transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.15s ease, background-color 0.15s ease, opacity 0.12s ease;
 }
 
 .btn:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+  transform: scale(0.975);
+  opacity: 0.92;
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, #6366F1 0%, #4F46E5 100%);
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 4px 0 var(--primary-shadow), 0 8px 20px var(--primary-glow), inset 0 1.5px 0 rgba(255, 255, 255, 0.35);
+  background: linear-gradient(180deg, var(--primary) 0%, #0062C4 100%);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 8px var(--primary-shadow);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(180deg, #7174F8 0%, #5850EC 100%);
-  transform: translateY(-1.5px);
-  box-shadow: 0 5.5px 0 var(--primary-shadow), 0 12px 24px var(--primary-glow), inset 0 1.5px 0 rgba(255, 255, 255, 0.4);
+  background: linear-gradient(180deg, var(--primary-hover) 0%, var(--primary) 100%);
+  transform: scale(1.015);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 4px 14px var(--primary-shadow);
 }
 
 .btn-primary:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 var(--primary-shadow), 0 2px 8px var(--primary-glow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: scale(0.975);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 6px var(--primary-shadow);
 }
 
 .btn-secondary {
   background: var(--bg-surface);
   color: var(--text-main);
-  border: 2px solid var(--border);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .btn-secondary:hover {
   background: var(--bg-surface-hover);
   border-color: var(--border-strong);
-  transform: translateY(-1px);
+  transform: scale(1.015);
 }
 
 .btn-secondary:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+  transform: scale(0.975);
 }
 
 .btn-subtle {
   background: var(--bg-pill);
   color: var(--text-sub);
-  border: 1.5px solid var(--border);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .btn-subtle:hover {
@@ -439,69 +459,71 @@ input[type="text"]:focus, select:focus {
   border-color: var(--border-strong);
 }
 
+.btn-subtle:active {
+  transform: scale(0.975);
+}
+
 .btn-success {
-  background: linear-gradient(180deg, #00DF8F 0%, #059669 100%);
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 0 var(--success-shadow), 0 8px 20px rgba(0, 223, 143, 0.35), inset 0 1.5px 0 rgba(255, 255, 255, 0.35);
+  background: linear-gradient(180deg, #30D158 0%, #28B84C 100%);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 8px var(--success-shadow);
 }
 
 .btn-success:hover {
-  background: linear-gradient(180deg, #13E798 0%, #0BA574 100%);
-  transform: translateY(-1.5px);
-  box-shadow: 0 5.5px 0 var(--success-shadow), 0 12px 24px rgba(0, 223, 143, 0.45);
+  background: linear-gradient(180deg, #4ADE80 0%, #30D158 100%);
+  transform: scale(1.015);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 4px 14px var(--success-shadow);
 }
 
 .btn-success:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 var(--success-shadow), 0 2px 6px rgba(0, 223, 143, 0.2);
+  transform: scale(0.975);
 }
 
 .btn-danger {
-  background: linear-gradient(180deg, #FF3366 0%, #E11D48 100%);
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 0 var(--danger-shadow), 0 8px 20px rgba(255, 51, 102, 0.35), inset 0 1.5px 0 rgba(255, 255, 255, 0.35);
+  background: linear-gradient(180deg, #FF453A 0%, #E0352A 100%);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 8px var(--danger-shadow);
 }
 
 .btn-danger:hover {
-  background: linear-gradient(180deg, #FF4D7B 0%, #F42B57 100%);
-  transform: translateY(-1.5px);
-  box-shadow: 0 5.5px 0 var(--danger-shadow), 0 12px 24px rgba(255, 51, 102, 0.45);
+  background: linear-gradient(180deg, #FF6961 0%, #FF453A 100%);
+  transform: scale(1.015);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 4px 14px var(--danger-shadow);
 }
 
 .btn-danger:active {
-  transform: translateY(3px);
-  box-shadow: 0 1px 0 var(--danger-shadow);
+  transform: scale(0.975);
 }
 
 .btn-block { width: 100%; }
-.btn-lg { padding: 12px 22px; font-size: 1rem; border-radius: 12px; }
-.btn-sm { padding: 5px 12px; font-size: 0.82rem; border-radius: 8px; }
+.btn-lg { padding: 11px 20px; font-size: 0.98rem; border-radius: 14px; }
+.btn-sm { padding: 4px 10px; font-size: 0.8rem; border-radius: 8px; }
 
 .icon-btn {
   background: var(--bg-surface);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   color: var(--text-sub);
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
-  transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .icon-btn:hover {
   color: var(--text-main);
   border-color: var(--border-strong);
-  transform: translateY(-1.5px);
-  box-shadow: 0 3.5px 0 rgba(0, 0, 0, 0.25);
+  transform: scale(1.04);
 }
 
 .icon-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.2);
+  transform: scale(0.96);
 }
 
 /* --------------------------------------------------------------------------
@@ -562,15 +584,9 @@ input[type="text"]:focus, select:focus {
   overflow: hidden;
 }
 
-/* 卡片顶部霓虹流光饰条 */
+/* 卡片顶部霓虹流光饰条已移除 (Apple 极简设计) */
 .login-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #FF3366, #FFD000, #00F0FF, #6366F1, #9D4EDD);
+  display: none;
 }
 
 .brand-header {
@@ -641,18 +657,19 @@ input[type="text"]:focus, select:focus {
   width: 72px;
   height: 72px;
   background: var(--bg-surface);
-  border: 2.5px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.25), 0 8px 16px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 4px 16px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .avatar-preview-box:hover .avatar-display {
   border-color: var(--primary);
-  box-shadow: 0 4px 0 var(--primary-shadow), 0 0 18px var(--primary-glow);
+  transform: scale(1.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 6px 20px var(--primary-shadow);
 }
 
 .avatar-edit-label {
@@ -694,8 +711,8 @@ input[type="text"]:focus, select:focus {
 .avatar-item.active {
   background: var(--primary-subtle);
   border-color: var(--primary);
-  box-shadow: 0 2px 0 var(--primary-shadow);
-  transform: scale(1.15);
+  box-shadow: 0 0 0 2px var(--primary), 0 2px 6px var(--primary-shadow);
+  transform: scale(1.1);
 }
 
 .login-form {
@@ -747,13 +764,13 @@ input[type="text"]:focus, select:focus {
   gap: 6px;
   padding: 4px 10px;
   background: var(--bg-surface);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 999px;
   font-family: var(--font-mono);
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-main);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   white-space: nowrap;
 }
 
@@ -768,22 +785,22 @@ input[type="text"]:focus, select:focus {
 
 .game-tag {
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 600;
   padding: 3px 9px;
   background: var(--primary-subtle);
-  border: 1.5px solid var(--primary);
+  border: 1px solid rgba(10, 132, 255, 0.3);
   border-radius: 999px;
   color: var(--primary);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
 
 .round-counter {
   font-size: 0.76rem;
-  font-weight: 700;
+  font-weight: 600;
   padding: 3px 9px;
   background: var(--bg-surface);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--text-sub);
   white-space: nowrap;
@@ -795,20 +812,20 @@ input[type="text"]:focus, select:focus {
   gap: 5px;
   padding: 4px 10px;
   background: var(--bg-surface);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--text-sub);
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15);
-  transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .pill-btn:hover {
   color: var(--text-main);
   border-color: var(--border-strong);
-  transform: translateY(-1px);
+  transform: scale(1.02);
 }
 
 /* ================= 计时器设计升级 (Prominent Arcade Timer) ================= */
@@ -1001,7 +1018,7 @@ input[type="text"]:focus, select:focus {
 .cat-pill.active {
   background: var(--primary);
   color: #fff;
-  box-shadow: 0 2px 0 var(--primary-shadow);
+  box-shadow: 0 2px 6px var(--primary-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transform: scale(1.02);
 }
 
@@ -1022,8 +1039,8 @@ input[type="text"]:focus, select:focus {
 
 .game-tile {
   background: var(--bg-surface);
-  border: 2px solid var(--border);
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   border-radius: 14px;
   padding: 10px 12px;
   display: flex;
@@ -1032,7 +1049,9 @@ input[type="text"]:focus, select:focus {
   cursor: pointer;
   position: relative;
   text-align: left;
-  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.16s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s ease;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: transform 0.14s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.14s ease, border-color 0.14s ease;
   overflow: hidden;
 }
 
@@ -1043,15 +1062,18 @@ input[type="text"]:focus, select:focus {
 .game-tile:hover {
   border-color: var(--border-strong);
   background: var(--bg-surface-hover);
-  transform: translateY(-3px) scale(1.015);
-  box-shadow: 0 7px 0 rgba(0, 0, 0, 0.35), 0 10px 20px rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.game-tile:active {
+  transform: scale(0.975);
 }
 
 .game-tile.active {
   border-color: var(--primary);
-  background: linear-gradient(145deg, rgba(99, 102, 241, 0.18) 0%, rgba(157, 78, 221, 0.12) 100%);
-  box-shadow: 0 4px 0 var(--primary-shadow), 0 0 18px var(--primary-glow), inset 0 1.5px 0 rgba(255, 255, 255, 0.25);
-  transform: translateY(-2px);
+  background: var(--primary-subtle);
+  box-shadow: 0 0 0 1.5px var(--primary), 0 6px 18px var(--primary-glow), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .game-tile.active::after {
@@ -1064,7 +1086,6 @@ input[type="text"]:focus, select:focus {
   border-radius: 50%;
   background: var(--primary);
   box-shadow: 0 0 8px var(--primary);
-  animation: pulseBeacon 1.5s infinite;
 }
 
 .tile-icon-box {
@@ -1077,8 +1098,8 @@ input[type="text"]:focus, select:focus {
   font-size: 1.45rem;
   flex-shrink: 0;
   background: var(--bg-sub);
-  border: 1.5px solid var(--border);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 /* 12 款游戏波普低饱和微渐变底 */
@@ -1497,7 +1518,7 @@ html, body {
 }
 
 /* --------------------------------------------------------------------------
-   1. 登录通行证界面 (Arcade Player Passport)
+   1. 登录通行证界面 (Apple ID / Arcade Pass)
    -------------------------------------------------------------------------- */
 
 .login-wrapper {
@@ -1515,14 +1536,14 @@ html, body {
 
 .login-card {
   background: var(--bg-card) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 20px !important;
-  padding: 20px 18px !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 24px !important;
+  padding: 24px 20px !important;
   width: 100% !important;
   max-width: 360px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
   position: relative !important;
   overflow: hidden !important;
   text-align: left !important;
@@ -1535,8 +1556,8 @@ html, body {
 
 .card-corner-theme {
   position: absolute !important;
-  top: 16px !important;
-  right: 16px !important;
+  top: 18px !important;
+  right: 18px !important;
   z-index: 10 !important;
 }
 
@@ -1544,25 +1565,28 @@ html, body {
   display: inline-flex !important;
   align-items: center !important;
   gap: 5px !important;
-  padding: 4px 10px !important;
+  padding: 5px 11px !important;
   background: var(--bg-surface) !important;
-  border: 1.5px solid var(--border) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 999px !important;
   color: var(--text-sub) !important;
-  font-size: 0.74rem !important;
-  font-weight: 800 !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
   cursor: pointer !important;
-  box-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   transition: all 0.12s ease !important;
 }
 
 .theme-switch-btn:hover {
   border-color: var(--primary) !important;
   color: var(--primary) !important;
+  transform: scale(1.03) !important;
 }
 
 .pass-header {
-  margin-bottom: 14px !important;
+  margin-bottom: 16px !important;
   padding-right: 70px !important;
 }
 
@@ -1570,41 +1594,41 @@ html, body {
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
-  margin-bottom: 5px !important;
+  margin-bottom: 6px !important;
 }
 
 .pass-chip-meta {
   font-family: var(--font-mono) !important;
   font-size: 0.68rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.1em !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
   color: var(--primary) !important;
   background: var(--primary-subtle) !important;
-  padding: 2px 7px !important;
-  border-radius: 4px !important;
-  border: 1px solid rgba(99, 102, 241, 0.3) !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(10, 132, 255, 0.28) !important;
 }
 
 .pass-chip-id {
   font-family: var(--font-mono) !important;
   font-size: 0.68rem !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   color: var(--success) !important;
   letter-spacing: 0.06em !important;
 }
 
 .pass-main-title {
-  font-size: 1.38rem !important;
-  font-weight: 900 !important;
+  font-size: 1.42rem !important;
+  font-weight: 700 !important;
   color: var(--text-main) !important;
-  letter-spacing: -0.02em !important;
-  margin: 0 0 2px 0 !important;
+  letter-spacing: -0.024em !important;
+  margin: 0 0 3px 0 !important;
   line-height: 1.2 !important;
 }
 
 .pass-sub-desc {
-  font-size: 0.78rem !important;
-  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  font-weight: 400 !important;
   color: var(--text-muted) !important;
   margin: 0 !important;
 }
@@ -1615,11 +1639,11 @@ html, body {
   align-items: center !important;
   gap: 12px !important;
   background: var(--bg-sub) !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 14px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
   padding: 10px 12px !important;
   margin-bottom: 12px !important;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
 }
 
 .avatar-interactive-slot {
@@ -1629,23 +1653,23 @@ html, body {
 }
 
 .avatar-display {
-  width: 44px !important;
-  height: 44px !important;
+  width: 46px !important;
+  height: 46px !important;
   background: var(--bg-surface) !important;
   border: 1.5px solid var(--border) !important;
-  border-radius: 12px !important;
+  border-radius: 14px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 1.8rem !important;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12) !important;
-  transition: all 0.16s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  font-size: 1.85rem !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.16s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
 .avatar-interactive-slot:hover .avatar-display {
-  transform: translateY(-1.5px) scale(1.05) !important;
+  transform: scale(1.05) !important;
   border-color: var(--primary) !important;
-  box-shadow: 0 4px 0 var(--primary-shadow) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 14px var(--primary-shadow) !important;
 }
 
 .avatar-badge-edit {
@@ -1675,9 +1699,9 @@ html, body {
 
 .dock-label {
   font-size: 0.68rem !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   color: var(--text-muted) !important;
-  letter-spacing: 0.05em !important;
+  letter-spacing: 0.04em !important;
   text-transform: uppercase !important;
   display: block !important;
 }
@@ -1692,60 +1716,61 @@ html, body {
 .name-input-wrapper input {
   flex: 1 !important;
   min-width: 0 !important;
-  padding: 6px 10px !important;
+  padding: 7px 11px !important;
   font-size: 0.88rem !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   background: var(--bg-input) !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 9px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
   color: var(--text-main) !important;
   outline: none !important;
-  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.12s ease !important;
 }
 
 .name-input-wrapper input:focus {
   border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.28) !important;
   background: var(--bg-surface) !important;
 }
 
 .btn-dice-random {
   flex-shrink: 0 !important;
-  padding: 0 9px !important;
+  padding: 0 10px !important;
   font-size: 0.74rem !important;
-  font-weight: 800 !important;
-  border-radius: 9px !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
   background: var(--bg-surface) !important;
-  border: 1.5px solid var(--border) !important;
+  border: 1px solid var(--border) !important;
   color: var(--text-main) !important;
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 4px !important;
-  box-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.1) !important;
-  transition: all 0.12s ease !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
   white-space: nowrap !important;
 }
 
 .btn-dice-random:hover {
   border-color: var(--primary) !important;
   color: var(--primary) !important;
-  transform: translateY(-1px) !important;
+  transform: scale(1.02) !important;
 }
 
 .btn-dice-random:active {
-  transform: translateY(1.5px) !important;
-  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.1) !important;
+  transform: scale(0.96) !important;
 }
 
 /* 房间号接入卡槽 */
 .pass-room-dock {
   background: var(--bg-sub) !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 14px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
   padding: 10px 12px !important;
   margin-bottom: 16px !important;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 8px rgba(0, 0, 0, 0.06) !important;
 }
 
 .room-input-wrapper {
@@ -1753,17 +1778,23 @@ html, body {
   align-items: center !important;
   gap: 4px !important;
   background: var(--bg-input) !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 9px !important;
-  padding: 2px 5px !important;
-  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  padding: 2px 6px !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06) !important;
   margin-top: 3px !important;
+  transition: all 0.12s ease !important;
+}
+
+.room-input-wrapper:focus-within {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.28) !important;
 }
 
 .room-hash-prefix {
   font-family: var(--font-mono) !important;
   font-size: 0.95rem !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   color: var(--primary) !important;
   padding-left: 5px !important;
   flex-shrink: 0 !important;
@@ -1777,7 +1808,7 @@ html, body {
   box-shadow: none !important;
   padding: 6px 4px !important;
   font-size: 0.92rem !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   font-family: var(--font-mono) !important;
   color: var(--text-main) !important;
   outline: none !important;
@@ -1786,7 +1817,7 @@ html, body {
 .btn-dice-room {
   width: 28px !important;
   height: 28px !important;
-  border-radius: 7px !important;
+  border-radius: 8px !important;
   background: var(--bg-surface) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-main) !important;
@@ -1796,17 +1827,17 @@ html, body {
   align-items: center !important;
   justify-content: center !important;
   flex-shrink: 0 !important;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) !important;
-  transition: all 0.12s ease !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
 .btn-dice-room:hover {
   border-color: var(--primary) !important;
-  transform: translateY(-1px) !important;
+  transform: scale(1.05) !important;
 }
 
 .btn-dice-room:active {
-  transform: translateY(1.5px) !important;
+  transform: scale(0.95) !important;
 }
 
 .quick-room-chips {
@@ -1817,44 +1848,49 @@ html, body {
 }
 
 .chip-label {
-  font-size: 0.7rem !important;
-  font-weight: 700 !important;
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
   color: var(--text-muted) !important;
+  letter-spacing: 0.02em !important;
 }
 
 .quick-room-btn {
-  padding: 2px 8px !important;
   background: var(--bg-surface) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 6px !important;
+  border-radius: 8px !important;
+  padding: 3px 9px !important;
   font-family: var(--font-mono) !important;
   font-size: 0.74rem !important;
-  font-weight: 800 !important;
-  color: var(--text-main) !important;
+  font-weight: 700 !important;
+  color: var(--text-sub) !important;
   cursor: pointer !important;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08) !important;
-  transition: all 0.12s ease !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
 .quick-room-btn:hover {
   border-color: var(--primary) !important;
   color: var(--primary) !important;
-  transform: translateY(-1px) !important;
+  transform: scale(1.04) !important;
+}
+
+.quick-room-btn:active {
+  transform: scale(0.96) !important;
 }
 
 .room-slogan-tip {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 5px !important;
+  gap: 6px !important;
   margin-top: 9px !important;
   padding: 5px 8px !important;
   background: var(--bg-surface) !important;
-  border: 1px dashed var(--border) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 8px !important;
   font-size: 0.72rem !important;
   color: var(--text-muted) !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
 }
 
 /* 进入大厅主按键 */
@@ -1862,34 +1898,33 @@ html, body {
   width: 100% !important;
   padding: 12px 18px !important;
   font-size: 0.98rem !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.04em !important;
-  background: linear-gradient(180deg, #6366F1 0%, #4F46E5 100%) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  background: linear-gradient(180deg, var(--primary) 0%, #0062C4 100%) !important;
   color: #fff !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   border-radius: 14px !important;
-  box-shadow: 0 4.5px 0 #312E81, 0 8px 20px rgba(99, 102, 241, 0.35), inset 0 1.5px 0 rgba(255, 255, 255, 0.35) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 16px var(--primary-shadow) !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
-  transition: all 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.15s ease !important;
 }
 
 .btn-arcade-enter:hover {
-  background: linear-gradient(180deg, #7174F8 0%, #5850EC 100%) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6.5px 0 #312E81, 0 12px 24px rgba(99, 102, 241, 0.45) !important;
+  background: linear-gradient(180deg, var(--primary-hover) 0%, var(--primary) 100%) !important;
+  transform: scale(1.015) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 6px 20px var(--primary-shadow) !important;
 }
 
 .btn-arcade-enter:active {
-  transform: translateY(4px) !important;
-  box-shadow: 0 0.5px 0 #312E81, 0 2px 6px rgba(99, 102, 241, 0.2) !important;
+  transform: scale(0.975) !important;
 }
 
 /* --------------------------------------------------------------------------
-   2. 顶部 Header 胶囊与对齐 (Centered Height 30px Topbar)
+   2. 顶部 Header 胶囊与对齐 (iOS Navigation Bar / Floating Topbar)
    -------------------------------------------------------------------------- */
 
 .game-header {
@@ -1898,10 +1933,10 @@ html, body {
   justify-content: space-between !important;
   padding: 8px 14px !important;
   background: var(--bg-card) !important;
-  backdrop-filter: blur(18px) !important;
-  -webkit-backdrop-filter: blur(18px) !important;
-  border-bottom: 2px solid var(--border) !important;
-  box-shadow: var(--shadow-sm) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05) !important;
   z-index: 50 !important;
   height: 50px !important;
   flex-shrink: 0 !important;
@@ -1914,84 +1949,77 @@ html, body {
 }
 
 .room-pill {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 6px !important;
-  height: 30px !important;
-  padding: 0 10px !important;
-  line-height: 1 !important;
-  background: var(--bg-surface) !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 999px !important;
-  font-family: var(--font-mono) !important;
-  font-size: 0.82rem !important;
-  font-weight: 800 !important;
-  color: var(--text-main) !important;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15) !important;
-  white-space: nowrap !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
 }
 
 .room-dot {
-  width: 7px !important;
-  height: 7px !important;
-  border-radius: 50% !important;
-  background: var(--success) !important;
-  box-shadow: 0 0 8px var(--success) !important;
-  animation: pulseBeacon 1.8s infinite !important;
-  flex-shrink: 0 !important;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  animation: pulseBeacon 1.8s infinite;
 }
 
 .game-tag {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  height: 30px !important;
-  padding: 0 10px !important;
-  line-height: 1 !important;
-  font-size: 0.78rem !important;
-  font-weight: 800 !important;
-  background: var(--primary-subtle) !important;
-  border: 1.5px solid var(--primary) !important;
-  border-radius: 999px !important;
-  color: var(--primary) !important;
-  letter-spacing: 0.02em !important;
-  white-space: nowrap !important;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  background: var(--primary-subtle);
+  border: 1px solid rgba(10, 132, 255, 0.3);
+  border-radius: 999px;
+  color: var(--primary);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .round-counter {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  height: 30px !important;
-  padding: 0 10px !important;
-  line-height: 1 !important;
-  font-size: 0.76rem !important;
-  font-weight: 700 !important;
-  background: var(--bg-surface) !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 999px !important;
-  color: var(--text-sub) !important;
-  white-space: nowrap !important;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-sub);
+  white-space: nowrap;
 }
 
 .pill-btn {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 5px !important;
-  height: 30px !important;
-  padding: 0 10px !important;
-  line-height: 1 !important;
-  background: var(--bg-surface) !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 999px !important;
-  color: var(--text-sub) !important;
-  font-size: 0.82rem !important;
-  font-weight: 700 !important;
-  cursor: pointer !important;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.15) !important;
-  white-space: nowrap !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-sub);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.pill-btn:hover {
+  color: var(--text-main);
+  border-color: var(--border-strong);
+  transform: scale(1.02);
+}
+
+.pill-btn:active {
+  transform: scale(0.96) !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -2039,16 +2067,18 @@ html, body {
 }
 
 /* --------------------------------------------------------------------------
-   4. 极简紧凑单行玩家席位条 (Ultra Compact Single-Row 4-Slots Island)
+   4. 极简紧凑单行玩家席位条 (Apple SharePlay 4-Slots Island)
    -------------------------------------------------------------------------- */
 
 .lobby-room-hero {
   background: var(--bg-card) !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 14px !important;
-  padding: 8px 10px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  padding: 8px 12px !important;
   margin-bottom: 10px !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
   position: relative !important;
   overflow: hidden !important;
   width: 100% !important;
@@ -2075,19 +2105,19 @@ html, body {
   border: 1px solid var(--border) !important;
   border-radius: 999px !important;
   font-family: var(--font-mono) !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
 }
 
 .hero-lbl {
   font-size: 0.65rem !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   color: var(--primary) !important;
-  letter-spacing: 0.06em !important;
+  letter-spacing: 0.05em !important;
 }
 
 .hero-room-id {
   font-size: 0.85rem !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   color: var(--text-main) !important;
 }
 
@@ -2099,19 +2129,19 @@ html, body {
 
 .hero-player-badge {
   font-size: 0.68rem !important;
-  font-weight: 700 !important;
-  padding: 1px 6px !important;
+  font-weight: 600 !important;
+  padding: 1px 7px !important;
   background: var(--primary-subtle) !important;
-  border: 1px solid rgba(99, 102, 241, 0.25) !important;
+  border: 1px solid rgba(10, 132, 255, 0.25) !important;
   border-radius: 999px !important;
   color: var(--primary) !important;
 }
 
 .hero-invite-btn {
   font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  padding: 2px 6px !important;
-  border-radius: 6px !important;
+  font-weight: 600 !important;
+  padding: 2px 7px !important;
+  border-radius: 8px !important;
   background: var(--bg-surface) !important;
   border: 1px solid var(--border) !important;
   color: var(--text-sub) !important;
@@ -2119,6 +2149,12 @@ html, body {
   align-items: center !important;
   gap: 4px !important;
   cursor: pointer !important;
+  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+.hero-invite-btn:hover {
+  border-color: var(--border-strong) !important;
+  color: var(--text-main) !important;
 }
 
 /* 强制全端（包括移动端手机）100% 保持单行 4 等分席位网格，严禁折行成 2x2 */
@@ -2140,18 +2176,18 @@ html, body {
 
 .player-seat-card {
   background: var(--bg-surface) !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 10px !important;
-  padding: 5px 3px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  padding: 6px 4px !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   text-align: center !important;
   gap: 2px !important;
-  box-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
   position: relative !important;
   min-width: 0 !important;
-  transition: all 0.15s ease !important;
+  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
 .player-seat-card.is-me {
@@ -2160,16 +2196,16 @@ html, body {
 }
 
 .player-seat-card.is-host {
-  border-color: #F59E0B !important;
+  border-color: rgba(255, 159, 10, 0.4) !important;
 }
 
 .seat-avatar-wrapper {
   position: relative !important;
-  width: 28px !important;
-  height: 28px !important;
+  width: 30px !important;
+  height: 30px !important;
   background: var(--bg-sub) !important;
   border: 1px solid var(--border) !important;
-  border-radius: 7px !important;
+  border-radius: 9px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -2177,7 +2213,7 @@ html, body {
 }
 
 .seat-avatar {
-  font-size: 1.15rem !important;
+  font-size: 1.2rem !important;
   line-height: 1 !important;
 }
 
@@ -2200,7 +2236,7 @@ html, body {
 
 .seat-name {
   font-size: 0.68rem !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   color: var(--text-main) !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -2215,39 +2251,39 @@ html, body {
 
 .badge-seat-host {
   font-size: 0.58rem !important;
-  font-weight: 800 !important;
-  color: #D97706 !important;
-  background: rgba(245, 158, 11, 0.15) !important;
-  padding: 1px 3px !important;
-  border-radius: 3px !important;
+  font-weight: 700 !important;
+  color: #FF9F0A !important;
+  background: rgba(255, 159, 10, 0.14) !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
   line-height: 1 !important;
   white-space: nowrap !important;
 }
 
 .badge-seat-ready {
   font-size: 0.58rem !important;
-  font-weight: 800 !important;
-  color: var(--success) !important;
-  background: rgba(0, 223, 143, 0.15) !important;
-  padding: 1px 3px !important;
-  border-radius: 3px !important;
+  font-weight: 700 !important;
+  color: #30D158 !important;
+  background: rgba(48, 209, 88, 0.14) !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
   line-height: 1 !important;
   white-space: nowrap !important;
 }
 
 .badge-seat-wait {
   font-size: 0.58rem !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   color: var(--text-muted) !important;
   background: var(--bg-sub) !important;
-  padding: 1px 3px !important;
-  border-radius: 3px !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
   line-height: 1 !important;
   white-space: nowrap !important;
 }
 
 .seat-empty-card {
-  border: 1.5px dashed var(--border-strong) !important;
+  border: 1px dashed var(--border-strong) !important;
   background: transparent !important;
   box-shadow: none !important;
   cursor: pointer !important;
@@ -2263,26 +2299,26 @@ html, body {
 .seat-empty-icon {
   width: 24px !important;
   height: 24px !important;
-  border-radius: 6px !important;
+  border-radius: 7px !important;
   border: 1px dashed var(--border-strong) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   font-size: 0.85rem !important;
-  font-weight: 800 !important;
+  font-weight: 700 !important;
   color: var(--text-muted) !important;
   margin-bottom: 1px !important;
 }
 
 .seat-empty-label {
   font-size: 0.62rem !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   color: var(--text-muted) !important;
   white-space: nowrap !important;
 }
 
 /* --------------------------------------------------------------------------
-   5. 掌机级双键操作坞 (Arcade Gamepad Action Dock)
+   5. Apple 浮动动作底栏 (Apple VisionOS / Floating Glass Dock)
    -------------------------------------------------------------------------- */
 
 .arcade-action-dock {
@@ -2294,13 +2330,13 @@ html, body {
   display: flex !important;
   align-items: stretch !important;
   gap: 10px !important;
-  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)) 12px !important;
-  margin: 14px 0 0 0 !important;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)) 14px !important;
+  margin: 12px 0 0 0 !important;
   background: var(--bg-card) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border-top: 1.5px solid var(--border-subtle) !important;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.18) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border-top: 1px solid var(--border) !important;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12) !important;
   width: 100% !important;
   box-sizing: border-box !important;
 }
@@ -2310,32 +2346,31 @@ html, body {
   min-width: 0 !important;
   background: var(--bg-surface) !important;
   color: var(--text-main) !important;
-  border: 2px solid var(--border-strong) !important;
+  border: 1px solid var(--border-strong) !important;
   border-radius: 14px !important;
-  padding: 10px 8px !important;
-  font-size: 0.84rem !important;
-  font-weight: 800 !important;
+  padding: 11px 8px !important;
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
   letter-spacing: -0.01em !important;
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 6px !important;
-  box-shadow: 0 3.5px 0 rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.15s ease, border-color 0.15s ease !important;
 }
 
 .btn-dock-sub:hover {
-  background: var(--bg-sub) !important;
+  background: var(--bg-surface-hover) !important;
   border-color: var(--primary) !important;
   color: var(--primary) !important;
-  transform: translateY(-1.5px) !important;
-  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.25) !important;
 }
 
 .btn-dock-sub:active {
-  transform: translateY(3px) !important;
-  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.2) !important;
+  transform: scale(0.97) !important;
 }
 
 .btn-dock-main {
@@ -2344,55 +2379,48 @@ html, body {
   border-radius: 14px !important;
   padding: 11px 16px !important;
   font-size: 0.98rem !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.04em !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
   color: #FFFFFF !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
-  transition: all 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.15s ease !important;
   white-space: nowrap !important;
 }
 
+.btn-dock-main:active {
+  transform: scale(0.975) !important;
+}
+
 .btn-arcade-start {
-  background: linear-gradient(180deg, #6366F1 0%, #4F46E5 100%) !important;
-  box-shadow: 0 4.5px 0 #312E81, 0 8px 20px rgba(99, 102, 241, 0.35), inset 0 1.5px 0 rgba(255, 255, 255, 0.4) !important;
+  background: linear-gradient(180deg, var(--primary) 0%, #0062C4 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 16px var(--primary-shadow) !important;
 }
 
 .btn-arcade-start:hover {
-  background: linear-gradient(180deg, #7174F8 0%, #5850EC 100%) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6.5px 0 #312E81, 0 12px 24px rgba(99, 102, 241, 0.45) !important;
-}
-
-.btn-arcade-start:active {
-  transform: translateY(4px) !important;
-  box-shadow: 0 0.5px 0 #312E81, 0 2px 6px rgba(99, 102, 241, 0.2) !important;
+  background: linear-gradient(180deg, var(--primary-hover) 0%, var(--primary) 100%) !important;
+  transform: scale(1.015) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 6px 20px var(--primary-shadow) !important;
 }
 
 .btn-arcade-ready {
-  background: linear-gradient(180deg, #FF3366 0%, #E11D48 100%) !important;
-  box-shadow: 0 4.5px 0 #881337, 0 8px 20px rgba(255, 51, 102, 0.35), inset 0 1.5px 0 rgba(255, 255, 255, 0.4) !important;
+  background: linear-gradient(180deg, #30D158 0%, #249C42 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 16px var(--success-shadow) !important;
 }
 
 .btn-arcade-ready:hover {
-  background: linear-gradient(180deg, #FF4D7B 0%, #F42B57 100%) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6.5px 0 #881337, 0 12px 24px rgba(255, 51, 102, 0.45) !important;
-}
-
-.btn-arcade-ready:active {
-  transform: translateY(4px) !important;
-  box-shadow: 0 0.5px 0 #881337, 0 2px 6px rgba(255, 51, 102, 0.2) !important;
+  background: linear-gradient(180deg, #4ADE80 0%, #30D158 100%) !important;
+  transform: scale(1.015) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 6px 20px var(--success-shadow) !important;
 }
 
 .btn-glyph {
   font-size: 0.95rem !important;
   line-height: 1 !important;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3)) !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -2507,7 +2535,7 @@ html, body {
   font-size: 0.95rem !important;
   padding: 2px 6px !important;
   cursor: pointer !important;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
 .chat-form {
@@ -2650,7 +2678,7 @@ html, body {
   background: var(--bg-card) !important;
   border: 1.5px solid var(--border) !important;
   border-radius: 10px !important;
-  box-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
 }
 
 .player-item.is-me {
@@ -2734,77 +2762,83 @@ html, body {
 
 
 /* --------------------------------------------------------------------------
-   8. 紧凑防截断 12 款游戏实体卡带 (Ultra Compact Non-Truncating Cartridges)
+   8. Apple Arcade 游戏卡带 Bento Grid (Apple Arcade Bento Grid Cards)
    -------------------------------------------------------------------------- */
 
 .game-tiles-grid {
   display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important;
-  gap: 6px !important;
-  margin-bottom: 10px !important;
+  gap: 8px !important;
+  margin-bottom: 12px !important;
   width: 100% !important;
 }
 
 @media (min-width: 768px) {
   .game-tiles-grid {
     grid-template-columns: repeat(4, 1fr) !important;
-    gap: 8px !important;
+    gap: 10px !important;
   }
 }
 
 .game-tile {
   background: var(--bg-surface) !important;
-  border: 1.5px solid var(--border) !important;
-  box-shadow: 0 2.5px 0 rgba(0, 0, 0, 0.15) !important;
-  border-radius: 11px !important;
-  padding: 6px 7px !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  border-radius: 14px !important;
+  padding: 7px 8px !important;
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 8px !important;
   cursor: pointer !important;
   position: relative !important;
   text-align: left !important;
-  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.12s ease, border-color 0.12s ease !important;
   overflow: hidden !important;
   min-width: 0 !important;
 }
 
 .game-tile:hover {
   border-color: var(--border-strong) !important;
-  transform: translateY(-1.5px) !important;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2) !important;
+  transform: scale(1.02) !important;
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.game-tile:active {
+  transform: scale(0.975) !important;
 }
 
 .game-tile.active {
   border-color: var(--primary) !important;
   background: var(--primary-subtle) !important;
-  box-shadow: 0 3px 0 var(--primary-shadow), 0 0 12px var(--primary-glow) !important;
+  box-shadow: 0 0 0 1.5px var(--primary), 0 4px 14px var(--primary-glow), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
 
 .game-tile.active::after {
   content: '' !important;
   position: absolute !important;
-  top: 5px !important;
-  right: 5px !important;
+  top: 6px !important;
+  right: 6px !important;
   width: 6px !important;
   height: 6px !important;
   border-radius: 50% !important;
   background: var(--primary) !important;
-  box-shadow: 0 0 6px var(--primary) !important;
+  box-shadow: 0 0 8px var(--primary) !important;
 }
 
 .tile-icon-box {
-  width: 32px !important;
-  height: 32px !important;
-  border-radius: 8px !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 10px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 1.25rem !important;
+  font-size: 1.3rem !important;
   flex-shrink: 0 !important;
   background: var(--bg-sub) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: 0 1.5px 0 rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid var(--border-subtle) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
 }
 
 .tile-content {
@@ -2824,8 +2858,8 @@ html, body {
 }
 
 .tile-title {
-  font-size: 0.78rem !important;
-  font-weight: 800 !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
   color: var(--text-main) !important;
   white-space: nowrap !important;
   letter-spacing: -0.01em !important;
@@ -2834,9 +2868,9 @@ html, body {
 
 .tile-badge {
   font-size: 0.58rem !important;
-  font-weight: 800 !important;
-  padding: 1px 4px !important;
-  border-radius: 4px !important;
+  font-weight: 600 !important;
+  padding: 1px 5px !important;
+  border-radius: 999px !important;
   white-space: nowrap !important;
   letter-spacing: 0.02em !important;
   flex-shrink: 0 !important;
@@ -2845,7 +2879,7 @@ html, body {
 
 .tile-meta {
   font-size: 0.65rem !important;
-  font-weight: 500 !important;
+  font-weight: 400 !important;
   color: var(--text-muted) !important;
   white-space: nowrap !important;
   overflow: hidden !important;
@@ -2896,26 +2930,27 @@ html, body {
 .btn-xs { padding: 2px 7px; font-size: 0.68rem; border-radius: 6px; }
 .btn-outline {
   background: transparent;
-  border: 1.5px solid var(--border-strong);
+  border: 1px solid var(--border-strong);
   color: var(--text-sub);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.12s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .btn-outline:hover {
   border-color: var(--primary);
   color: var(--primary);
   background: var(--primary-subtle);
-  transform: translateY(-1px);
+  transform: scale(1.015);
 }
-/* 按压态：明显下沉 + 阴影压缩，给出清晰的"按下去了"反馈 */
 .btn-outline:active {
-  transform: translateY(3px);
+  transform: scale(0.975);
   background: var(--primary-subtle);
   border-color: var(--primary);
   color: var(--primary);
-  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  box-shadow: none;
 }
 
-/* ---------------------------- 弹窗系统 ---------------------------- */
+/* ---------------------------- 弹窗系统 (Apple Sheet & Modal) ---------------------------- */
 .modal {
   position: fixed !important;
   inset: 0 !important;
@@ -2931,8 +2966,8 @@ html, body {
   position: absolute;
   inset: 0;
   background: var(--bg-backdrop);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
 }
 
 .modal-content {
@@ -2943,10 +2978,12 @@ html, body {
   max-height: 86dvh;
   overflow-y: auto;
   background: var(--bg-surface);
-  border: 2px solid var(--border-strong);
-  border-radius: 18px;
-  padding: 18px;
-  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 22px 20px;
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   text-align: center;
 }
 .modal-content h3 { font-size: 1.05rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
@@ -3962,32 +3999,32 @@ html, body {
 .hold-btn-wrapper { display: flex; justify-content: center; }
 /* 掌机式实体大按键：按住时下沉 */
 .btn-hold-trigger {
-  width: 190px; height: 190px;
-  max-width: 62vw; max-height: 62vw;
+  width: 140px;
+  height: 140px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
   border-radius: 50%;
-  background: radial-gradient(circle at 32% 26%, var(--primary-hover), var(--primary-active) 62%, var(--primary-shadow));
-  border: 4px solid var(--border-strong);
+  background: radial-gradient(circle at 32% 26%, var(--primary-hover), var(--primary-active) 62%, #004F9E);
+  border: 3px solid rgba(255, 255, 255, 0.25);
   color: #fff;
   font-family: var(--font-main);
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 0 var(--primary-shadow), 0 14px 30px rgba(0, 0, 0, 0.4);
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.3), 0 10px 28px rgba(0, 0, 0, 0.35);
+  transition: transform 0.1s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.1s ease;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
 }
 .btn-hold-trigger .hold-icon { font-size: 2.4rem; line-height: 1; }
-.btn-hold-trigger .hold-text { font-size: 0.92rem; letter-spacing: 0.02em; }
+.btn-hold-trigger .hold-text { font-size: 0.92rem; letter-spacing: 0.01em; }
 .btn-hold-trigger.pressing {
-  transform: translateY(6px) scale(0.97);
-  box-shadow: 0 2px 0 var(--primary-shadow), 0 6px 16px rgba(0, 0, 0, 0.4);
+  transform: scale(0.95);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .hold-result-box {
   display: flex;
@@ -4107,30 +4144,18 @@ html, body {
   align-items: center;
   justify-content: center;
   background: var(--bg-surface);
-  border: 2px solid var(--border);
-  border-radius: 11px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
   color: var(--text-main);
   font-family: var(--font-mono);
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2.5px 0 rgba(0, 0, 0, 0.2);
-  transition: all 0.1s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: transform 0.1s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.12s ease;
 }
-.btn-key:hover { border-color: var(--primary); color: var(--primary); }
-.btn-key:active { transform: translateY(2px); box-shadow: none; }
-.btn-key-action { background: var(--primary-subtle); border-color: var(--primary); color: var(--primary); }
-
-/* ------------------------- 【决战 24 点】 ------------------------- */
-.m24-arena {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow-y: auto;
-  padding-bottom: 6px;
-}
+.btn-key:hover { border-color: var(--primary); color: var(--primary); transform: scale(1.02); }
+.btn-key:active { transform: scale(0.96); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15); }
 .m24-poker-deck { flex-shrink: 0; }
 .m24-deck-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
 .m24-tag { font-size: 0.8rem; font-weight: 800; color: var(--text-main); }
@@ -5760,32 +5785,28 @@ html, body {
 
 /* 底部操作坞二维码图标按键 */
 .btn-dock-icon {
-  flex: 0 0 46px !important;
-  height: 44px !important;
-  background: var(--bg-surface) !important;
-  color: var(--text-main) !important;
-  border: 2px solid var(--border-strong) !important;
-  border-radius: 14px !important;
-  cursor: pointer !important;
   display: inline-flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 2px !important;
-  padding: 2px 4px !important;
+  padding: 3px 6px !important;
   font-size: 0.62rem !important;
-  font-weight: 800 !important;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.2) !important;
-  transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.15s ease !important;
 }
 .btn-dock-icon:hover {
   border-color: var(--primary) !important;
   color: var(--primary) !important;
-  transform: translateY(-1.5px) !important;
+  transform: scale(1.04) !important;
 }
 .btn-dock-icon:active {
-  transform: translateY(2px) !important;
-  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.2) !important;
+  transform: scale(0.96) !important;
 }
 
 /* 触觉震动切换图标状态 */
@@ -5898,43 +5919,41 @@ html, body {
 }
 .btn-arcade-rematch {
   flex: 1 !important;
-  background: linear-gradient(180deg, #6366F1 0%, #4F46E5 100%) !important;
-  box-shadow: 0 3.5px 0 #312E81, inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  background: linear-gradient(180deg, var(--primary) 0%, #0062C4 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 3px 12px var(--primary-shadow) !important;
   color: #FFFFFF !important;
-  font-weight: 800 !important;
-  padding: 9px 12px !important;
-  border-radius: 12px !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  font-weight: 700 !important;
+  padding: 10px 14px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 6px !important;
   cursor: pointer !important;
-  transition: all 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 .btn-arcade-rematch:active {
-  transform: translateY(2.5px) !important;
-  box-shadow: 0 1px 0 #312E81 !important;
+  transform: scale(0.97) !important;
 }
 .btn-arcade-random-next {
   flex: 1 !important;
   background: var(--bg-surface) !important;
-  border: 2px solid var(--primary) !important;
+  border: 1px solid var(--border-strong) !important;
   color: var(--primary) !important;
-  font-weight: 800 !important;
-  padding: 9px 12px !important;
-  border-radius: 12px !important;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.15) !important;
+  font-weight: 700 !important;
+  padding: 10px 14px !important;
+  border-radius: 14px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08) !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 6px !important;
   cursor: pointer !important;
-  transition: all 0.1s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transition: transform 0.12s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 .btn-arcade-random-next:active {
-  transform: translateY(2px) !important;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15) !important;
+  transform: scale(0.97) !important;
 }
 
 /* 连胜与高分飘窗通知 (Streak Toast Notification) */
