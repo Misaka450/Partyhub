@@ -11,7 +11,7 @@
   <script>
     (function() {
       try {
-        var t = localStorage.getItem('party_theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        var t = localStorage.getItem('party_theme') || 'light';
         document.documentElement.setAttribute('data-theme', t);
       } catch(e) {}
     })();
@@ -49,11 +49,11 @@
         <!-- 顶部身份铭牌 -->
         <div class="pass-header">
           <div class="pass-chip-row">
-            <span class="pass-chip-meta">GAME PASS // ID</span>
-            <span class="pass-chip-id">ONLINE</span>
+            <span class="pass-chip-meta">PARTY HUB // PASS</span>
+            <span class="pass-chip-id font-tabular">ONLINE</span>
           </div>
-          <h1 class="pass-main-title">Party Hub · 聚会大厅</h1>
-          <p class="pass-sub-desc">随时随地，拉上好友即刻开黑</p>
+          <h1 class="pass-main-title">Party Hub · 聚会游戏</h1>
+          <p class="pass-sub-desc">和朋友一起，让聚会更有趣</p>
         </div>
 
         <!-- 玩家形象与昵称卡槽 (水平双栏并排) -->
@@ -176,16 +176,66 @@
         <!-- 1. 等待大厅控制台 -->
         <div id="lobby-card" class="lobby-card">
                     <div class="lobby-console">
+            <!-- 顶部 Header 与全局指标条 (Brand Banner & Global Metrics Deck) -->
+            <div class="lobby-brand-bar">
+              <div class="lobby-brand-info">
+                <div class="lobby-brand-title-row">
+                  <span class="lobby-brand-logo">🎉</span>
+                  <h2 class="lobby-brand-title">Party Hub · 聚会游戏</h2>
+                </div>
+                <p class="lobby-brand-sub">和朋友一起，让聚会更有趣</p>
+              </div>
+            </div>
+
+            <div class="lobby-metrics-deck">
+              <div class="metric-card">
+                <div class="metric-icon-box bg-emerald-subtle">
+                  <span class="metric-icon-dot"></span>
+                </div>
+                <div class="metric-detail">
+                  <span class="metric-label">在线房间</span>
+                  <span class="metric-value text-emerald">已联机</span>
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-icon-box bg-blue-subtle">👥</div>
+                <div class="metric-detail">
+                  <span class="metric-label">房间人数</span>
+                  <span class="metric-value font-tabular"><b id="metric-player-count">1</b>/12</span>
+                </div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-icon-box bg-indigo-subtle">🏠</div>
+                <div class="metric-detail">
+                  <span class="metric-label">我的房间</span>
+                  <span class="metric-value font-tabular" id="metric-room-num">#--</span>
+                </div>
+              </div>
+              <div class="metric-card privilege-card" id="metric-privilege-card">
+                <div class="metric-icon-box bg-amber-subtle" id="metric-privilege-icon">👑</div>
+                <div class="metric-detail">
+                  <span class="metric-label">特权卡片</span>
+                  <span class="metric-value text-amber" id="metric-privilege-label">房主特权</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 房主/客态情境化引导横幅 (Contextual Guidance Banner) -->
+            <div id="lobby-guidance-banner" class="lobby-guidance-banner host-guidance">
+              <span class="guidance-icon">👑</span>
+              <span class="guidance-text" id="guidance-banner-text">请挑选游戏，并邀请好友入席开始对局</span>
+            </div>
+
             <!-- 派对大厅：房间英雄与席位岛 (Party Lobby Stage) -->
             <div class="lobby-room-hero">
               <div class="hero-top-bar">
                 <div class="hero-room-pill">
-                  <span class="live-dot"></span>
+                  <span class="live-dot pulse-green"></span>
                   <span class="hero-lbl">ROOM</span>
-                  <b class="hero-room-id" id="hero-room-id">--</b>
+                  <b class="hero-room-id font-tabular" id="hero-room-id">--</b>
                 </div>
                 <div class="hero-right-actions">
-                  <span class="hero-player-badge" id="hero-player-badge">1 人已就绪</span>
+                  <span class="hero-player-badge font-tabular" id="hero-player-badge">1 人已就绪</span>
                   <button id="btn-hero-share" class="btn btn-sm btn-subtle hero-invite-btn" title="复制邀请链接">
                     <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                     <span>邀请好友</span>
@@ -193,7 +243,7 @@
                 </div>
               </div>
 
-              <!-- 席位卡片浮岛 -->
+              <!-- 席位卡片浮岛 (保留移动端单行 4 席位紧凑布局，约60px高) -->
               <div class="player-seats-grid" id="lobby-seats-grid">
                 <!-- 由 renderPlayerList 动态填充 -->
               </div>
@@ -203,8 +253,8 @@
             <div id="host-game-select-box" class="host-game-select-box">
               <div class="console-section-header">
                 <div class="section-title">
-                  <span>🎮 挑选游戏 (19款精选游戏)</span>
-                  <span class="count-hint" id="lobby-count">1人就绪</span>
+                  <span>🎮 挑选游戏 (19款)</span>
+                  <span class="count-hint font-tabular" id="lobby-count">1人就绪</span>
                 </div>
                 <div class="category-nav-group">
                   <div class="category-nav">
@@ -220,7 +270,7 @@
                 </div>
               </div>
 
-              <!-- 12款游戏磁贴 -->
+              <!-- 19款精选游戏双列卡片网格 -->
               <div class="game-tiles-grid">
                 <div class="game-tile game-mode-card active" data-game="draw-guess" data-cat="party">
                   <div class="tile-icon-box bg-indigo">🎨</div>
@@ -229,7 +279,10 @@
                       <span class="tile-title">你画我猜</span>
                       <span class="tile-badge badge-party">经典</span>
                     </div>
-                    <div class="tile-meta">2-12人 · 绘图抢答</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">绘图抢答</span>
+                      <span class="tile-seat-tag font-tabular">2-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="undercover" data-cat="party">
@@ -239,7 +292,10 @@
                       <span class="tile-title">谁是卧底</span>
                       <span class="tile-badge badge-party">经典</span>
                     </div>
-                    <div class="tile-meta">3-12人 · 语言推理</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">语言推理</span>
+                      <span class="tile-seat-tag font-tabular">3-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="avalon" data-cat="party">
@@ -249,7 +305,10 @@
                       <span class="tile-title">阿瓦隆</span>
                       <span class="tile-badge badge-party">经典</span>
                     </div>
-                    <div class="tile-meta">5-10人 · 阵营博弈</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">阵营博弈</span>
+                      <span class="tile-seat-tag font-tabular">5-10人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="uno" data-cat="party">
@@ -259,7 +318,10 @@
                       <span class="tile-title">UNO 优诺</span>
                       <span class="tile-badge badge-party">经典</span>
                     </div>
-                    <div class="tile-meta">2-8人 · 经典卡牌</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">经典卡牌</span>
+                      <span class="tile-seat-tag font-tabular">2-8人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="flash-counter" data-cat="action">
@@ -269,7 +331,10 @@
                       <span class="tile-title">瞬间数羊</span>
                       <span class="tile-badge badge-action">手速</span>
                     </div>
-                    <div class="tile-meta">2-12人 · 动态视力</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">动态视力</span>
+                      <span class="tile-seat-tag font-tabular">2-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="bomb-roulette" data-cat="action">
@@ -279,7 +344,10 @@
                       <span class="tile-title">拆弹轮盘</span>
                       <span class="tile-badge badge-action">手速</span>
                     </div>
-                    <div class="tile-meta">2-8人 · 心跳博弈</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">心跳博弈</span>
+                      <span class="tile-seat-tag font-tabular">2-8人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="bulls-and-cows" data-cat="puzzle">
@@ -289,7 +357,10 @@
                       <span class="tile-title">几A几B</span>
                       <span class="tile-badge badge-puzzle">益智</span>
                     </div>
-                    <div class="tile-meta">1-8人 · 逻辑破译</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">逻辑破译</span>
+                      <span class="tile-seat-tag font-tabular">1-8人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="math-24" data-cat="puzzle">
@@ -299,7 +370,10 @@
                       <span class="tile-title">决战 24 点</span>
                       <span class="tile-badge badge-puzzle">益智</span>
                     </div>
-                    <div class="tile-meta">1-8人 · 心算速答</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">心算速答</span>
+                      <span class="tile-seat-tag font-tabular">1-8人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="cube-count" data-cat="puzzle">
@@ -309,7 +383,10 @@
                       <span class="tile-title">3D 数方块</span>
                       <span class="tile-badge badge-puzzle">益智</span>
                     </div>
-                    <div class="tile-meta">1-12人 · 空间立体</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">空间立体</span>
+                      <span class="tile-seat-tag font-tabular">1-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="word-bomb" data-cat="action">
@@ -319,7 +396,10 @@
                       <span class="tile-title">词汇炸弹</span>
                       <span class="tile-badge badge-action">手速</span>
                     </div>
-                    <div class="tile-meta">2-8人 · 成语接龙</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">成语接龙</span>
+                      <span class="tile-seat-tag font-tabular">2-8人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="perfect-slice" data-cat="puzzle">
@@ -329,7 +409,10 @@
                       <span class="tile-title">切披萨</span>
                       <span class="tile-badge badge-puzzle">益智</span>
                     </div>
-                    <div class="tile-meta">1-12人 · 直觉等分</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">直觉等分</span>
+                      <span class="tile-seat-tag font-tabular">1-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="hold-five" data-cat="action">
@@ -339,7 +422,10 @@
                       <span class="tile-title">盲压挑战</span>
                       <span class="tile-badge badge-action">手速</span>
                     </div>
-                    <div class="tile-meta">1-12人 · 随机3-10秒</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">随机3-10秒</span>
+                      <span class="tile-seat-tag font-tabular">1-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="stroop-trap" data-cat="puzzle">
@@ -349,7 +435,10 @@
                       <span class="tile-title">颜色大陷阱</span>
                       <span class="tile-badge badge-puzzle">脑力</span>
                     </div>
-                    <div class="tile-meta">1-12人 · 斯特鲁普效应</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">斯特鲁普效应</span>
+                      <span class="tile-seat-tag font-tabular">1-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="shadow-match" data-cat="puzzle">
@@ -359,7 +448,10 @@
                       <span class="tile-title">影子猜物</span>
                       <span class="tile-badge badge-puzzle">脑力</span>
                     </div>
-                    <div class="tile-meta">1-12人 · 聚光灯剪影</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">聚光灯剪影</span>
+                      <span class="tile-seat-tag font-tabular">1-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="simon-memory" data-cat="action">
@@ -369,7 +461,10 @@
                       <span class="tile-title">西蒙节拍记忆</span>
                       <span class="tile-badge badge-action">手速</span>
                     </div>
-                    <div class="tile-meta">1-12人 · 序列节奏复现</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">序列节奏复现</span>
+                      <span class="tile-seat-tag font-tabular">1-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="train-route" data-cat="puzzle">
@@ -379,7 +474,10 @@
                       <span class="tile-title">轨道小火车</span>
                       <span class="tile-badge badge-puzzle">脑力</span>
                     </div>
-                    <div class="tile-meta">1-12人 · 空间路线拼图</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">空间路线拼图</span>
+                      <span class="tile-seat-tag font-tabular">1-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="hole-punch" data-cat="puzzle">
@@ -389,7 +487,10 @@
                       <span class="tile-title">折纸打孔展开</span>
                       <span class="tile-badge badge-puzzle">脑力</span>
                     </div>
-                    <div class="tile-meta">1-12人 · 对称镜像推理</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">对称镜像推理</span>
+                      <span class="tile-seat-tag font-tabular">1-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="change-master" data-cat="puzzle">
@@ -397,9 +498,12 @@
                   <div class="tile-content">
                     <div class="tile-title-row">
                       <span class="tile-title">找零钱大师</span>
-                      <span class="tile-badge badge-puzzle">心算</span>
+                      <span class="tile-badge badge-puzzle">益智</span>
                     </div>
-                    <div class="tile-meta">1-12人 · 面额速凑</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">面额速凑</span>
+                      <span class="tile-seat-tag font-tabular">1-12人</span>
+                    </div>
                   </div>
                 </div>
                 <div class="game-tile game-mode-card" data-game="number-guess" data-cat="party">
@@ -407,9 +511,12 @@
                   <div class="tile-content">
                     <div class="tile-title-row">
                       <span class="tile-title">盲猜谁最接近</span>
-                      <span class="tile-badge badge-party">聚会</span>
+                      <span class="tile-badge badge-party">经典</span>
                     </div>
-                    <div class="tile-meta">1-12人 · 常识估算</div>
+                    <div class="tile-meta-row">
+                      <span class="tile-meta">常识估算</span>
+                      <span class="tile-seat-tag font-tabular">1-12人</span>
+                    </div>
                   </div>
                 </div>
               </div>

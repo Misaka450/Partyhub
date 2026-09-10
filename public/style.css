@@ -87,6 +87,7 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.22), 0 2px 6px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.18);
   --shadow-arcade: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.25);
 
   --canvas-bg: #FFFFFF;
   --canvas-border: #38383A;
@@ -99,13 +100,13 @@
   --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Monaco, Consolas, monospace;
 
-  /* Apple System Colors (Light Mode) */
-  --primary: #0071E3; /* Apple Signature Blue Light */
-  --primary-hover: #0077ED;
-  --primary-active: #005BB5;
-  --primary-shadow: rgba(0, 113, 227, 0.2);
-  --primary-subtle: rgba(0, 113, 227, 0.08);
-  --primary-glow: rgba(0, 113, 227, 0.18);
+  /* Modern Neo-Skeuomorphic Clean (Light Mode Tokens) */
+  --primary: #2F7CF6;
+  --primary-hover: #1E66DE;
+  --primary-active: #1858C2;
+  --primary-shadow: rgba(47, 124, 246, 0.2);
+  --primary-subtle: rgba(47, 124, 246, 0.08);
+  --primary-glow: rgba(47, 124, 246, 0.18);
 
   /* Apple HIG System Accents */
   --accent-coral: #FF2D55;
@@ -114,7 +115,7 @@
   --accent-lime: #34C759;
   --accent-purple: #AF52DE;
   --accent-orange: #FF9500;
-  --accent-core: #0071E3;   /* 核心高亮强调色兼容别名 */
+  --accent-core: #2F7CF6;   /* 核心高亮强调色兼容别名 */
 
   /* 游戏品类微章胶囊 (Apple Translucent Badges) */
   --badge-party-bg: rgba(175, 82, 222, 0.08);
@@ -139,34 +140,35 @@
   --warning: #FF9500;
   --warning-shadow: rgba(255, 149, 0, 0.18);
   --warning-subtle: rgba(255, 149, 0, 0.08);
-  --info: #0071E3;
-  --info-subtle: rgba(0, 113, 227, 0.08);
+  --info: #2F7CF6;
+  --info-subtle: rgba(47, 124, 246, 0.08);
 
-  /* Apple 浅色陶瓷质感 (Apple Light Porcelain) */
-  --bg-base: #F5F5F7;
-  --bg-sub: #E8E8ED;
-  --bg-surface: rgba(255, 255, 255, 0.85);
-  --bg-surface-hover: rgba(255, 255, 255, 0.95);
-  --bg-card: rgba(255, 255, 255, 0.78);
-  --bg-input: rgba(255, 255, 255, 0.92);
+  /* Modern Neo-Skeuomorphic Clean 浅色底色体系 */
+  --bg-base: #F4F7FB;
+  --bg-sub: #EDF2F7;
+  --bg-surface: #FFFFFF;
+  --bg-surface-hover: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-input: #FFFFFF;
   --bg-pill: rgba(0, 0, 0, 0.04);
   --bg-backdrop: rgba(0, 0, 0, 0.35);
 
   /* 文字与边框 */
-  --text-main: #1D1D1F;
-  --text-sub: #515154;
-  --text-muted: #86868B;
+  --text-main: #1E293B;
+  --text-sub: #64748B;
+  --text-muted: #94A3B8;
 
-  --border: rgba(0, 0, 0, 0.08);
-  --border-subtle: rgba(0, 0, 0, 0.04);
-  --border-strong: rgba(0, 0, 0, 0.14);
-  --border-focus: #0071E3;
+  --border: rgba(226, 232, 240, 0.85);
+  --border-subtle: rgba(226, 232, 240, 0.5);
+  --border-strong: rgba(203, 213, 225, 0.9);
+  --border-focus: #2F7CF6;
 
-  /* Apple 浅色弥散阴影 */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
-  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --shadow-arcade: 0 2px 8px rgba(0, 0, 0, 0.04);
+  /* Modern Neo-Skeuomorphic Clean 浅色弥散阴影与卡片投影 */
+  --shadow-sm: 0 1px 3px rgba(112, 144, 176, 0.08), 0 1px 2px rgba(112, 144, 176, 0.04);
+  --shadow-md: 0 4px 14px rgba(112, 144, 176, 0.1), 0 1px 3px rgba(112, 144, 176, 0.05);
+  --shadow-lg: 0 16px 40px rgba(112, 144, 176, 0.12), 0 4px 12px rgba(112, 144, 176, 0.06);
+  --shadow-arcade: 0 2px 8px rgba(112, 144, 176, 0.06);
+  --shadow-card: 0 4px 20px -2px rgba(112, 144, 176, 0.08);
 
   --canvas-bg: #FFFFFF;
   --canvas-border: #D1D1D6;
@@ -213,11 +215,18 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.12); border-radius: 9999px; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); }
+
 .pass-main-title,
 .console-section-header .section-title {
   letter-spacing: -0.028em !important;
   font-weight: 750 !important;
   line-height: 1.18 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .hero-room-id,
@@ -1224,6 +1233,27 @@ input[type="text"]:focus, select:focus {
   margin-top: 3px;
 }
 
+.tile-meta-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 4px !important;
+  width: 100% !important;
+}
+
+.tile-seat-tag {
+  font-size: 0.65rem !important;
+  font-weight: 600 !important;
+  color: #10B981 !important;
+  background: rgba(16, 185, 129, 0.08) !important;
+  padding: 1px 5px !important;
+  border-radius: 9999px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1.1 !important;
+}
+
 .game-tile.active .tile-title {
   color: var(--primary);
 }
@@ -1601,7 +1631,9 @@ html, body {
 }
 
 [data-theme="light"] .login-card {
-  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.08), inset 0 0.5px 0 0 rgba(255, 255, 255, 0.9) !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(226, 232, 240, 0.85) !important;
+  box-shadow: 0 12px 36px -4px rgba(112, 144, 176, 0.12), 0 4px 16px -2px rgba(112, 144, 176, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
 }
 
 .login-card::before {
@@ -1918,6 +1950,20 @@ html, body {
   opacity: 0.9 !important;
 }
 
+[data-theme="light"] .btn-arcade-enter {
+  background: #2F7CF6 !important;
+  box-shadow: 0 4px 16px rgba(47, 124, 246, 0.32), inset 0 0.5px 0 0 rgba(255, 255, 255, 0.45) !important;
+}
+
+[data-theme="light"] .btn-arcade-enter:hover {
+  background: #1E66DE !important;
+  box-shadow: 0 6px 20px rgba(47, 124, 246, 0.4), inset 0 0.5px 0 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+[data-theme="light"] .btn-arcade-enter:active {
+  background: #1858C2 !important;
+}
+
 /* --------------------------------------------------------------------------
    2. 顶部 Header 胶囊与对齐 (iOS Navigation Bar / Floating Topbar)
    -------------------------------------------------------------------------- */
@@ -2059,6 +2105,236 @@ html, body {
   margin: 0 auto !important;
   width: 100% !important;
   box-sizing: border-box !important;
+}
+
+/* --------------------------------------------------------------------------
+   3.5 大厅品牌展示栏、数据大盘与情境横幅 (Modern Neo-Skeuomorphic Clean Lobby)
+   -------------------------------------------------------------------------- */
+
+.font-tabular {
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* 在线呼吸指示灯 */
+.pulse-green {
+  display: inline-block !important;
+  width: 7px !important;
+  height: 7px !important;
+  border-radius: 50% !important;
+  background-color: #10B981 !important;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7) !important;
+  animation: pulseGreenGlow 2s infinite cubic-bezier(0.4, 0, 0.6, 1) !important;
+  vertical-align: middle !important;
+}
+
+@keyframes pulseGreenGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    transform: scale(0.95);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    transform: scale(0.95);
+  }
+}
+
+/* 紧凑品牌展示栏 */
+.lobby-brand-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 4px 2px 10px 2px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.lobby-brand-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.lobby-brand-title-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.lobby-brand-logo {
+  font-size: 1.3rem !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.lobby-brand-title {
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  color: var(--text-main) !important;
+  letter-spacing: -0.02em !important;
+  margin: 0 !important;
+  line-height: 1.2 !important;
+}
+
+.lobby-brand-sub {
+  font-size: 0.78rem !important;
+  color: var(--text-muted) !important;
+  margin: 0 !important;
+  line-height: 1.25 !important;
+}
+
+/* 4 列数据大盘卡片甲板 */
+.lobby-metrics-deck {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 8px !important;
+  margin-bottom: 10px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 520px) {
+  .lobby-metrics-deck {
+    gap: 6px !important;
+  }
+}
+
+.metric-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  padding: 6px 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: var(--shadow-card) !important;
+  min-width: 0 !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
+[data-theme="light"] .metric-card {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(226, 232, 240, 0.85) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.metric-card:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px -2px rgba(112, 144, 176, 0.14) !important;
+}
+
+.metric-icon-box {
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.85rem !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+}
+
+.bg-emerald-subtle {
+  background: rgba(16, 185, 129, 0.1) !important;
+  color: #10B981 !important;
+}
+
+.bg-blue-subtle {
+  background: rgba(47, 124, 246, 0.1) !important;
+  color: #2F7CF6 !important;
+}
+
+.bg-indigo-subtle {
+  background: rgba(99, 102, 241, 0.1) !important;
+  color: #6366F1 !important;
+}
+
+.bg-amber-subtle {
+  background: rgba(245, 158, 11, 0.1) !important;
+  color: #F59E0B !important;
+}
+
+.metric-icon-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background: #10B981 !important;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6) !important;
+  animation: pulseGreenGlow 2s infinite ease-in-out !important;
+}
+
+.metric-detail {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  gap: 1px !important;
+  overflow: hidden !important;
+}
+
+.metric-label {
+  font-size: 0.66rem !important;
+  color: var(--text-muted) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.2 !important;
+}
+
+.metric-value {
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+  color: var(--text-main) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-variant-numeric: tabular-nums !important;
+  font-family: var(--font-mono) !important;
+  line-height: 1.2 !important;
+}
+
+.text-emerald {
+  color: #10B981 !important;
+}
+
+.text-amber {
+  color: #F59E0B !important;
+}
+
+/* 房主与玩家情境横幅 */
+.lobby-guidance-banner {
+  background: linear-gradient(135deg, rgba(47, 124, 246, 0.06), rgba(47, 124, 246, 0.02)) !important;
+  border: 1px solid rgba(47, 124, 246, 0.18) !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  font-size: 0.82rem !important;
+  color: #1E66DE !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 10px !important;
+  line-height: 1.4 !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.guidance-icon {
+  font-size: 1rem !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+.guidance-text {
+  flex: 1 !important;
+  min-width: 0 !important;
+  font-weight: 500 !important;
+  word-break: break-word !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -2937,6 +3213,27 @@ html, body {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   line-height: 1.15 !important;
+}
+
+.tile-meta-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 4px !important;
+  width: 100% !important;
+}
+
+.tile-seat-tag {
+  font-size: 0.65rem !important;
+  font-weight: 600 !important;
+  color: #10B981 !important;
+  background: rgba(16, 185, 129, 0.08) !important;
+  padding: 1px 5px !important;
+  border-radius: 9999px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: 1.1 !important;
 }
 
 /* ==========================================================================
@@ -5801,14 +6098,19 @@ html, body {
   gap: 3px !important;
 }
 .tile-capacity-badge.badge-capacity-ok {
-  background: rgba(16, 185, 129, 0.12) !important;
+  background: rgba(16, 185, 129, 0.08) !important;
   color: #10B981 !important;
-  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
 }
 .tile-capacity-badge.badge-capacity-warn {
-  background: rgba(245, 158, 11, 0.12) !important;
-  color: #F59E0B !important;
-  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: var(--text-sub) !important;
+  border: 1px solid var(--border-subtle) !important;
+}
+[data-theme="dark"] .tile-capacity-badge.badge-capacity-warn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--text-sub) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 /* 房间专属二维码弹窗 */

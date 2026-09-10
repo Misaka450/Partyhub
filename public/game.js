@@ -77,7 +77,7 @@ function clearReconnectSecret() {
 let myReconnectSecret = loadReconnectSecret() || '';
 
 // 主题管理 (深色 / 浅色模式)
-let currentTheme = safeGetItem('party_theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+let currentTheme = safeGetItem('party_theme') || 'light';
 
 function applyTheme(theme) {
   currentTheme = theme;
@@ -1396,10 +1396,10 @@ function updateGameCapacityBadges(playerCount = 1) {
     }
     if (playerCount < cap.min) {
       badge.className = 'tile-capacity-badge badge-capacity-warn';
-      badge.textContent = `⚠️ 差 ${cap.min - playerCount} 人 (需${cap.min}人+)`;
+      badge.textContent = `待入席 · 需${cap.min}人+ (差${cap.min - playerCount}人)`;
     } else {
       badge.className = 'tile-capacity-badge badge-capacity-ok';
-      badge.textContent = `✓ 人数充足 (${cap.min}-${cap.max}人)`;
+      badge.textContent = `✓ 可立即开局 (${cap.min}-${cap.max}人)`;
     }
   });
 }
@@ -1870,7 +1870,7 @@ const btnHeroShare = document.getElementById('btn-hero-share');
 if (btnHeroShare) btnHeroShare.addEventListener('click', copyInviteLink);
 
 // 核心状态同步处理
-socket.on('room_state', (state) => {
+function handleRoomState(state) {
   const prevStatus = currentRoomState?.status;
   currentRoomState = state;
   currentGameType = state.gameType || 'draw-guess';
@@ -1898,6 +1898,7 @@ socket.on('room_state', (state) => {
   ];
 
   if (state.status === 'LOBBY') {
+    document.querySelector('.sub-status-bar')?.classList.add('hidden');
     document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
     lobbyCard.classList.remove('hidden');
     allStages.forEach(s => s && s.classList.add('hidden'));
@@ -1937,6 +1938,7 @@ socket.on('room_state', (state) => {
     }
     resetAllGameStages();
   } else {
+    document.querySelector('.sub-status-bar')?.classList.remove('hidden');
     // 游戏中：自动关闭所有残留弹窗（包括上一局结算弹窗），确保全体玩家无遮挡同步进入新一局
     if (state.status !== 'GAME_OVER') {
       document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
@@ -2005,7 +2007,8 @@ socket.on('room_state', (state) => {
   else if (currentGameType === 'word-bomb') renderWordBombState(state);
   else if (currentGameType === 'perfect-slice' && typeof renderPerfectSliceState === 'function') renderPerfectSliceState(state);
   else if (currentGameType === 'hold-five' && typeof renderHoldFiveState === 'function') renderHoldFiveState(state);
-});
+}
+socket.on('room_state', handleRoomState);
 
 function renderPlayerList(players) {
   if (!players) return;
@@ -2017,6 +2020,21 @@ function renderPlayerList(players) {
   if (heroRoomId && currentRoomId) heroRoomId.textContent = currentRoomId;
   if (heroPlayerBadge) heroPlayerBadge.textContent = `${players.length} 人已入席`;
   updateGameCapacityBadges(players.length);
+
+  const metricPlayerCount = document.getElementById('metric-player-count');
+  const metricRoomNum = document.getElementById('metric-room-num');
+  const guidanceBannerText = document.getElementById('guidance-banner-text');
+  const metricPrivilegeLabel = document.getElementById('metric-privilege-label');
+  const metricPrivilegeIcon = document.getElementById('metric-privilege-icon');
+  if (metricPlayerCount) metricPlayerCount.textContent = players.length;
+  if (metricRoomNum && currentRoomId) metricRoomNum.textContent = '#' + currentRoomId;
+  if (guidanceBannerText) {
+    guidanceBannerText.textContent = isHost 
+      ? '请挑选游戏，并邀请好友入席开始对局'
+      : '房主正在挑选游戏与房间规则，请稍候...';
+  }
+  if (metricPrivilegeLabel) metricPrivilegeLabel.textContent = isHost ? '房主特权' : '房间成员';
+  if (metricPrivilegeIcon) metricPrivilegeIcon.textContent = isHost ? '👑' : '✨';
 
   if (lobbySeatsGrid) {
     lobbySeatsGrid.innerHTML = '';
