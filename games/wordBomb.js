@@ -30,6 +30,9 @@ function pickRuleMode() {
   if (r < 0.45) return 'ANY';
   if (r < 0.65) return 'START';
   if (r < 0.85) return 'END';
+  // 成语模式依赖词库校验：词库缺失（validWordSet 为空，仅走中文兜底）时
+  // 任意四字词都会被当成语放行，"成语"限制形同虚设，故直接退化为包含模式
+  if (!validWordSet || validWordSet.size === 0) return 'ANY';
   return 'IDIOM';
 }
 

@@ -386,6 +386,15 @@ io.on('connection', (socket) => {
         return;
       }
 
+      // 阿瓦隆为固定 5~10 人的身份局：对局进行中（非大厅/非结算）满 10 人时禁止中途加入，
+      // 防止新玩家把房间人数推到配置表(QUEST_CONFIGS)之外，触发引擎"人数不足/超限"提前整局结算（审计-可玩性）
+      if (room.gameType === 'avalon' && room.status !== 'LOBBY' && room.status !== 'GAME_OVER' && room.players.length >= 10) {
+        socket.emit('join_error', { reason: '阿瓦隆对局正在火热进行中（房间最多 10 人），请等待本局结算后再加入观战！' });
+        socket.leave(roomId);
+        currentRoomId = null;
+        return;
+      }
+
       // 安全防护：token 已被房内其他席位占用时，为本连接换发全新 token，
       // 杜绝"同 token 重复席位"被用于冒充他人投票/出牌（会话劫持）
       if (room.players.some(p => p.token === currentPlayerToken)) {

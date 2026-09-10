@@ -187,10 +187,17 @@ function createActionRegistry(engines) {
     },
 
     // ---------- 盲压 5 秒 ----------
-    'hold_submit_time': {
+    // 服务端墙钟计时：按下/抬起两个事件分别记录起止时刻，杜绝客户端伪造精准时长刷满分
+    'hold_start': {
+      gameType: 'hold-five',
+      handler: (ctx) => {
+        ctx.safeCall(engines['hold-five'].holdStart, ctx.room, ctx.playerToken, ctx.io, ctx.broadcastRoom);
+      }
+    },
+    'hold_end': {
       gameType: 'hold-five',
       handler: (ctx, payload) => {
-        ctx.safeCall(engines['hold-five'].submitHoldTime, ctx.room, ctx.playerToken, payload, ctx.io, ctx.broadcastRoom);
+        ctx.safeCall(engines['hold-five'].holdEnd, ctx.room, ctx.playerToken, payload, ctx.io, ctx.broadcastRoom);
       }
     },
 

@@ -234,12 +234,13 @@ function startVotingPhase(room, io, broadcastRoom) {
 function castVote(room, voterToken, targetToken, io, broadcastRoom) {
   if (room.status !== 'UC_VOTING') return;
   const voter = room.players.find(p => p.token === voterToken);
-  if (!voter || !voter.alive) return;
+  // 只有已分配身份（正式参战玩家）才能投票：中途加入的观战者无 role，禁止其左右投票结果
+  if (!voter || !voter.alive || !voter.role) return;
 
-  // 只能投给仍存活的候选玩家（或投弃权 ABSTAIN），防止废票/无效票被静默吞掉污染计票
+  // 只能投给仍存活的候选玩家（或投弃权 ABSTAIN），观战者不设候选资格，防止废票/无效票污染计票
   if (targetToken !== 'ABSTAIN') {
     const target = room.players.find(p => p.token === targetToken);
-    if (!target || !target.alive) return;
+    if (!target || !target.alive || !target.role) return;
   }
 
   room.votes[voterToken] = targetToken; // targetToken 可以是玩家token 或 'ABSTAIN'
@@ -247,8 +248,8 @@ function castVote(room, voterToken, targetToken, io, broadcastRoom) {
 
   broadcastRoom(room);
 
-  // 检查是否所有存活玩家都已投票
-  const alivePlayers = room.players.filter(p => p.alive);
+  // 检查是否所有存活且有身份的参战玩家都已投票（观战者不计门槛）
+  const alivePlayers = room.players.filter(p => p.alive && p.role);
   const allVoted = alivePlayers.every(p => room.votes[p.token] !== undefined);
 
   if (allVoted) {
@@ -278,10 +279,10 @@ function tallyVotes(room, io, broadcastRoom) {
     p.votesReceived = voteCounts[p.token] || 0;
   });
 
-  // 找最高得票者（仅限存活玩家或PK玩家）
+  // 找最高得票者（仅限存活且有身份的玩家或PK玩家，观战者永远不具候选资格）
   const candidatePool = room.pkPlayers.length > 0
-    ? room.players.filter(p => room.pkPlayers.includes(p.token) && p.alive)
-    : room.players.filter(p => p.alive);
+    ? room.players.filter(p => room.pkPlayers.includes(p.token) && p.alive && p.role)
+    : room.players.filter(p => p.alive && p.role);
 
   let maxVotes = 0;
   let topCandidates = [];
@@ -372,7 +373,8 @@ function tallyVotes(room, io, broadcastRoom) {
 }
 
 function checkWinCondition(room, io, broadcastRoom) {
-  const alivePlayers = room.players.filter(p => p.alive);
+  // 只统计有身份的参战玩家，中途加入的观战者不参与任何阵营计算
+  const alivePlayers = room.players.filter(p => p.alive && p.role);
   const aliveSpies = alivePlayers.filter(p => p.role === 'undercover');
   const aliveCivs = alivePlayers.filter(p => p.role === 'civilian');
   const aliveBlanks = alivePlayers.filter(p => p.role === 'blank');
@@ -415,8 +417,8 @@ function checkWinCondition(room, io, broadcastRoom) {
     const allRoles = room.players.map(p => ({
       name: p.name,
       avatar: p.avatar,
-      role: p.role,
-      word: p.word,
+      role: p.role || 'spectator', // 中途加入的观战者无身份，结算时如实标注避免误导
+      word: p.word || '',
       alive: p.alive
     }));
 
@@ -474,8 +476,8 @@ function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
       nextSpeaker(room, io, broadcastRoom);
     }
   } else if (room.status === 'UC_VOTING') {
-    // 2. 若处于投票阶段，检查剩余存活玩家是否均已完成投票
-    const alivePlayers = room.players.filter(p => p.alive);
+    // 2. 若处于投票阶段，检查剩余存活且有身份的参战玩家是否均已完成投票（观战者不计门槛）
+    const alivePlayers = room.players.filter(p => p.alive && p.role);
     const allVoted = alivePlayers.length > 0 && alivePlayers.every(p => room.votes[p.token] !== undefined);
     if (allVoted) {
       clearInterval(room.timer);
@@ -484,7 +486,7 @@ function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
   }
 
   // 3. 检查是否有关键玩家（如最后卧底）离场导致胜负提前决出
-  const alivePlayers = room.players.filter(p => p.alive);
+  const alivePlayers = room.players.filter(p => p.alive && p.role);
   const aliveSpies = alivePlayers.filter(p => p.role === 'undercover');
   const aliveCivs = alivePlayers.filter(p => p.role === 'civilian');
   const aliveBlanks = alivePlayers.filter(p => p.role === 'blank');

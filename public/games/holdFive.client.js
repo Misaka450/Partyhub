@@ -52,6 +52,10 @@
     if (holdText) holdText.textContent = '计时中...松开提交';
     if (window.playSound) window.playSound('tick');
 
+    // 告知服务端"按下"：按住时长由服务端墙钟计时（防伪造满分），客户端不再上报毫秒数
+    const socket = window.socket;
+    if (socket) socket.emit('hold_start');
+
     // 障眼法声光干扰：按压期间冷不丁闪烁假数字打乱节拍
     const chaosOverlay = document.getElementById('hold-chaos-overlay');
     if (currentHoldIsChaos && chaosOverlay) {
@@ -86,7 +90,6 @@
     }
 
     if (holdPressStartTime) {
-      const elapsedMs = Math.round(performance.now() - holdPressStartTime);
       holdPressStartTime = null;
       hasSubmittedHold = true;
       if (holdText) holdText.textContent = '已提交！等待结算...';
@@ -94,7 +97,8 @@
       const isWager = Boolean(wagerToggle && wagerToggle.checked);
       const socket = window.socket;
       if (socket) {
-        socket.emit('hold_submit_time', { elapsedMs, isWager });
+        // 按住时长由服务端按下/抬起两个事件自行计时，客户端只告知"松开了 + 是否下注"
+        socket.emit('hold_end', { isWager });
       }
       if (window.playSound) window.playSound('card');
     }

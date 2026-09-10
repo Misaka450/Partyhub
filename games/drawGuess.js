@@ -316,11 +316,14 @@ function onPlayerRemoved(room, removedIndex, io, broadcastRoom) {
 
   if (room.status === 'SELECTING') {
     if (removedIndex < room.currentDrawerIndex) room.currentDrawerIndex -= 1;
-    if (room.currentDrawerIndex >= count) room.currentDrawerIndex %= count;
     if (drawerRemoved) {
-      // 选词阶段画师离场：清掉旧计时器并由下一位玩家重新开始选词
+      // 选词阶段画师离场：清掉旧计时器，交由 startTurn 重新开始选词。
+      // 注意：若离开的正是"末位画师"（removedIndex === count），保持索引越界
+      // 让 startTurn 触发"换大轮 +1"，避免当前轮内把画师又拉回重复作画一轮
       clearInterval(room.timer);
       startTurn(room, io, broadcastRoom);
+    } else if (room.currentDrawerIndex >= count) {
+      room.currentDrawerIndex %= count;
     }
   } else if (room.status === 'DRAWING') {
     if (drawerRemoved) {

@@ -5,6 +5,7 @@ function initRoomState(room) {
   room.maxRounds = room.maxRounds || 3;
   room.targetSeconds = 5.0;
   room.playerHolds = {}; // token -> { timeHeld, diff, score }
+  room.holdPressList = {}; // token -> 服务端按下时刻 Date.now()（防伪造时长，审计-可玩性）
   room.timeLeft = 15;
   clearInterval(room.timer);
   room.timer = null;
@@ -32,6 +33,7 @@ function startGame(room, io, broadcastRoom) {
 function startRound(room, io, broadcastRoom) {
   room.status = 'HOLD_PRESSING';
   room.playerHolds = {};
+  room.holdPressList = {}; // 新轮重置按压锚点，防止上一轮残留
 
   // 随机 3 到 10 之间的整数秒 (3, 4, 5, 6, 7, 8, 9, 10)
   if (room.fixedTargetSeconds && room.fixedTargetSeconds > 0) {
@@ -75,14 +77,39 @@ function startRound(room, io, broadcastRoom) {
   }, 1000);
 }
 
-function submitHoldTime(room, playerToken, payload, io, broadcastRoom) {
+// 【按下】事件：服务端记录按压开始时刻。
+// 相比旧版"客户端直接自报按住毫秒数"，改为服务端墙钟计时，从根上杜绝
+// 作弊者事先得知目标秒数后手动上报目标值刷满分（审计-可玩性全量优化）
+function holdStart(room, playerToken, io, broadcastRoom) {
   if (room.status !== 'HOLD_PRESSING') return;
-  if (room.playerHolds[playerToken]) return;
-  // 校验提交者真实在房：防止被踢/已退出玩家的幽灵提交污染数据（审计 R2-40）
+  // 校验提交者真实在房：防止被踢/已退出玩家的幽灵按压污染数据（审计 R2-40）
+  const player = room.players.find(p => p.token === playerToken);
+  if (!player) return;
+  if (room.playerHolds[playerToken]) return; // 已出成绩，忽略后续按压
+  if (!room.holdPressList) room.holdPressList = {};
+  if (room.holdPressList[playerToken]) return; // 已在按住（重复按下忽略）
+  room.holdPressList[playerToken] = Date.now();
+}
+
+// 【抬起】事件：用服务端墙钟差结算按住时长，客户端无法直接伪造精准毫秒值
+function holdEnd(room, playerToken, payload, io, broadcastRoom) {
+  if (room.status !== 'HOLD_PRESSING') return;
+  const startAt = room.holdPressList && room.holdPressList[playerToken];
+  if (typeof startAt !== 'number') return; // 未按下即抬起：忽略
+  if (room.playerHolds[playerToken]) return; // 已出成绩
   const player = room.players.find(p => p.token === playerToken);
   if (!player) return;
 
-  const elapsedMs = typeof payload === 'number' ? payload : (payload?.elapsedMs || 0);
+  delete room.holdPressList[playerToken];
+  const elapsedMs = Date.now() - startAt;
+  finalizeHold(room, player, elapsedMs, payload, io, broadcastRoom);
+}
+
+// 统一的成绩结算入口（holdEnd 与兼容入口 submitHoldTime 共用）
+function finalizeHold(room, player, elapsedMs, payload, io, broadcastRoom) {
+  if (room.status !== 'HOLD_PRESSING') return;
+  if (room.playerHolds[player.token]) return;
+
   const isWager = Boolean(typeof payload === 'object' && payload?.isWager);
 
   // 校验时间数值合理：必须是大于 0 的有限数字且不超过 60 秒，防止 NaN/伪造值污染成绩
@@ -98,7 +125,7 @@ function submitHoldTime(room, playerToken, payload, io, broadcastRoom) {
   const diff = Math.abs(seconds - room.targetSeconds);
   const baseScore = Math.max(0, Math.round(100 - diff * 35));
 
-  room.playerHolds[playerToken] = {
+  room.playerHolds[player.token] = {
     seconds: parseFloat(seconds.toFixed(3)),
     diff: parseFloat(diff.toFixed(3)),
     baseScore,
@@ -107,8 +134,8 @@ function submitHoldTime(room, playerToken, payload, io, broadcastRoom) {
 
   // player 已在函数开头校验过存在性，直接发即时反馈
   io.to(player.id).emit('hold_submit_feedback', {
-    seconds: room.playerHolds[playerToken].seconds,
-    diff: room.playerHolds[playerToken].diff,
+    seconds: room.playerHolds[player.token].seconds,
+    diff: room.playerHolds[player.token].diff,
     targetSeconds: room.targetSeconds,
     isWager
   });
@@ -121,6 +148,15 @@ function submitHoldTime(room, playerToken, payload, io, broadcastRoom) {
     clearInterval(room.timer);
     endRound(room, io, broadcastRoom);
   }
+}
+
+// 兼容保留入口：仅供单元测试与旧式直调使用（网络层已统一走 hold_start/hold_end）
+function submitHoldTime(room, playerToken, payload, io, broadcastRoom) {
+  if (room.status !== 'HOLD_PRESSING') return;
+  const player = room.players.find(p => p.token === playerToken);
+  if (!player) return;
+  const elapsedMs = typeof payload === 'number' ? payload : (payload?.elapsedMs || 0);
+  finalizeHold(room, player, elapsedMs, payload, io, broadcastRoom);
 }
 
 function endRound(room, io, broadcastRoom) {
@@ -218,5 +254,7 @@ module.exports = {
   initRoomState,
   getPublicState,
   startGame,
+  holdStart,
+  holdEnd,
   submitHoldTime
 };

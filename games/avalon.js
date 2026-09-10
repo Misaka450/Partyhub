@@ -166,7 +166,7 @@ function ensurePlayable(room, io, broadcastRoom) {
   if (QUEST_CONFIGS[room.players.length]) return true;
   if (room.status !== 'LOBBY' && room.status !== 'GAME_OVER') {
     room.winner = null;
-    room.winReason = '⚠️ 玩家离开导致人数不足 5 人，阿瓦隆无法继续，游戏提前结束';
+    room.winReason = '⚠️ 当前房间人数不足或超出阿瓦隆支持范围（5~10 人），游戏提前结束';
     endGame(room, io, broadcastRoom);
   }
   return false;
@@ -230,7 +230,7 @@ function selectTeamMember(room, leaderToken, memberToken, io, broadcastRoom) {
   if (!leader || leader.token !== leaderToken) return;
   // 校验被选者真实在房且已有阵营身份（中途加入的无身份玩家不可入队，防止幽灵队员，审计 R2-31）
   const member = room.players.find(p => p.token === memberToken);
-  if (!member) return;
+  if (!member || !member.avalonSide) return;
 
   const count = room.players.length;
   const requiredCount = QUEST_CONFIGS[count].quests[room.currentQuestIndex];
@@ -257,11 +257,12 @@ function submitTeam(room, leaderToken, teamTokens, io, broadcastRoom) {
   const requiredCount = QUEST_CONFIGS[count].quests[room.currentQuestIndex];
 
   if (!Array.isArray(teamTokens) || teamTokens.length !== requiredCount) return;
-  // 校验队员 token 都真实存在且不重复，防止伪造/重复成员操纵任务结果
+  // 校验队员 token 都真实存在、有阵营身份且不重复，防止伪造/重复成员/观战者混入操纵任务结果
   const uniqueTokens = new Set(teamTokens);
   if (uniqueTokens.size !== requiredCount) return;
   for (const t of uniqueTokens) {
-    if (!room.players.some(p => p.token === t)) return;
+    const member = room.players.find(p => p.token === t);
+    if (!member || !member.avalonSide) return;
   }
 
   room.selectedTeam = teamTokens;
@@ -359,10 +360,16 @@ function castTeamVote(room, voterToken, approve, io, broadcastRoom) {
   const voter = room.players.find(p => p.token === voterToken);
   if (!voter) return;
 
+  // 仅有阵营身份（正式参战玩家）才能投组队表决：
+  // 中途加入的观战者没有 avalonSide，禁止其投出关键一票干扰队伍出行
+  if (!voter.avalonSide) return;
+
   room.teamVotes[voterToken] = !!approve;
   broadcastRoom(room);
 
-  if (Object.keys(room.teamVotes).length >= room.players.length) {
+  // 全员判定只统计有身份玩家，观战者不参与计票门槛，避免一直等票卡到 30s 超时
+  const votingPlayers = room.players.filter(p => p.avalonSide);
+  if (Object.keys(room.teamVotes).length >= votingPlayers.length) {
     clearInterval(room.timer);
     tallyTeamVotes(room, io, broadcastRoom);
   }
