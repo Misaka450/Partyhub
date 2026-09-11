@@ -26,6 +26,7 @@ const holePunchEngine = require('./games/holePunch');
 const changeMasterEngine = require('./games/changeMaster');
 const numberGuessEngine = require('./games/numberGuess');
 const { attachGameDispatcher } = require('./gameDispatcher'); // 引入游戏事件统一调度分发器（维度一架构解耦）
+const { computeDelta, createPlayerView, initFsmMetadata } = require('./fsmEngine'); // FSM 有限状态机与增量分发引擎
 
 const app = express();
 
@@ -254,12 +255,30 @@ function buildRoomState(room) {
     gameType: room.gameType,
     status: room.status,
     players: safePlayers,
+    phaseStartedAt: room.phaseStartedAt || Date.now(),
+    phaseDuration: typeof room.phaseDuration === 'number' ? room.phaseDuration : 0,
+    actionSeq: room.actionSeq || 0,
     ...publicState
   };
 }
 
 function broadcastRoom(room) {
-  io.to(room.id).emit('room_state', buildRoomState(room));
+  const fullState = buildRoomState(room);
+
+  // FSM 状态机增量广播：计算最小 Delta 补丁
+  if (room._lastBroadcastState) {
+    const delta = computeDelta(room._lastBroadcastState, fullState);
+    if (delta) {
+      io.to(room.id).emit('game_delta', {
+        actionSeq: fullState.actionSeq,
+        delta
+      });
+    }
+  }
+  room._lastBroadcastState = fullState;
+
+  // 100% 保持原有全量向下兼容广播
+  io.to(room.id).emit('room_state', fullState);
 }
 
 function resetToLobby(room) {
@@ -507,9 +526,9 @@ io.on('connection', (socket) => {
     const nowSync = Date.now();
     if (socket.lastPingSyncAt && nowSync - socket.lastPingSyncAt < 500) return;
     socket.lastPingSyncAt = nowSync;
-    // 改为单播回发当前客户端，绝不广播全房：
+    // 改为单播回发当前客户端，绝不广播全房，并通过 FSM playerView 进行私密脱敏：
     // N 个客户端各自心跳若各触发一次全房广播，会放大成 N² 个状态包（审计 H2）
-    socket.emit('room_state', buildRoomState(room));
+    socket.emit('room_state', createPlayerView(buildRoomState(room), currentPlayerToken));
   });
 
 // 房主切换游戏类型

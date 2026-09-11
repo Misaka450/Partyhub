@@ -16,6 +16,8 @@
  * ============================================================================
  */
 
+const { checkActionAllowed } = require('./fsmEngine');
+
 /**
  * 注册所有小游戏动作与处理函数的映射字典
  * @param {Object} engines 游戏引擎字典
@@ -283,6 +285,11 @@ function attachGameDispatcher(socket, { getRoomContext, engines, io, broadcastRo
 
     const { room, player, roomId, playerToken } = getRoomContext();
     if (!room || !player) return;
+
+    // FSM 状态机动作互斥与防抖拦截（防高频并发击穿）
+    if (!checkActionAllowed(room, playerToken, actionName)) {
+      return;
+    }
 
     // 严密校验：房间当前游戏类型必须与动作匹配，防止跨游戏误触发
     if (config.gameType && room.gameType !== config.gameType) {
