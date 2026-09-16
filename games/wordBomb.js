@@ -93,7 +93,8 @@ function startGame(room, io, broadcastRoom) {
   room.timeLeftPenalty = 0;
   room.status = 'BOMB_TICKING';
   // 基础引信时长读取房间设置 wbTime（4~30 秒），未配置则默认 8 秒
-  room.baseTime = Math.min(30, Math.max(4, Number.isFinite(room.wbTime) && room.wbTime > 0 ? room.wbTime : 8));
+  // 取整修复（QA-M2）：房主设置可能是小数，逐秒连减会产生 6.800000000000001 这类浮点尾数显示在倒计时上
+  room.baseTime = Math.round(Math.min(30, Math.max(4, Number.isFinite(room.wbTime) && room.wbTime > 0 ? room.wbTime : 8)));
   // 保存原始配置：爆炸后的新炸弹按房主配置重置，而不是硬编码 7.5 秒（审计 R2-38）
   room.wbBaseTimeConfig = room.baseTime;
   room.timeLeft = room.baseTime;

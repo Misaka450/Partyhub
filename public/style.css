@@ -314,6 +314,11 @@ body::after {
   gap: 8px;
   pointer-events: none;
 }
+/* QA-L3：房间内顶部有 52px 导航栏 + 32px 副状态栏，toast 下移到其下方，
+   避免“剪断引线 +50分”等提示浮层与倒计时/炸弹图标重叠遮挡 */
+body.in-room .app-toast-container {
+  top: max(92px, calc(env(safe-area-inset-top, 0px) + 92px));
+}
 
 .app-toast {
   background: rgba(28, 28, 30, 0.88);
@@ -4041,7 +4046,8 @@ html, body {
   display: flex;
   align-items: flex-end;
   gap: 0;
-  padding: 10px 4px 4px 14px;
+  /* QA-L1：左右对称留白 + 刘海屏安全区，避免首张/末张手牌紧贴屏幕边缘被裁切 */
+  padding: 10px max(14px, env(safe-area-inset-right)) 4px max(14px, env(safe-area-inset-left));
   overflow-x: auto;
   min-height: 104px;
   -webkit-overflow-scrolling: touch;
@@ -5003,7 +5009,7 @@ html, body {
   /* 手牌容器与单牌缩小（原62x90 → 52x76） */
   .uno-hand-container {
     min-height: 92px !important;
-    padding: 8px 2px 4px 8px !important;
+    padding: 8px max(10px, env(safe-area-inset-right)) 4px max(10px, env(safe-area-inset-left)) !important;
   }
   .uno-hand-card .uno-card {
     width: 52px !important;
@@ -5372,7 +5378,7 @@ html, body {
   .current-top-card .card-val { font-size: 1.4rem !important; }
   .uno-hand-container {
     min-height: 82px !important;
-    padding: 6px 2px 4px 6px !important;
+    padding: 6px max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left)) !important;
   }
   .uno-hand-card .uno-card {
     width: 44px !important;

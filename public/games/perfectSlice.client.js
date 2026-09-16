@@ -37,6 +37,26 @@
   let displayRoundTag = null;
   let displayRound = null;
 
+  // 圆角矩形路径兼容助手（QA-L4）：
+  // CanvasRenderingContext2D.roundRect 仅 Chrome≥99 / Safari≥16 / Firefox≥112 支持，
+  // 旧安卓 WebView / 微信内置内核没有该方法，直接调用会每帧抛错导致切披萨画布空白。
+  // 优先用原生实现；不支持时用 arcTo 手绘相同路径（与原生一样只构建路径，不负责填充/描边）
+  function roundedRectPath(c, x, y, w, h, radius) {
+    // 半径不能超过矩形宽高的一半，超出时原生实现会自动钳制，这里保持同样行为
+    const r = Math.max(0, Math.min(radius, w / 2, h / 2));
+    c.beginPath();
+    if (typeof c.roundRect === 'function') {
+      c.roundRect(x, y, w, h, r);
+      return;
+    }
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r);
+    c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r);
+    c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+
   // 初始化 DOM 引用
   function ensureDomElements() {
     if (!sliceCanvas) sliceCanvas = document.getElementById('slice-canvas');
@@ -454,8 +474,7 @@
     const pad = 12;
     const r = 20;
     c.save();
-    c.beginPath();
-    c.roundRect(pad, pad, width - pad * 2, height - pad * 2, r);
+    roundedRectPath(c, pad, pad, width - pad * 2, height - pad * 2, r);
     const slateGrad = c.createRadialGradient(width / 2, height / 2, 40, width / 2, height / 2, width / 2);
     slateGrad.addColorStop(0, '#1a1f2b');
     slateGrad.addColorStop(1, '#0e121a');
@@ -544,8 +563,7 @@
     const bw = tm.width + 16;
     const bh = 22;
 
-    c.beginPath();
-    c.roundRect(x - bw / 2, y - bh / 2, bw, bh, 11);
+    roundedRectPath(c, x - bw / 2, y - bh / 2, bw, bh, 11);
     c.fillStyle = 'rgba(15, 23, 42, 0.85)';
     c.shadowColor = 'rgba(0, 0, 0, 0.4)';
     c.shadowBlur = 8;

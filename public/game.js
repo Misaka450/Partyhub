@@ -1186,6 +1186,8 @@ socket.on('joined_successfully', (data) => {
 
   loginScreen.classList.remove('active');
   gameScreen.classList.add('active');
+  // QA-L3：房间内给 body 打标记，让全局 toast 下移避开顶部导航/状态栏，防止遮挡游戏信息
+  document.body.classList.add('in-room');
   displayRoomId.textContent = currentRoomId;
 
   const heroRoomId = document.getElementById('hero-room-id');
@@ -1250,6 +1252,7 @@ socket.on('kicked', () => {
   savePlayerToken(myPlayerToken);
   gameScreen.classList.remove('active');
   loginScreen.classList.add('active');
+  document.body.classList.remove('in-room');
   showToast('你已被房主请出房间', '🚫');
 });
 
@@ -1773,6 +1776,7 @@ if (btnLeaveRoom) {
         resetRoomLocalState();
         gameScreen.classList.remove('active');
         loginScreen.classList.add('active');
+        document.body.classList.remove('in-room');
         showToast('已退出房间 🚪', '👋');
         playSound('tick');
       }
@@ -1939,6 +1943,18 @@ function handleRoomState(state) {
     resetAllGameStages();
   } else {
     document.querySelector('.sub-status-bar')?.classList.remove('hidden');
+    // 大厅提示条清理（QA-M1）：非大厅状态下，若提示条里仍是大厅引导文案，说明当前游戏
+    // 没有自己的提示（如 UNO、阿瓦隆等 9 款），清空避免对局全程残留误导。
+    // 按「内容是否仍是大厅文案」判断而非按状态跃迁清空：各游戏通过 renderState 或开局事件
+    // 写入的提示文案与此不同，不会被误清；同时天然规避「开局事件先于 room_state 广播到达」
+    // 的时序竞争（如颜色大陷阱的 stroop_new_question 在服务端先于广播发出）
+    const staleHint = wordHintBox.textContent;
+    if (staleHint
+        && (staleHint.startsWith('👑 你是房主')
+            || staleHint.startsWith('⏳ 房主当前选择')
+            || staleHint === '等待房主开始...')) {
+      wordHintBox.textContent = '';
+    }
     // 游戏中：自动关闭所有残留弹窗（包括上一局结算弹窗），确保全体玩家无遮挡同步进入新一局
     if (state.status !== 'GAME_OVER') {
       document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));

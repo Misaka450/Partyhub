@@ -302,7 +302,10 @@ io.on('connection', (socket) => {
   let currentRoomId = null;
   let currentPlayerToken = null;
 
-  socket.on('join_room', ({ roomId, playerName, avatar, playerToken, reconnectSecret }) => {
+  socket.on('join_room', (payload) => {
+    // 健壮性守卫（QA-M3）：payload 为 null/缺失时先兜底再解构，避免直接抛异常导致登录端永远等待
+    // 注意必须用 let：下方会对这些入参做 trim/slice/兜底重赋值
+    let { roomId, playerName, avatar, playerToken, reconnectSecret } = payload || {};
     // 输入校验：限制类型与长度，防止超长字符串滥用内存/带宽（昵称最长12字、房间号最长32字符）
     // 校验失败时回发 join_error，让登录界面能给出提示而不是毫无反应（审计 R2-17）
     if (typeof roomId !== 'string' || typeof playerName !== 'string') {
@@ -532,7 +535,9 @@ io.on('connection', (socket) => {
   });
 
 // 房主切换游戏类型
-  socket.on('switch_game', ({ gameType }) => {
+  socket.on('switch_game', (payload) => {
+    // 健壮性守卫（QA-M3）：null 报文兜底，gameType 为 undefined 会在下方引擎表查找时安全拦截
+    const { gameType } = payload || {};
     const room = rooms.get(currentRoomId);
     if (!room) return;
     const player = room.players.find(p => p.token === currentPlayerToken);
@@ -690,9 +695,11 @@ io.on('connection', (socket) => {
   });
 
   // 聊天与猜词
-  socket.on('send_chat', ({ text }) => {
+  socket.on('send_chat', (payload) => {
+    // 健壮性守卫（QA-M3）：null 报文兜底；text 必须是字符串，防止数字等类型调 .trim() 抛异常
+    const { text } = payload || {};
     const room = rooms.get(currentRoomId);
-    if (!room || !text || !text.trim()) return;
+    if (!room || typeof text !== 'string' || !text.trim()) return;
     const player = room.players.find(p => p.token === currentPlayerToken);
     if (!player) return;
 
@@ -726,7 +733,9 @@ io.on('connection', (socket) => {
   });
 
   // 快捷表情与互动
-  socket.on('send_reaction', ({ emoji }) => {
+  socket.on('send_reaction', (payload) => {
+    // 健壮性守卫（QA-M3）：null 报文兜底，emoji 类型/长度由下方既有校验拦截
+    const { emoji } = payload || {};
     const room = rooms.get(currentRoomId);
     if (!room) return;
     const player = room.players.find(p => p.token === currentPlayerToken);
@@ -742,7 +751,9 @@ io.on('connection', (socket) => {
   });
 
   // 移交房主 / 踢人
-  socket.on('transfer_host', ({ targetToken }) => {
+  socket.on('transfer_host', (payload) => {
+    // 健壮性守卫（QA-M3）：null 报文兜底，targetToken 缺失时查找不到目标即安全返回
+    const { targetToken } = payload || {};
     const room = rooms.get(currentRoomId);
     if (!room) return;
     const player = room.players.find(p => p.token === currentPlayerToken);
@@ -757,7 +768,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('kick_player', ({ targetToken }) => {
+  socket.on('kick_player', (payload) => {
+    // 健壮性守卫（QA-M3）：null 报文兜底，targetToken 缺失时 findIndex 返回 -1 安全跳过
+    const { targetToken } = payload || {};
     const room = rooms.get(currentRoomId);
     if (!room) return;
     const player = room.players.find(p => p.token === currentPlayerToken);
@@ -865,7 +878,9 @@ io.on('connection', (socket) => {
   });
 
   // =====================【实时语音 WebRTC 信令中继】=====================
-  socket.on('voice_signal', ({ toToken, signal }) => {
+  socket.on('voice_signal', (payload) => {
+    // 健壮性守卫（QA-M3）：null 报文兜底，字段合法性由下方既有频控/类型校验拦截
+    const { toToken, signal } = payload || {};
     if (!currentRoomId || !currentPlayerToken || typeof toToken !== 'string' || !signal) return;
     const room = rooms.get(currentRoomId);
     if (!room) return;
@@ -898,7 +913,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('voice_status', ({ isMuted, isSpeaking }) => {
+  socket.on('voice_status', (payload) => {
+    // 健壮性守卫（QA-M3）：null 报文兜底，缺字段时按 false 广播不影响其他端
+    const { isMuted, isSpeaking } = payload || {};
     if (!currentRoomId || !currentPlayerToken) return;
     socket.to(currentRoomId).emit('voice_status_update', {
       playerToken: currentPlayerToken,

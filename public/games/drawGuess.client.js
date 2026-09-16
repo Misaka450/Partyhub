@@ -339,11 +339,17 @@
           if (drawTurnBanner) drawTurnBanner.classList.add('is-drawer');
           if (drawRoleIcon) drawRoleIcon.textContent = '🎨';
           if (drawStatusText) drawStatusText.textContent = '轮到你作画！题目：';
+          // QA-L2：题目未就绪（状态切换的短暂窗口）时显示中性等待提示，
+          // 不能把选词按钮的占位文案“选中词”当成真实题目展示
           if (drawWordBadge) {
-            drawWordBadge.textContent = state.currentWord || '选中词';
+            drawWordBadge.textContent = state.currentWord || '题目准备中…';
             drawWordBadge.classList.remove('hidden');
           }
-          if (wordHintBox) wordHintBox.textContent = `题目：${state.currentWord || '选中词'} (分类: ${state.wordCategory || '常用'})`;
+          if (wordHintBox) {
+            wordHintBox.textContent = state.currentWord
+              ? `题目：${state.currentWord} (分类: ${state.wordCategory || '常用'})`
+              : '题目准备中，请稍候…';
+          }
         } else {
           if (drawTurnBanner) drawTurnBanner.classList.remove('is-drawer');
           if (drawRoleIcon) drawRoleIcon.textContent = '👀';
