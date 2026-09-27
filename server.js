@@ -30,6 +30,9 @@ const { computeDelta, createPlayerView, initFsmMetadata } = require('./fsmEngine
 
 const app = express();
 
+// 启用反向代理信任（信任一级反代 Nginx），确保 express-rate-limit 能准确识别真实玩家 IP
+app.set('trust proxy', 1);
+
 // ===== 安全增强中间件 =====
 // 1. Helmet：自动配置 HTTP 安全响应头（防点击劫持、防嗅探、启用 HSTS 等）
 app.use(helmet({
@@ -145,11 +148,16 @@ app.use(compression({
   level: 6         // 压缩级别 6（兼顾高压缩率与极低 CPU 开销的最佳黄金点）
 }));
 
-// 2. 静态资源智能托管：开启 ETag 与强弱缓存结合
+// 2. 静态资源智能托管：开启 ETag 与强弱缓存结合 (HTML 文件不强缓存，确保版本更新瞬时生效)
 app.use(express.static(path.join(__dirname, 'public'), {
-  maxAge: '1d',     // 静态资源在客户端缓存 1 天，减少重复下载
-  etag: true,       // 开启 ETag 协商缓存（文件没变时直接返回 304，节省网络带宽）
-  lastModified: true
+  maxAge: '1d',     // 静态非 HTML 资源在客户端缓存 1 天
+  etag: true,       // 开启 ETag 协商缓存
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    }
+  }
 }));
 
 // 提供 ICE/TURN 服务器配置接口，供前端语音模块随时拉取

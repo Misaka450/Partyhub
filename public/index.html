@@ -19,12 +19,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   
   <!-- 维度二优化：预加载关键 CSS 与核心脚本，提升首屏与弱网环境下的加载速度 -->
-  <link rel="preload" href="/style.css?v=1.2.4" as="style">
-  <link rel="preload" href="/game.js?v=1.2.4" as="script">
+  <link rel="preload" href="/style.css?v=2.1.0" as="style">
+  <link rel="preload" href="/game.js?v=2.1.0" as="script">
   <!-- 开启版本号管理：配合 ETag 强缓存，避免代码更新后浏览器强刷问题 -->
-  <link rel="stylesheet" href="/style.css?v=1.2.4">
+  <link rel="stylesheet" href="/style.css?v=2.1.0">
   <script src="/socket.io/socket.io.js"></script>
   <!-- 站点访问统计 (Umami) -->
   <script defer src="https://umami.980823.xyz/script.js" data-website-id="f2370455-9fa1-428e-8525-424731a454bf"></script>
@@ -48,12 +49,15 @@
 
         <!-- 顶部身份铭牌 -->
         <div class="pass-header">
-          <div class="pass-chip-row">
-            <span class="pass-chip-meta">PARTY HUB // PASS</span>
-            <span class="pass-chip-id font-tabular">ONLINE</span>
+          <div class="pass-brand-row">
+            <img src="/assets/logo.png" alt="PartyHub" class="login-brand-logo">
+            <div class="pass-chip-row">
+              <span class="pass-chip-meta">PARTY HUB</span>
+              <span class="pass-chip-id font-tabular">ONLINE</span>
+            </div>
           </div>
           <h1 class="pass-main-title">Party Hub · 聚会游戏</h1>
-          <p class="pass-sub-desc">和朋友一起，让聚会更有趣</p>
+          <p class="pass-sub-desc">温润奶油治愈风 · 和朋友一起无忧畅玩</p>
         </div>
 
         <!-- 玩家形象与昵称卡槽 (水平双栏并排) -->
@@ -176,78 +180,69 @@
         <!-- 1. 等待大厅控制台 -->
         <div id="lobby-card" class="lobby-card">
                     <div class="lobby-console">
-            <!-- 顶部 Header 与全局指标条 (Brand Banner & Global Metrics Deck) -->
-            <div class="lobby-brand-bar">
-              <div class="lobby-brand-info">
-                <div class="lobby-brand-title-row">
-                  <span class="lobby-brand-logo">🎉</span>
-                  <h2 class="lobby-brand-title">Party Hub · 聚会游戏</h2>
+            <!-- 顶部房主与房间胶囊 (Fluffy Host & Room Capsule) -->
+            <section class="host-room-capsule">
+              <div class="capsule-top-row">
+                <div class="host-profile-box">
+                  <div class="host-avatar-wrapper">
+                    <img class="host-avatar-img" src="/assets/avatar_shiba.png" alt="Host Avatar">
+                    <span class="host-crown-badge" id="metric-privilege-icon" title="房主标志">👑</span>
+                  </div>
+                  <div class="host-text-box">
+                    <div class="host-name-row">
+                      <span class="host-title-name" id="metric-privilege-label">派对房主</span>
+                      <span class="host-tag-pill">房主</span>
+                    </div>
+                    <div class="host-meta-row">
+                      <span class="host-sub-tag" id="guidance-banner-text">全员已备战</span>
+                      <span class="host-ping-tag"><span class="ping-dot"></span>在线联机</span>
+                    </div>
+                  </div>
                 </div>
-                <p class="lobby-brand-sub">和朋友一起，让聚会更有趣</p>
-              </div>
-            </div>
-
-            <div class="lobby-metrics-deck">
-              <div class="metric-card">
-                <div class="metric-icon-box bg-emerald-subtle">
-                  <span class="metric-icon-dot"></span>
-                </div>
-                <div class="metric-detail">
-                  <span class="metric-label">在线房间</span>
-                  <span class="metric-value text-emerald">已联机</span>
-                </div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-icon-box bg-blue-subtle">👥</div>
-                <div class="metric-detail">
-                  <span class="metric-label">房间人数</span>
-                  <span class="metric-value font-tabular"><b id="metric-player-count">1</b>/12</span>
-                </div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-icon-box bg-indigo-subtle">🏠</div>
-                <div class="metric-detail">
-                  <span class="metric-label">我的房间</span>
-                  <span class="metric-value font-tabular" id="metric-room-num">#--</span>
-                </div>
-              </div>
-              <div class="metric-card privilege-card" id="metric-privilege-card">
-                <div class="metric-icon-box bg-amber-subtle" id="metric-privilege-icon">👑</div>
-                <div class="metric-detail">
-                  <span class="metric-label">特权卡片</span>
-                  <span class="metric-value text-amber" id="metric-privilege-label">房主特权</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- 房主/客态情境化引导横幅 (Contextual Guidance Banner) -->
-            <div id="lobby-guidance-banner" class="lobby-guidance-banner host-guidance">
-              <span class="guidance-icon">👑</span>
-              <span class="guidance-text" id="guidance-banner-text">请挑选游戏，并邀请好友入席开始对局</span>
-            </div>
-
-            <!-- 派对大厅：房间英雄与席位岛 (Party Lobby Stage) -->
-            <div class="lobby-room-hero">
-              <div class="hero-top-bar">
-                <div class="hero-room-pill">
-                  <span class="live-dot pulse-green"></span>
-                  <span class="hero-lbl">ROOM</span>
-                  <b class="hero-room-id font-tabular" id="hero-room-id">--</b>
-                </div>
-                <div class="hero-right-actions">
-                  <span class="hero-player-badge font-tabular" id="hero-player-badge">1 人已就绪</span>
-                  <button id="btn-hero-share" class="btn btn-sm btn-subtle hero-invite-btn" title="复制邀请链接">
-                    <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                <div class="capsule-actions">
+                  <button type="button" id="btn-hero-share" class="btn-capsule-action" title="邀请好友">
+                    <span>🔗</span>
                     <span>邀请好友</span>
+                  </button>
+                  <button type="button" id="btn-random-pick-game" class="btn-capsule-action" title="随缘盲盒抽取">
+                    <span>🎲</span>
+                    <span>盲盒快选</span>
                   </button>
                 </div>
               </div>
+              <!-- 房间参数与席位横条 (Room Sub-Bar) -->
+              <div class="capsule-sub-bar">
+                <div class="sub-bar-left">
+                  <span class="room-chip-pill">
+                    <span class="room-chip-lbl">房间</span>
+                    <b class="room-chip-num" id="hero-room-id">--</b>
+                    <b class="hidden" id="metric-room-num">#--</b>
+                  </span>
+                  <span class="seats-count-pill">
+                    <span class="seats-dot animate-pulse"></span>
+                    <b id="metric-player-count">1</b>/12 席位
+                  </span>
+                </div>
+                <div class="sub-bar-right">
+                  <span class="host-mode-tag" id="hero-player-badge">1 人已入席</span>
+                </div>
+              </div>
+            </section>
 
-              <!-- 席位卡片浮岛 (保留移动端单行 4 席位紧凑布局，约60px高) -->
+            <!-- 席位卡片浮岛 (Player Cushion Island) -->
+            <section class="seats-island-section">
+              <div class="seats-island-header">
+                <div class="island-title-row">
+                  <span class="island-pulse-dot"></span>
+                  <span class="island-title">席位浮岛</span>
+                </div>
+                <span class="island-sub-status" id="lobby-count">1人就绪</span>
+              </div>
+              <!-- 席位卡片浮岛容器 -->
               <div class="player-seats-grid" id="lobby-seats-grid">
                 <!-- 由 renderPlayerList 动态填充 -->
               </div>
-            </div>
+            </section>
 
             <!-- 房主选择游戏区 -->
             <div id="host-game-select-box" class="host-game-select-box">
@@ -258,15 +253,11 @@
                 </div>
                 <div class="category-nav-group">
                   <div class="category-nav">
-                    <button type="button" class="cat-pill active" data-category="all">全部</button>
-                    <button type="button" class="cat-pill" data-category="party">经典</button>
-                    <button type="button" class="cat-pill" data-category="action">手速</button>
-                    <button type="button" class="cat-pill" data-category="puzzle">益智</button>
+                    <button type="button" class="cat-pill active" data-category="all">全部 (19)</button>
+                    <button type="button" class="cat-pill" data-category="party">经典 Party (4)</button>
+                    <button type="button" class="cat-pill" data-category="action">手速 Action (7)</button>
+                    <button type="button" class="cat-pill" data-category="puzzle">益智 Puzzle (8)</button>
                   </div>
-                  <button type="button" id="btn-random-pick-game" class="btn-random-pick" title="随缘抽取一款游戏">
-                    <span>🎲</span>
-                    <span>盲盒抽选</span>
-                  </button>
                 </div>
               </div>
 
