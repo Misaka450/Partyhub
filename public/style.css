@@ -6975,6 +6975,407 @@ html, body {
 }
 
 /* ==========================================================================
+   WARM CREAMY HEALING STYLE - SECONDARY MODULES CRAFT SPEC
+   ========================================================================== */
+
+/* 6. 游戏结算弹窗与颁奖台 (Game Over & Podium) */
+.gameover-content {
+  background: #FFFFFF !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 28px !important;
+  box-shadow: 0 20px 48px -8px rgba(138, 112, 89, 0.16) !important;
+  padding: 28px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  max-width: 440px !important;
+}
+
+.gameover-content::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 6px !important;
+  background: linear-gradient(90deg, #F3C766, #FF8A3D, #F39C9B) !important;
+}
+
+#gameover-title {
+  font-family: var(--font-main) !important;
+  font-size: 1.5rem !important;
+  font-weight: 800 !important;
+  color: #3D352E !important;
+  margin: 4px 0 6px 0 !important;
+}
+
+.gameover-desc {
+  font-size: 0.86rem !important;
+  color: #82776E !important;
+  margin-bottom: 16px !important;
+}
+
+.podium-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  max-height: 280px !important;
+}
+
+.podium-card {
+  background: #FAF7F2 !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 18px !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-shadow: 0 2px 6px rgba(138, 112, 89, 0.04) !important;
+}
+
+.podium-card.podium-top1 {
+  background: #FFF9ED !important;
+  border-color: #F3C766 !important;
+  box-shadow: 0 4px 16px rgba(243, 199, 102, 0.25) !important;
+}
+
+.podium-card-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+}
+
+.podium-rank {
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  width: 28px !important;
+  text-align: center !important;
+}
+
+.podium-avatar {
+  font-size: 1.3rem !important;
+}
+
+.podium-name {
+  font-family: var(--font-main) !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  color: #3D352E !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.podium-detail {
+  font-size: 0.72rem !important;
+  color: #82776E !important;
+  margin-left: 6px !important;
+}
+
+.podium-score {
+  font-family: var(--font-mono) !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  color: #FF8A3D !important;
+}
+
+.gameover-actions-dock {
+  margin-top: 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.gameover-host-actions {
+  display: flex !important;
+  gap: 8px !important;
+}
+
+.btn-arcade-rematch {
+  flex: 1 !important;
+  height: 46px !important;
+  border-radius: 9999px !important;
+  background: #FF8A3D !important;
+  color: #FFFFFF !important;
+  font-family: var(--font-main) !important;
+  font-weight: 800 !important;
+  border: none !important;
+  box-shadow: 0 6px 18px rgba(255, 138, 61, 0.35) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: transform 0.12s ease !important;
+}
+
+.btn-arcade-rematch:hover {
+  background: #F07829 !important;
+}
+
+.btn-arcade-rematch:active {
+  transform: scale(0.97) !important;
+}
+
+.btn-arcade-random-next {
+  flex: 1 !important;
+  height: 46px !important;
+  border-radius: 9999px !important;
+  background: #FAF7F2 !important;
+  border: 1.5px solid #EFE8DF !important;
+  color: #3D352E !important;
+  font-family: var(--font-main) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 6px rgba(138, 112, 89, 0.04) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-arcade-random-next:hover {
+  background: #FFF0E5 !important;
+  border-color: #FF8A3D !important;
+  color: #FF8A3D !important;
+}
+
+/* 7. 全局通用弹窗与设置面板 (Modals & Settings Panel) */
+.modal-content, .modal-card {
+  background: #FFFFFF !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 26px !important;
+  box-shadow: 0 20px 48px -8px rgba(138, 112, 89, 0.16) !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.modal-content::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 5px !important;
+  background: linear-gradient(90deg, #F3C766, #FF8A3D, #F39C9B) !important;
+}
+
+.settings-panel {
+  background: #FFFFFF !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 22px !important;
+  padding: 14px 16px !important;
+  box-shadow: 0 4px 14px rgba(138, 112, 89, 0.05) !important;
+  margin-bottom: 12px !important;
+}
+
+.settings-form-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 10px !important;
+  margin-bottom: 10px !important;
+}
+
+.form-item label {
+  font-size: 0.76rem !important;
+  font-weight: 700 !important;
+  color: #82776E !important;
+  margin-bottom: 4px !important;
+  display: block !important;
+}
+
+.form-item select {
+  background: #FAF7F2 !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 12px !important;
+  padding: 6px 8px !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  color: #3D352E !important;
+}
+
+.rule-tip-bar {
+  background: #FAF7F2 !important;
+  border: 1px dashed #EFE8DF !important;
+  border-radius: 14px !important;
+  padding: 8px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.tip-label {
+  background: #FFF0E5 !important;
+  color: #FF8A3D !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  padding: 1px 6px !important;
+  border-radius: 9999px !important;
+}
+
+.tip-desc {
+  font-size: 0.74rem !important;
+  color: #82776E !important;
+  line-height: 1.35 !important;
+}
+
+.qr-modal-content {
+  border-radius: 26px !important;
+  padding: 22px !important;
+}
+
+.qr-canvas-box {
+  background: #FAF7F2 !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 20px !important;
+  padding: 14px !important;
+  box-shadow: 0 4px 14px rgba(138, 112, 89, 0.06) !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+}
+
+.confirm-modal-content {
+  border-radius: 24px !important;
+  padding: 24px !important;
+  text-align: center !important;
+}
+
+/* 8. 底部折叠聊天栏 (Collapsible Chat Section) */
+.chat-section {
+  background: #FFFFFF !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 22px !important;
+  box-shadow: 0 10px 28px -4px rgba(138, 112, 89, 0.08) !important;
+  overflow: hidden !important;
+  transition: all 0.25s ease !important;
+}
+
+.chat-header-bar {
+  background: #FAF7F2 !important;
+  border-bottom: 1px solid #EFE8DF !important;
+  padding: 10px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+}
+
+.chat-title-text {
+  font-family: var(--font-main) !important;
+  font-size: 0.84rem !important;
+  font-weight: 800 !important;
+  color: #3D352E !important;
+}
+
+.chat-live-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #70B9B0 !important;
+}
+
+.btn-toggle-chat {
+  background: #FFFFFF !important;
+  border: 1px solid #EFE8DF !important;
+  border-radius: 9999px !important;
+  padding: 2px 10px !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  color: #82776E !important;
+}
+
+.chat-messages {
+  background: #FFFFFF !important;
+  padding: 10px 14px !important;
+  font-size: 0.8rem !important;
+}
+
+.chat-form {
+  background: #FAF7F2 !important;
+  border-top: 1px solid #EFE8DF !important;
+  padding: 8px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.chat-form input {
+  background: #FFFFFF !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 9999px !important;
+  padding: 7px 14px !important;
+  font-size: 0.82rem !important;
+  color: #3D352E !important;
+  flex: 1 !important;
+}
+
+.chat-form input:focus {
+  border-color: #FF8A3D !important;
+  box-shadow: 0 0 0 3px rgba(255, 138, 61, 0.2) !important;
+}
+
+#btn-send {
+  border-radius: 9999px !important;
+  background: #FF8A3D !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  padding: 7px 16px !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(255, 138, 61, 0.3) !important;
+  transition: transform 0.12s ease !important;
+}
+
+#btn-send:active {
+  transform: scale(0.96) !important;
+}
+
+/* 9. 全局渐变与冷色统一 (Gradients & Accents Harmonization) */
+.btn-arcade-start {
+  background: #FF8A3D !important;
+  color: #FFFFFF !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 6px 20px -2px rgba(255, 138, 61, 0.4) !important;
+  border: none !important;
+}
+
+.btn-arcade-start:hover {
+  background: #F07829 !important;
+}
+
+.btn-arcade-ready {
+  background: #70B9B0 !important;
+  color: #FFFFFF !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 6px 20px -2px rgba(112, 185, 176, 0.4) !important;
+  border: none !important;
+}
+
+.btn-arcade-ready:hover {
+  background: #5EA89F !important;
+}
+
+.pulse-green {
+  background-color: #70B9B0 !important;
+  box-shadow: 0 0 0 0 rgba(112, 185, 176, 0.7) !important;
+}
+
+.bg-emerald-subtle {
+  background: rgba(112, 185, 176, 0.15) !important;
+  color: #176962 !important;
+}
+
+.text-emerald {
+  color: #176962 !important;
+}
+
+.bg-indigo-subtle {
+  background: rgba(243, 199, 102, 0.2) !important;
+  color: #A06B00 !important;
+}
+
+/* ==========================================================================
    15. 通用隐藏工具类 (Utility: Hidden) —— 必须置于文件最末尾
    原因：本文件后半段有大量容器使用 display:flex !important（如 .lobby-card、
    .chat-section、.stage-section 等）。若 .hidden 定义在它们之前，同为
