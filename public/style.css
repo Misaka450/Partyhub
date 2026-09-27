@@ -7648,6 +7648,36 @@ html, body {
   font-weight: 800 !important;
 }
 
+/* 12. 玩家抽屉与侧边栏温润治愈风 (Player Drawer Polish) */
+.player-drawer {
+  background: #FFFFFF !important;
+  border-right: 1.5px solid #EFE8DF !important;
+  box-shadow: 12px 0 36px rgba(138, 112, 89, 0.16) !important;
+}
+
+.drawer-backdrop {
+  background: rgba(61, 53, 46, 0.35) !important;
+}
+
+.drawer-header {
+  border-bottom: 1px solid #EFE8DF !important;
+  padding-bottom: 12px !important;
+}
+
+.player-item {
+  background: #FAF7F2 !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 6px rgba(138, 112, 89, 0.04) !important;
+  padding: 8px 10px !important;
+}
+
+.player-item.is-me {
+  background: #FFF9F2 !important;
+  border-color: #FF8A3D !important;
+  box-shadow: 0 4px 12px rgba(255, 138, 61, 0.15) !important;
+}
+
 /* ==========================================================================
    15. 通用隐藏工具类 (Utility: Hidden) —— 必须置于文件最末尾
    原因：本文件后半段有大量容器使用 display:flex !important（如 .lobby-card、
