@@ -7375,6 +7375,89 @@ html, body {
   color: #A06B00 !important;
 }
 
+/* 10. 响应式布局与细节深度对齐 (Responsive Alignment & Precision Spacing) */
+.lobby-console {
+  max-width: 720px !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+.host-game-select-box {
+  padding: 0 !important;
+  margin: 8px 0 14px 0 !important;
+  width: 100% !important;
+}
+
+.console-section-header {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  margin-bottom: 12px !important;
+}
+
+.console-section-header .section-title {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+.category-nav-group {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  padding: 2px 0 4px 0 !important;
+}
+
+.category-nav-group::-webkit-scrollbar {
+  display: none !important;
+}
+
+.category-nav {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+.cat-pill {
+  flex-shrink: 0 !important;
+  padding: 6px 14px !important;
+  border-radius: 9999px !important;
+  font-family: var(--font-main) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  background: #FFFFFF !important;
+  border: 1.5px solid #EFE8DF !important;
+  color: #82776E !important;
+  box-shadow: 0 2px 6px rgba(138, 112, 89, 0.04) !important;
+  transition: all 0.15s ease !important;
+}
+
+.cat-pill.active {
+  background: #FF8A3D !important;
+  color: #FFFFFF !important;
+  border-color: #FF8A3D !important;
+  box-shadow: 0 4px 14px rgba(255, 138, 61, 0.3) !important;
+}
+
+.arcade-action-dock {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 12px 0 !important;
+}
+
 /* ==========================================================================
    15. 通用隐藏工具类 (Utility: Hidden) —— 必须置于文件最末尾
    原因：本文件后半段有大量容器使用 display:flex !important（如 .lobby-card、
