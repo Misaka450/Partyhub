@@ -7678,6 +7678,141 @@ html, body {
   box-shadow: 0 4px 12px rgba(255, 138, 61, 0.15) !important;
 }
 
+/* 13. 游戏内各舞台温润治愈风细节深度重塑 (In-Game Stages Harmonization) */
+.draw-turn-banner, .sub-status-bar {
+  background: #FFFFFF !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 20px !important;
+  box-shadow: 0 4px 14px rgba(138, 112, 89, 0.05) !important;
+}
+
+.drawing-toolbar {
+  background: #FFFFFF !important;
+  border: 1.5px solid #EFE8DF !important;
+  border-radius: 22px !important;
+  box-shadow: 0 6px 20px rgba(138, 112, 89, 0.06) !important;
+}
+
+.btn-tool {
+  border-radius: 14px !important;
+  background: #FAF7F2 !important;
+  border: 1.5px solid #EFE8DF !important;
+  transition: all 0.12s ease !important;
+}
+
+.btn-tool:hover, .btn-tool.active {
+  background: #FFF9F2 !important;
+  border-color: #FF8A3D !important;
+  color: #FF8A3D !important;
+}
+
+.draw-guess-input {
+  border-radius: 9999px !important;
+  border: 1.5px solid #EFE8DF !important;
+  background: #FFFFFF !important;
+  padding: 8px 16px !important;
+}
+
+.draw-guess-input:focus {
+  border-color: #FF8A3D !important;
+  box-shadow: 0 0 0 3px rgba(255, 138, 61, 0.2) !important;
+}
+
+.btn-draw-guess {
+  border-radius: 9999px !important;
+  background: #FF8A3D !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  border: none !important;
+  padding: 8px 18px !important;
+  box-shadow: 0 4px 12px rgba(255, 138, 61, 0.3) !important;
+}
+
+.uc-speaker-spotlight {
+  border-radius: 20px !important;
+  background: #FFFFFF !important;
+  border: 1.5px solid #FF8A3D !important;
+  box-shadow: 0 4px 16px rgba(255, 138, 61, 0.15) !important;
+  padding: 10px 14px !important;
+}
+
+.uc-player-card {
+  border-radius: 18px !important;
+  background: #FAF7F2 !important;
+  border: 1.5px solid #EFE8DF !important;
+  box-shadow: 0 2px 6px rgba(138, 112, 89, 0.04) !important;
+  padding: 10px 12px !important;
+  transition: all 0.15s ease !important;
+}
+
+.uc-player-card.is-speaking {
+  border-color: #FF8A3D !important;
+  background: #FFF9F2 !important;
+  box-shadow: 0 4px 14px rgba(255, 138, 61, 0.2) !important;
+}
+
+.avalon-hero-card {
+  border-radius: 20px !important;
+  background: #FFFFFF !important;
+  border: 1.5px solid #EFE8DF !important;
+  box-shadow: 0 6px 18px rgba(138, 112, 89, 0.06) !important;
+}
+
+.avalon-quest-track {
+  border-radius: 20px !important;
+  background: #FAF7F2 !important;
+  border: 1.5px solid #EFE8DF !important;
+}
+
+.uno-deck-pile {
+  border-radius: 18px !important;
+  box-shadow: 0 6px 18px rgba(138, 112, 89, 0.15) !important;
+}
+
+.m24-card {
+  border-radius: 18px !important;
+  border: 1.5px solid #EFE8DF !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(138, 112, 89, 0.08) !important;
+}
+
+.m24-formula-bar {
+  border-radius: 18px !important;
+  border: 1.5px solid #EFE8DF !important;
+  background: #FAF7F2 !important;
+}
+
+.wire-card {
+  border-radius: 18px !important;
+  border: 1.5px solid #EFE8DF !important;
+  background: #FAF7F2 !important;
+  box-shadow: 0 2px 8px rgba(138, 112, 89, 0.05) !important;
+}
+
+.wire-card:hover {
+  background: #FFF9F2 !important;
+  border-color: #FF8A3D !important;
+}
+
+.bc-history-panel {
+  border-radius: 20px !important;
+  border: 1.5px solid #EFE8DF !important;
+  background: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(138, 112, 89, 0.05) !important;
+}
+
+.bc-log-item {
+  border-radius: 14px !important;
+  border: 1px solid #EFE8DF !important;
+  background: #FAF7F2 !important;
+}
+
+.flash-canvas-wrapper {
+  border-radius: 22px !important;
+  border: 1.5px solid #EFE8DF !important;
+  box-shadow: 0 6px 20px rgba(138, 112, 89, 0.08) !important;
+}
+
 /* ==========================================================================
    15. 通用隐藏工具类 (Utility: Hidden) —— 必须置于文件最末尾
    原因：本文件后半段有大量容器使用 display:flex !important（如 .lobby-card、
