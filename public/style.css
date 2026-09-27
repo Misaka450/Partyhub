@@ -7814,6 +7814,152 @@ html, body {
 }
 
 /* ==========================================================================
+   14. WARM HEARTH NIGHT (DARK MODE) COMPREHENSIVE OVERRIDES
+   ========================================================================== */
+[data-theme="dark"] .login-wrapper {
+  background: var(--bg-base) !important;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1.5px, transparent 1.5px) !important;
+}
+
+[data-theme="dark"] .login-card,
+[data-theme="dark"] .host-room-capsule,
+[data-theme="dark"] .seats-island-section,
+[data-theme="dark"] .game-tile,
+[data-theme="dark"] .gameover-content,
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .modal-card,
+[data-theme="dark"] .settings-panel,
+[data-theme="dark"] .chat-section,
+[data-theme="dark"] .player-drawer,
+[data-theme="dark"] .draw-turn-banner,
+[data-theme="dark"] .sub-status-bar,
+[data-theme="dark"] .drawing-toolbar,
+[data-theme="dark"] .uc-speaker-spotlight,
+[data-theme="dark"] .avalon-hero-card,
+[data-theme="dark"] .bc-history-panel,
+[data-theme="dark"] .m24-card {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-theme="dark"] .pass-player-dock,
+[data-theme="dark"] .pass-room-dock,
+[data-theme="dark"] .player-seat-card,
+[data-theme="dark"] .podium-card,
+[data-theme="dark"] .chat-header-bar,
+[data-theme="dark"] .chat-form,
+[data-theme="dark"] .player-item,
+[data-theme="dark"] .btn-capsule-action,
+[data-theme="dark"] .room-chip-pill,
+[data-theme="dark"] .tile-icon-box,
+[data-theme="dark"] .btn-tool,
+[data-theme="dark"] .uc-player-card,
+[data-theme="dark"] .avatar-option-btn,
+[data-theme="dark"] .qr-canvas-box,
+[data-theme="dark"] .avatar-modal-footer,
+[data-theme="dark"] .avatar-modal-card .modal-header,
+[data-theme="dark"] .form-item select,
+[data-theme="dark"] .rule-tip-bar,
+[data-theme="dark"] .bc-log-item,
+[data-theme="dark"] .m24-formula-bar,
+[data-theme="dark"] .wire-card {
+  background: var(--bg-sub) !important;
+  border-color: var(--border) !important;
+  color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .pass-main-title,
+[data-theme="dark"] .host-title-name,
+[data-theme="dark"] .island-title,
+[data-theme="dark"] .tile-title,
+[data-theme="dark"] #gameover-title,
+[data-theme="dark"] .chat-title-text,
+[data-theme="dark"] .seat-name,
+[data-theme="dark"] .podium-name,
+[data-theme="dark"] .section-title span:first-child,
+[data-theme="dark"] .qr-modal-title {
+  color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .pass-sub-desc,
+[data-theme="dark"] .host-sub-tag,
+[data-theme="dark"] .island-sub-status,
+[data-theme="dark"] .tile-meta,
+[data-theme="dark"] .gameover-desc,
+[data-theme="dark"] .host-mode-tag,
+[data-theme="dark"] .seat-status,
+[data-theme="dark"] .podium-detail,
+[data-theme="dark"] .qr-tip-text,
+[data-theme="dark"] .form-item label,
+[data-theme="dark"] .tip-desc {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .cat-pill {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .cat-pill.active {
+  background: var(--primary) !important;
+  color: #1F1B18 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="dark"] .name-input-wrapper input,
+[data-theme="dark"] .room-input-wrapper input,
+[data-theme="dark"] .chat-form input,
+[data-theme="dark"] .draw-guess-input {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .avatar-display,
+[data-theme="dark"] .seat-avatar-wrapper {
+  background: var(--bg-sub) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .arcade-action-dock {
+  background: rgba(42, 36, 32, 0.95) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .btn-dock-icon,
+[data-theme="dark"] .btn-dock-sub {
+  background: var(--bg-sub) !important;
+  border-color: var(--border) !important;
+  color: var(--text-main) !important;
+}
+
+[data-theme="dark"] .btn-arcade-enter,
+[data-theme="dark"] .btn-dock-main,
+[data-theme="dark"] .btn-arcade-start,
+[data-theme="dark"] .btn-arcade-rematch,
+[data-theme="dark"] #btn-send,
+[data-theme="dark"] .btn-draw-guess {
+  background: var(--primary) !important;
+  color: #1F1B18 !important;
+  box-shadow: 0 8px 24px -4px rgba(255, 166, 102, 0.35) !important;
+}
+
+[data-theme="dark"] .player-seat-card.is-me,
+[data-theme="dark"] .game-tile.active,
+[data-theme="dark"] .player-item.is-me,
+[data-theme="dark"] .avatar-option-btn.active {
+  background: rgba(255, 166, 102, 0.12) !important;
+  border-color: var(--primary) !important;
+}
+
+[data-theme="dark"] .podium-card.podium-top1 {
+  background: rgba(243, 199, 102, 0.15) !important;
+  border-color: var(--warning) !important;
+}
+
+/* ==========================================================================
    15. 通用隐藏工具类 (Utility: Hidden) —— 必须置于文件最末尾
    原因：本文件后半段有大量容器使用 display:flex !important（如 .lobby-card、
    .chat-section、.stage-section 等）。若 .hidden 定义在它们之前，同为
