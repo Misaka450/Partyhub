@@ -122,8 +122,8 @@ document.addEventListener('compositionend', () => { isIMEComposing = false; });
 let myPlayerToken = loadPlayerToken() || generatePlayerToken();
 savePlayerToken(myPlayerToken);
 
-let savedName = safeGetItem('dg_player_name') || ('玩家' + Math.floor(Math.random() * 900 + 100));
-let savedAvatar = safeGetItem('dg_player_avatar') || '🐱';
+let savedName = safeGetItem('dg_player_name', true) || safeGetItem('dg_player_name') || ('玩家' + Math.floor(Math.random() * 900 + 100));
+let savedAvatar = safeGetItem('dg_player_avatar', true) || safeGetItem('dg_player_avatar') || '🐱';
 
 // 全局状态
 let myPlayerId = '';
@@ -742,6 +742,7 @@ if (playerNameInput) {
     const val = e.target.value.trim();
     if (val) {
       myPlayerName = val;
+      safeSetItem('dg_player_name', val, true);
       safeSetItem('dg_player_name', val);
     }
   });
@@ -814,6 +815,7 @@ if (btnAvatarConfirm) {
   btnAvatarConfirm.addEventListener('click', () => {
     myAvatar = tempSelectedAvatar;
     if (selectedAvatarEl) selectedAvatarEl.textContent = myAvatar;
+    safeSetItem('dg_player_avatar', myAvatar, true);
     safeSetItem('dg_player_avatar', myAvatar);
     closeAvatarModal();
     showToast(`头像已更换为 ${myAvatar} ✨`, '🎨');
@@ -1033,6 +1035,7 @@ if (btnRandomName) {
     if (playerNameInput) {
       playerNameInput.value = rName;
       myPlayerName = rName;
+      safeSetItem('dg_player_name', rName, true);
       safeSetItem('dg_player_name', rName);
       playSound('tick');
       triggerVibration('pop');
@@ -1136,6 +1139,7 @@ btnJoin.addEventListener('click', () => {
     return;
   }
   myPlayerName = name;
+  safeSetItem('dg_player_name', name, true);
   safeSetItem('dg_player_name', name);
   // 记录本标签页最后加入的房间（仅 sessionStorage，标签页隔离）：
   // 刷新页面后自动回房用；主动退出时清除（见 resetRoomLocalState）
@@ -1982,7 +1986,10 @@ function handleRoomState(state) {
     }
     // 游戏中：自动关闭所有残留弹窗（包括上一局结算弹窗），确保全体玩家无遮挡同步进入新一局
     if (state.status !== 'GAME_OVER') {
-      document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+      document.querySelectorAll('.modal.active').forEach(m => {
+        if (m.id === 'word-modal' && state.status === 'SELECTING') return;
+        m.classList.remove('active');
+      });
     }
     // 若从 GAME_OVER 直接开启新的一局（再来一局），全量重置客户端各游戏舞台
     if (prevStatus === 'GAME_OVER' && state.status !== 'GAME_OVER') {
@@ -2052,7 +2059,12 @@ function handleRoomState(state) {
   // UI 审计 P3：提示条内容为空时（如 UNO、阿瓦隆等无提示玩法）整条隐藏，
   // 避免对局顶部长期悬留一条空白占位条。放在各游戏渲染之后执行，
   // 确保以最终提示文案为准（防止游戏插件稍后写入提示却被提前隐藏）
-  document.querySelector('.sub-status-bar')?.classList.toggle('hidden', !wordHintBox.textContent.trim());
+  if (state.status === 'LOBBY') {
+    document.querySelector('.sub-status-bar')?.classList.add('hidden');
+    displayRoundTag?.classList.add('hidden');
+  } else {
+    document.querySelector('.sub-status-bar')?.classList.toggle('hidden', !wordHintBox.textContent.trim());
+  }
 }
 socket.on('room_state', handleRoomState);
 

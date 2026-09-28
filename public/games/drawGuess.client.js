@@ -57,7 +57,7 @@
     if (!wordHintBox) wordHintBox = document.getElementById('word-hint-box');
     if (!categoryBadge) categoryBadge = document.getElementById('category-badge');
     if (!wordModal) wordModal = document.getElementById('word-modal');
-    if (!wordOptionsContainer) wordOptionsContainer = document.getElementById('word-options-container');
+    if (!wordOptionsContainer) wordOptionsContainer = document.getElementById('word-options') || document.getElementById('word-options-container');
     if (!displayRoundTag) displayRoundTag = document.getElementById('display-round-tag');
     if (!displayRound) displayRound = document.getElementById('display-round');
   }
@@ -166,7 +166,10 @@
     }
   }
 
+  let socketEventsBound = false;
   function bindEvents(socket) {
+    if (!socket || socketEventsBound) return;
+    socketEventsBound = true;
     ensureDom();
 
     if (drawGuessForm && !drawGuessForm._eventsBound) {
@@ -329,11 +332,17 @@
 
   window.PartyGames['draw-guess'] = {
     init(socket) {
-      bindEvents(socket);
+      bindEvents(socket || window.socket);
     },
     renderState(state) {
       ensureDom();
-      if (displayRoundTag) displayRoundTag.classList.remove('hidden');
+      if (displayRoundTag) {
+        if (state.status !== 'LOBBY') {
+          displayRoundTag.classList.remove('hidden');
+        } else {
+          displayRoundTag.classList.add('hidden');
+        }
+      }
       if (displayRound) displayRound.textContent = `${state.round}/${state.maxRounds}`;
 
       const myToken = window.myPlayerToken;
@@ -390,4 +399,8 @@
       }
     }
   };
+
+  if (window.socket) {
+    bindEvents(window.socket);
+  }
 })();

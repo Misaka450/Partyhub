@@ -188,6 +188,7 @@ async function openPage(port, url) {
   await p.screenshot('fix-drawguess-stage');
 
   // ========== 4. 切 UNO：桌面舞台适配 ==========
+  await p.setViewport(1440, 900, false); await wait(400);
   await p.eval(`document.querySelector('#btn-header-lobby').click()`); await wait(800);
   await p.eval(`(function(){var m=document.querySelector('#confirm-modal');if(m&&m.classList.contains('active'))document.querySelector('#btn-confirm-ok').click();})()`);
   await wait(1000);
