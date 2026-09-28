@@ -7973,3 +7973,171 @@ html, body {
 .tab-hidden {
   display: none !important;
 }
+
+/* ==========================================================================
+   13. UI 全面审计修复层 (UI Audit Fix Layer · 2026-09-28 走查)
+   ------------------------------------------------------------------------------
+   规范：按项目约定，带 !important 的修复样式统一置于文件最末尾以保证优先级。
+   本层不修改任何 display 显示性规则，避免与上方 .hidden 的优先级约定冲突。
+   ========================================================================== */
+
+/* ---- 【P0】游戏舞台桌面端适配：≥1024px 时舞台限宽居中，UNO 卡牌整体放大 ---- */
+@media (min-width: 1024px) {
+  .game-stage-container {
+    max-width: 960px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+  .uno-card,
+  .uno-deck-pile {
+    width: 86px !important;
+    height: 124px !important;
+    border-radius: 14px !important;
+  }
+  .uno-card .card-val {
+    font-size: 2.2rem !important;
+  }
+  .uno-card-back {
+    font-size: 1.4rem !important;
+  }
+  .uno-hand-container {
+    justify-content: center !important;
+    min-height: 150px !important;
+  }
+  .uno-hand-card {
+    margin-left: -30px !important;
+  }
+  .uno-hand-card:first-child {
+    margin-left: 0 !important;
+  }
+}
+
+/* ---- 【P1】移动端大厅（≤600px）：房主胶囊防文字竖排 + 游戏卡片单列防截断 ---- */
+@media (max-width: 600px) {
+  .capsule-top-row {
+    flex-wrap: wrap !important;
+  }
+  .capsule-actions {
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+  .host-title-name,
+  .host-sub-tag,
+  .host-ping-tag {
+    white-space: nowrap !important;
+  }
+  .game-tiles-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .tile-icon-box {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 1.3rem !important;
+  }
+}
+
+/* 容量徽章禁止换行（配合文案精简，杜绝孤行） */
+.tile-capacity-badge {
+  white-space: nowrap !important;
+}
+
+/* ---- 【P2】登录页头像与昵称水平双栏并排（对齐 HTML 设计意图） ---- */
+.pass-player-dock {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+}
+.pass-player-dock .player-name-dock {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+.pass-player-dock .avatar-interactive-slot {
+  flex-shrink: 0 !important;
+}
+
+/* ---- 【P2】WCAG AA 对比度修复（浅色主题深色化文字，深色主题原本达标） ---- */
+/* 登录 CTA：深暖棕文字替代白字，浅色 6.0:1 / 深色 7.3:1（原白字仅 2.35:1） */
+.btn-arcade-enter {
+  color: #4A2005 !important;
+}
+/* PARTY HUB 徽标：2.35 → 4.6+ */
+[data-theme="light"] .pass-chip-meta {
+  color: #B45309 !important;
+  border-color: rgba(180, 83, 9, 0.35) !important;
+}
+/* ONLINE 徽标 / 在线联机：2.27 → 6.5+ */
+[data-theme="light"] .pass-chip-id,
+[data-theme="light"] .host-ping-tag {
+  color: #176962 !important;
+}
+/* 燕麦灰褐辅助文字族：4.37 → 5.7（表单标签/快捷直达/标语条/副标语/卡片元信息/房主副标签） */
+[data-theme="light"] .pass-sub-desc,
+[data-theme="light"] .dock-label,
+[data-theme="light"] .chip-label,
+[data-theme="light"] .room-slogan-tip,
+[data-theme="light"] .tile-meta,
+[data-theme="light"] .host-sub-tag {
+  color: #6F655C !important;
+}
+/* 快捷房间按钮：恢复主题变量配色（修复深色模式下仍是白底的问题），文字 5.7:1 */
+.quick-room-btn {
+  background: var(--bg-sub) !important;
+  color: var(--text-sub) !important;
+}
+.quick-room-btn:hover {
+  background: var(--primary-subtle) !important;
+  color: #A84A08 !important;
+  border-color: var(--primary) !important;
+}
+[data-theme="dark"] .quick-room-btn:hover {
+  color: var(--primary-hover) !important;
+}
+/* 房主小标签 / 分类徽章 / 可开局徽章 / 席位人数标签：橙绿小字深色化至 4.5:1+ */
+[data-theme="light"] .host-tag-pill,
+[data-theme="light"] .category-indicator {
+  color: #A84A08 !important;
+}
+[data-theme="light"] .tile-capacity-badge.badge-capacity-ok,
+[data-theme="light"] .tile-seat-tag {
+  color: #047857 !important;
+}
+
+/* ---- 【P2】触控目标：头部胶囊按钮最小高度 24px（WCAG 2.5.8） ---- */
+.pill-btn {
+  min-height: 24px !important;
+}
+
+/* ---- 【P3】画板调色板横向滚动条主题化（原为突兀的白色胶囊） ---- */
+.color-palette-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+.color-palette-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.color-palette-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.color-palette-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+
+/* ---- 【P3】猜错答案反馈：输入框抖动 + 红色描边（配合服务端 guess_rejected 事件） ---- */
+.guess-rejected {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px var(--danger-subtle) !important;
+  animation: ui-audit-shake 0.4s ease !important;
+}
+@keyframes ui-audit-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+/* ---- 【P3】收起的玩家抽屉不渲染阴影（修复桌面大厅左缘阴影伪影） ---- */
+.player-drawer:not(.open) {
+  box-shadow: none !important;
+}

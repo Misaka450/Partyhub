@@ -43,32 +43,29 @@ function generatePlayerToken() {
   return `token_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }
 
-// token 存取：sessionStorage（标签页隔离）优先 + localStorage 兜底。
-// 双开标签页共享 localStorage 会互相覆盖 token 导致身份错乱（审计 R2-16）
+// token 存取：仅存 sessionStorage（标签页隔离，刷新可恢复）。
+// 双开标签页共享 localStorage 会互相覆盖 token 导致身份错乱（审计 R2-16 / UI 审计 P1）：
+// token 与重连凭据只存 sessionStorage —— 同标签页刷新可无感恢复座位，
+// 新开标签页则拿不到他人身份，杜绝双“(我)”徽标、重名分身与串台重连
 function loadPlayerToken() {
-  const sessionToken = safeGetItem('dg_player_token', true);
-  if (sessionToken) return sessionToken;
-  return safeGetItem('dg_player_token');
+  return safeGetItem('dg_player_token', true);
 }
 function savePlayerToken(token) {
-  safeSetItem('dg_player_token', token, true); // 本标签页专属
-  safeSetItem('dg_player_token', token);       // 兜底（sessionStorage 不可用时）
+  safeSetItem('dg_player_token', token, true); // 本标签页专属，不再写 localStorage 兜底
 }
 function clearPlayerToken() {
   safeRemoveItem('dg_player_token', true);
-  safeRemoveItem('dg_player_token');
+  safeRemoveItem('dg_player_token'); // 顺带清理历史版本写入 localStorage 的残留
   clearReconnectSecret();
 }
 
 // 私密重连凭据 (Reconnect Secret)：服务端单播下发，不公开广播，防离线席位劫持（审计 H1）
+// 与 token 同理只存 sessionStorage，避免跨标签页共享凭据（UI 审计 P1）
 function loadReconnectSecret() {
-  const sessionSecret = safeGetItem('dg_reconnect_secret', true);
-  if (sessionSecret) return sessionSecret;
-  return safeGetItem('dg_reconnect_secret');
+  return safeGetItem('dg_reconnect_secret', true);
 }
 function saveReconnectSecret(secret) {
   safeSetItem('dg_reconnect_secret', secret, true);
-  safeSetItem('dg_reconnect_secret', secret);
 }
 function clearReconnectSecret() {
   safeRemoveItem('dg_reconnect_secret', true);
@@ -1140,6 +1137,9 @@ btnJoin.addEventListener('click', () => {
   }
   myPlayerName = name;
   safeSetItem('dg_player_name', name);
+  // 记录本标签页最后加入的房间（仅 sessionStorage，标签页隔离）：
+  // 刷新页面后自动回房用；主动退出时清除（见 resetRoomLocalState）
+  safeSetItem('dg_last_room', JSON.stringify({ id: room, at: Date.now() }), true);
   initAudio();
 
   // 防连点：点击后临时禁用，收到 joined_successfully / join_error 后恢复（审计 R2-17）
@@ -1225,6 +1225,8 @@ function resetRoomLocalState() {
   myUndercoverRole = null;
   myAvalonRole = null;
   myUnoHand = [];
+  // 主动退出/被踢后不再自动回房：清除本标签页记录的最近房间（UI 审计 P2 配套）
+  safeRemoveItem('dg_last_room', true);
   if (window.voiceManager) {
     window.voiceManager.destroy();
   }
@@ -1316,6 +1318,23 @@ socket.on('connect', () => {
       playerToken: myPlayerToken,
       reconnectSecret: myReconnectSecret
     });
+  } else {
+    // 刷新后自动回房（UI 审计 P2）：页面重载会丢失 currentRoomId，
+    // 从本标签页的 sessionStorage 恢复最近房间（30 分钟内有效），
+    // 服务端凭 token + secret + 同名三重校验认领原席位，房间已解散则按新进房处理
+    try {
+      var savedLastRoom = JSON.parse(safeGetItem('dg_last_room', true) || 'null');
+      if (savedLastRoom && savedLastRoom.id && myPlayerName
+          && (Date.now() - savedLastRoom.at) < 30 * 60 * 1000) {
+        socket.emit('join_room', {
+          roomId: savedLastRoom.id,
+          playerName: myPlayerName,
+          avatar: myAvatar,
+          playerToken: myPlayerToken,
+          reconnectSecret: myReconnectSecret
+        });
+      }
+    } catch (e) { /* 存储数据异常时忽略自动回房 */ }
   }
 });
 
@@ -1399,10 +1418,11 @@ function updateGameCapacityBadges(playerCount = 1) {
     }
     if (playerCount < cap.min) {
       badge.className = 'tile-capacity-badge badge-capacity-warn';
-      badge.textContent = `待入席 · 需${cap.min}人+ (差${cap.min - playerCount}人)`;
+      // UI 审计 P1：原文案“待入席 · 需X人+ (差X人)”过长导致移动端换行孤行，精简为一行
+      badge.textContent = `⏳ 差${cap.min - playerCount}人可开`;
     } else {
       badge.className = 'tile-capacity-badge badge-capacity-ok';
-      badge.textContent = `✓ 可立即开局 (${cap.min}-${cap.max}人)`;
+      badge.textContent = `✓ 可开局 (${cap.min}-${cap.max}人)`;
     }
   });
 }
@@ -1551,6 +1571,11 @@ function updateGameStageView(gameType) {
     displayGameTag.textContent = gameNames[gameType] || '聚会游戏';
   } else {
     displayGameTag.textContent = '🎮 选游戏大厅';
+    // UI 审计 P3 兜底：大厅状态下强制隐藏轮次胶囊 / 计时器 / 提示条，
+    // 防止事件乱序（先收到非大厅状态渲染、后回到大厅）残留无效 UI
+    displayRoundTag?.classList.add('hidden');
+    timerBox?.classList.add('hidden');
+    document.querySelector('.sub-status-bar')?.classList.add('hidden');
   }
 
   // 更新非房主横幅展示
@@ -2023,6 +2048,11 @@ function handleRoomState(state) {
   else if (currentGameType === 'word-bomb') renderWordBombState(state);
   else if (currentGameType === 'perfect-slice' && typeof renderPerfectSliceState === 'function') renderPerfectSliceState(state);
   else if (currentGameType === 'hold-five' && typeof renderHoldFiveState === 'function') renderHoldFiveState(state);
+
+  // UI 审计 P3：提示条内容为空时（如 UNO、阿瓦隆等无提示玩法）整条隐藏，
+  // 避免对局顶部长期悬留一条空白占位条。放在各游戏渲染之后执行，
+  // 确保以最终提示文案为准（防止游戏插件稍后写入提示却被提前隐藏）
+  document.querySelector('.sub-status-bar')?.classList.toggle('hidden', !wordHintBox.textContent.trim());
 }
 socket.on('room_state', handleRoomState);
 

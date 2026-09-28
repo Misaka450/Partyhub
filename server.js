@@ -495,6 +495,16 @@ io.on('connection', (socket) => {
       socket.emit('sync_draw_history', room.drawHistory);
     }
 
+    // UI 审计 P1 修复：你画我猜选题阶段断线重连/刷新后，画师会因错过只发一次的
+    // select_word_options 而卡在"题目准备中"直到超时自动选词。
+    // 此处对"重连后恰好是当前画师"的玩家补发选词弹窗（player.id 已更新为本连接）
+    if (room.gameType === 'draw-guess' && room.status === 'SELECTING' && room.wordOptions?.length > 0) {
+      const currentDrawer = room.players[room.currentDrawerIndex];
+      if (currentDrawer && currentDrawer.token === player.token) {
+        socket.emit('select_word_options', { options: room.wordOptions });
+      }
+    }
+
     // 几A几B：断线重连时私发本人历史猜测记录（用于前端状态自愈），
     // 历史只发给本人，不再通过公共 room_state 泄露给其他玩家
     if (room.gameType === 'bulls-and-cows' && room.playerGuesses?.[player.token]?.length > 0) {
@@ -727,6 +737,11 @@ io.on('connection', (socket) => {
       }
       const guessed = safeEngineCall(drawGuessEngine.handleGuess, room, player, trimmed, io, broadcastRoom);
       if (guessed) return;
+      // UI 审计 P3 修复：猜错时向本人私发反馈事件（客户端抖动输入框提示），
+      // 原实现猜错与普通聊天毫无区别，猜词者毫无"没猜中"的感知
+      if (!player.isDrawing) {
+        socket.emit('guess_rejected', { text: trimmed });
+      }
     } else if (room.gameType === 'word-bomb' && room.status === 'BOMB_TICKING') {
       safeEngineCall(wordBombEngine.submitWord, room, player.token, trimmed, io, broadcastRoom);
       return;

@@ -299,6 +299,17 @@
       if (window.playSound) window.playSound('fanfare');
     });
 
+    // UI 审计 P3 修复：猜错时输入框抖动+红边反馈（事件由服务端私发给猜错者本人）
+    socket.on('guess_rejected', () => {
+      ensureDom();
+      if (!drawGuessInput) return;
+      drawGuessInput.classList.remove('guess-rejected');
+      void drawGuessInput.offsetWidth; // 强制重排以重启动画
+      drawGuessInput.classList.add('guess-rejected');
+      clearTimeout(drawGuessInput._rejectTimer);
+      drawGuessInput._rejectTimer = setTimeout(() => drawGuessInput.classList.remove('guess-rejected'), 500);
+    });
+
     socket.on('round_ended', (data) => {
       if (window.showRevealModal) {
         window.showRevealModal(data.reason || '本轮结束！', data.word || '--', 3500);
