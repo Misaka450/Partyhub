@@ -1,6 +1,6 @@
 # 🎮 PartyHub (聚会游戏大厅)
 
-一款专为聚会、团建、派对打造的 **商业级多人实时在线网页小游戏聚合平台**。基于 Node.js + Express + Socket.IO 构建，采用精致典雅的 **Modern Neo-Skeuomorphic Clean (现代微质感浅色)** 设计风格，全端（PC / 平板 / 手机移动端）完美自适应。支持多人实时联机、房主房间管理、WebRTC 实时语音连麦、统一有限状态机 (FSM) 与确定性网络同步架构。
+一款专为聚会、团建、派对打造的 **商业级多人实时在线网页小游戏聚合平台**。基于 Node.js + Express + Socket.IO 构建，采用温润治愈的 **Warm Hearth & Healing Light (温润暖木与治愈系)** 视觉体系，兼备深度调优的 **Warm Hearth Night (壁炉静夜)** 深色模式，全端（PC / 平板 / 手机移动端）完美自适应。支持多人实时联机、房主房间管理、WebRTC 实时语音连麦、统一有限状态机 (FSM) 与确定性网络同步架构。
 
 ---
 
@@ -14,9 +14,10 @@
   - **Delta 增量状态同步 (Delta Diff Sync)**：自动进行新旧状态深层比对，仅下发发生变化的增量字段，广播带宽开销降低 **70%~80%**；
   - **动作原子性与防重放 (Action Mutex & Seq)**：引入全局动作互斥锁与递增流水号机制，彻底杜绝客户端并发狂点、网络重放与竞态脏数据；
   - **安全视口投影 (PlayerView)**：在 FSM 状态投影层针对不同玩家严格过滤私密数据（如手牌、身份、卧底词），杜绝内存越权与外挂作弊。
-- **� Modern Neo-Skeuomorphic 现代微质感浅色 UI**：
-  - 告别昏暗压抑，全面升级为温润优雅的浅色微质感大厅风格；
-  - 具备真实的物理按压反馈（`:hover` 柔和升起、`:active` 凹陷动效与轻快音效），卡片层次自然立体，视效清爽通透。
+- **🎨 温润治愈系双主题 UI (Warm Hearth & Healing Light)**：
+  - **日间治愈模式 (Light)**：以温暖原木暖白、杏仁灰与柔和米褐为基调，搭配低饱和多巴胺点缀色，全站 18~24px 温润大圆角与柔和漫反射环境光；
+  - **壁炉静夜深色模式 (Warm Hearth Night)**：摒弃冰冷死黑，采用深灰褐底色、柔和琥珀光晕与夜间护眼对比度，营造壁炉围炉夜话般的沉浸感；
+  - **全场景微交互与质感**：具备物理按压反馈（`:hover` 柔和浮起、`:active` 凹陷微触感与轻快音效），全套重塑的治愈风卡带、头像挑选抽屉、二维码弹窗与游戏内舞台。
 - **�🎙️ WebRTC 实时语音连麦**：
   - 原生支持 P2P Mesh 语音连麦，具备硬件级回声消除 (AEC)、自动增益 (AGC) 与噪声抑制 (ANS)；
   - 实时声浪动态可视化波形，集成 Coturn TURN 穿透 NAT 与 4G/5G 移动网络，兼容 RFC 5766 动态短效凭据。
@@ -79,6 +80,7 @@
 
 ```text
 PartyHub/
+├── partyhub_ui_design_spec.md    # 【设计规范】温润治愈风视觉体系与双主题色彩指南
 ├── server.js                     # 服务端启动入口（Express + Socket.IO + 安全中间件 + 静态托管）
 ├── fsmEngine.js                  # 【FSM引擎】确定性授时、Delta增量同步、动作防重放与视口隔离
 ├── gameDispatcher.js             # 【调度总线】游戏动作统一分发调度器（Action Registry 解耦核心）
@@ -92,7 +94,7 @@ PartyHub/
 ├── public/                       # 前端客户端静态资源
 │   ├── index.html                # 单页应用入口（带静态资源预加载与版本缓存防穿透）
 │   ├── game.js                   # 前端核心大厅通信总线（房间状态、聊天、音效、重连）
-│   ├── style.css                 # 现代浅色微质感响应式样式表 (Neo-Skeuomorphic)
+│   ├── style.css                 # 全站温润治愈风双主题样式表 (Warm Hearth & Night)
 │   ├── voice.js                  # WebRTC P2P 实时语音通话管理模块
 │   └── games/                    # 前端各游戏解耦客户端插件
 │       ├── avalon.client.js
@@ -170,7 +172,7 @@ docker compose ps
   - **插件化调度器 (`gameDispatcher.js` & `window.PartyGames`)** - 客户端与服务端插槽总线
 - **前端技术 (Frontend)**:
   - 原生现代 JavaScript (Vanilla ES6+)
-  - 现代浅色微质感 CSS 变量系统 (Modern Neo-Skeuomorphic Clean)
+  - 温润治愈系双主题 CSS 变量设计系统 (Warm Hearth & Healing Light / Warm Hearth Night)
   - HTML5 Canvas 绘图与几何交互引擎
   - Web Audio API 拟真触感音效系统
   - WebRTC P2P Mesh 实时音频通话
