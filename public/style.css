@@ -7406,38 +7406,36 @@ html, body {
 
 .category-nav-group {
   width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  scrollbar-width: none !important;
+  display: block !important;
+  overflow: visible !important;
   padding: 2px 0 4px 0 !important;
 }
 
-.category-nav-group::-webkit-scrollbar {
-  display: none !important;
-}
-
 .category-nav {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 6px !important;
+  width: 100% !important;
+  overflow: visible !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
-  flex-shrink: 0 !important;
 }
 
 .cat-pill {
-  flex-shrink: 0 !important;
-  padding: 6px 14px !important;
+  padding: 6px 2px !important;
+  text-align: center !important;
+  font-size: 0.76rem !important;
+  white-space: nowrap !important;
+  justify-content: center !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  width: 100% !important;
   border-radius: 9999px !important;
   font-family: var(--font-main) !important;
-  font-size: 0.78rem !important;
   font-weight: 700 !important;
   cursor: pointer !important;
-  white-space: nowrap !important;
   background: #FFFFFF !important;
   border: 1.5px solid #EFE8DF !important;
   color: #82776E !important;
@@ -8026,9 +8024,6 @@ html, body {
   .host-ping-tag {
     white-space: nowrap !important;
   }
-  .game-tiles-grid {
-    grid-template-columns: 1fr !important;
-  }
   .tile-icon-box {
     width: 40px !important;
     height: 40px !important;
@@ -8174,4 +8169,196 @@ html, body {
   color: #8BC4BC !important;
   background: rgba(139, 196, 188, 0.18) !important;
 }
+
+/* ---- 【大厅移动端深度排版与防遮挡重构】 ---- */
+@media (max-width: 600px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+  #btn-toggle-vibrate {
+    display: none !important;
+  }
+  .game-header .header-left {
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+  .game-header .game-tag {
+    max-width: none !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+  .host-profile-box {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  .host-name-row, .host-meta-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+  }
+  .host-ping-tag {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* 大厅容器底部充足留白，彻底解决底部悬浮吸底栏对设置和差人提示的遮挡 */
+.lobby-card,
+.lobby-console {
+  padding-bottom: 130px !important;
+}
+
+#host-settings-container {
+  margin-bottom: 24px !important;
+}
+
+/* 席位卡片淡雅空槽位样式 */
+.seat-empty-card.seat-placeholder-card {
+  opacity: 0.45 !important;
+  border-style: dashed !important;
+  cursor: default !important;
+  background: var(--bg-surface) !important;
+}
+.seat-empty-card.seat-placeholder-card .seat-empty-icon {
+  color: var(--text-muted) !important;
+  font-size: 1.2rem !important;
+}
+.seat-empty-card.seat-placeholder-card .seat-empty-label {
+  color: var(--text-muted) !important;
+  font-weight: 500 !important;
+}
+
+/* 底部操作栏辅助按钮与主按钮统一和谐视觉 */
+.arcade-action-dock {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1.5px solid var(--border) !important;
+}
+[data-theme="dark"] .arcade-action-dock {
+  background: rgba(35, 30, 27, 0.95) !important;
+}
+
+/* ==========================================================================
+   移动端响应式与高自适应排版重构（分类等宽4列、双列卡片、文字自适应）
+   ========================================================================== */
+
+/* 【要求 1: 游戏分类必须一次性全部展示，杜绝横向滚动被截断】 */
+.category-nav-group {
+  width: 100% !important;
+  display: block !important;
+  overflow: visible !important;
+}
+
+.category-nav {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 6px !important;
+  width: 100% !important;
+  overflow: visible !important;
+}
+
+.cat-pill {
+  padding: 6px 2px !important;
+  text-align: center !important;
+  font-size: 0.76rem !important;
+  white-space: nowrap !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+/* 【要求 2: 下面的游戏必须是两列双栏并排与精致高自适应排版】 */
+.game-tiles-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+@media (max-width: 768px) {
+  .game-tiles-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+}
+
+.game-tile {
+  padding: 8px 10px !important;
+  gap: 8px !important;
+  border-radius: 16px !important;
+  min-width: 0 !important;
+}
+
+.tile-icon-box {
+  width: 38px !important;
+  height: 38px !important;
+  font-size: 1.25rem !important;
+  border-radius: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+.tile-content {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.tile-title {
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.tile-badge {
+  display: none !important; /* 双列紧凑卡片隐藏冗余品类角标，为游戏名字腾出全部宽度，杜绝字显示不全 */
+}
+
+.tile-meta-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 2px !important;
+  margin-top: 2px !important;
+}
+
+.tile-meta {
+  font-size: 0.68rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: var(--text-muted) !important;
+}
+
+.tile-seat-tag {
+  font-size: 0.66rem !important;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+}
+
+/* 【要求 3: 全站文字显示不全问题系统修复】 */
+.player-seats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 6px !important;
+  width: 100% !important;
+}
+
+.player-seat-card {
+  padding: 8px 4px !important;
+  min-width: 0 !important;
+}
+
+.seat-name {
+  font-size: 0.72rem !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+
 

@@ -143,10 +143,10 @@
         <button id="btn-toggle-theme" class="icon-btn" title="切换深浅主题">
           <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
         </button>
-        <button id="btn-header-qr" class="icon-btn" title="房间二维码">
+        <button id="btn-header-qr" class="icon-btn mobile-hidden" title="房间二维码">
           <svg class="icon-svg-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         </button>
-        <button id="btn-share" class="btn btn-sm btn-subtle">邀请</button>
+        <button id="btn-share" class="btn btn-sm btn-subtle mobile-hidden">邀请</button>
       </div>
     </header>
 
@@ -200,10 +200,6 @@
                   </div>
                 </div>
                 <div class="capsule-actions">
-                  <button type="button" id="btn-hero-share" class="btn-capsule-action" title="邀请好友">
-                    <span>🔗</span>
-                    <span>邀请好友</span>
-                  </button>
                   <button type="button" id="btn-random-pick-game" class="btn-capsule-action" title="随缘盲盒抽取">
                     <span>🎲</span>
                     <span>盲盒快选</span>
@@ -219,8 +215,7 @@
                     <b class="hidden" id="metric-room-num">#--</b>
                   </span>
                   <span class="seats-count-pill">
-                    <span class="seats-dot animate-pulse"></span>
-                    <b id="metric-player-count">1</b>/12 席位
+                    <span class="seats-dot animate-pulse"></span><span class="seats-num-text"><b id="metric-player-count">1</b>/12 席位</span>
                   </span>
                 </div>
                 <div class="sub-bar-right">
@@ -236,7 +231,7 @@
                   <span class="island-pulse-dot"></span>
                   <span class="island-title">席位浮岛</span>
                 </div>
-                <span class="island-sub-status" id="lobby-count">1人就绪</span>
+                <span class="island-sub-status" id="island-player-count">1人就绪</span>
               </div>
               <!-- 席位卡片浮岛容器 -->
               <div class="player-seats-grid" id="lobby-seats-grid">
@@ -254,9 +249,9 @@
                 <div class="category-nav-group">
                   <div class="category-nav">
                     <button type="button" class="cat-pill active" data-category="all">全部 (19)</button>
-                    <button type="button" class="cat-pill" data-category="party">经典 Party (4)</button>
-                    <button type="button" class="cat-pill" data-category="action">手速 Action (7)</button>
-                    <button type="button" class="cat-pill" data-category="puzzle">益智 Puzzle (8)</button>
+                    <button type="button" class="cat-pill" data-category="party">经典 (4)</button>
+                    <button type="button" class="cat-pill" data-category="action">手速 (7)</button>
+                    <button type="button" class="cat-pill" data-category="puzzle">益智 (8)</button>
                   </div>
                 </div>
               </div>
@@ -427,7 +422,7 @@
                       <span class="tile-badge badge-puzzle">脑力</span>
                     </div>
                     <div class="tile-meta-row">
-                      <span class="tile-meta">斯特鲁普效应</span>
+                      <span class="tile-meta">色彩冲突</span>
                       <span class="tile-seat-tag font-tabular">1-12人</span>
                     </div>
                   </div>
@@ -453,7 +448,7 @@
                       <span class="tile-badge badge-action">手速</span>
                     </div>
                     <div class="tile-meta-row">
-                      <span class="tile-meta">序列节奏复现</span>
+                      <span class="tile-meta">音律记忆</span>
                       <span class="tile-seat-tag font-tabular">1-12人</span>
                     </div>
                   </div>
@@ -466,7 +461,7 @@
                       <span class="tile-badge badge-puzzle">脑力</span>
                     </div>
                     <div class="tile-meta-row">
-                      <span class="tile-meta">空间路线拼图</span>
+                      <span class="tile-meta">轨道拼接</span>
                       <span class="tile-seat-tag font-tabular">1-12人</span>
                     </div>
                   </div>
@@ -479,7 +474,7 @@
                       <span class="tile-badge badge-puzzle">脑力</span>
                     </div>
                     <div class="tile-meta-row">
-                      <span class="tile-meta">对称镜像推理</span>
+                      <span class="tile-meta">镜像还原</span>
                       <span class="tile-seat-tag font-tabular">1-12人</span>
                     </div>
                   </div>

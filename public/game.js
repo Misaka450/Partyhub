@@ -1919,7 +1919,9 @@ function handleRoomState(state) {
 
   displayPlayerCount.textContent = state.players.length;
   playerCount.textContent = state.players.length;
-  lobbyCount.textContent = state.players.length;
+  if (lobbyCount) lobbyCount.textContent = `${state.players.length}人就绪`;
+  const islandPlayerCount = document.getElementById('island-player-count');
+  if (islandPlayerCount) islandPlayerCount.textContent = `${state.players.length}/12 在席`;
 
   // 大厅与游戏状态切换
   const allStages = [
@@ -2086,10 +2088,13 @@ function renderPlayerList(players) {
   const metricPrivilegeIcon = document.getElementById('metric-privilege-icon');
   if (metricPlayerCount) metricPlayerCount.textContent = players.length;
   if (metricRoomNum && currentRoomId) metricRoomNum.textContent = '#' + currentRoomId;
+  const islandPlayerCount = document.getElementById('island-player-count');
+  if (islandPlayerCount) islandPlayerCount.textContent = `${players.length}/12 在席`;
+  if (lobbyCount) lobbyCount.textContent = `${players.length}人就绪`;
   if (guidanceBannerText) {
     guidanceBannerText.textContent = isHost 
-      ? '请挑选游戏，并邀请好友入席开始对局'
-      : '房主正在挑选游戏与房间规则，请稍候...';
+      ? '挑选游戏即可开局'
+      : '等待房主选游戏中...';
   }
   if (metricPrivilegeLabel) metricPrivilegeLabel.textContent = isHost ? '房主特权' : '房间成员';
   if (metricPrivilegeIcon) metricPrivilegeIcon.textContent = isHost ? '👑' : '✨';
@@ -2122,12 +2127,20 @@ function renderPlayerList(players) {
     const emptyCount = totalSlots - players.length;
     for (let i = 0; i < emptyCount; i++) {
       const emptySeat = document.createElement('div');
-      emptySeat.className = 'player-seat-card seat-empty-card';
-      emptySeat.innerHTML = `
-        <div class="seat-empty-icon">+</div>
-        <div class="seat-empty-label">邀请好友</div>
-      `;
-      emptySeat.addEventListener('click', copyInviteLink);
+      if (i === 0) {
+        emptySeat.className = 'player-seat-card seat-empty-card';
+        emptySeat.innerHTML = `
+          <div class="seat-empty-icon">+</div>
+          <div class="seat-empty-label">邀请好友</div>
+        `;
+        emptySeat.addEventListener('click', copyInviteLink);
+      } else {
+        emptySeat.className = 'player-seat-card seat-empty-card seat-placeholder-card';
+        emptySeat.innerHTML = `
+          <div class="seat-empty-icon">·</div>
+          <div class="seat-empty-label">待入席</div>
+        `;
+      }
       lobbySeatsGrid.appendChild(emptySeat);
     }
   }
