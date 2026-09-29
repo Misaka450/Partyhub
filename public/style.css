@@ -5320,17 +5320,16 @@ html, body {
     padding: 1px 4px !important;
   }
 
-  /* ----- 分类栏：≤480px 横滚防溢出 ----- */
+  /* ----- 分类栏：≤480px 分段控制器展示 ----- */
   .category-nav {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    flex-wrap: nowrap !important;
-    padding-bottom: 2px;
+    overflow: hidden !important;
+    overflow-x: hidden !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: auto !important;
   }
   .cat-pill {
-    flex-shrink: 0;
+    min-width: 0 !important;
     font-size: 0.68rem !important;
-    padding: 3px 7px !important;
   }
 
   /* ----- 控制台：房主选游戏标题缩小 ----- */
@@ -6822,11 +6821,12 @@ html, body {
 }
 
 .category-nav {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 4px !important;
   margin: 10px 0 12px 0 !important;
-  overflow-x: auto !important;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
 }
 
 .cat-pill {
@@ -8207,7 +8207,42 @@ html, body {
 /* 大厅容器底部充足留白，彻底解决底部悬浮吸底栏对设置和差人提示的遮挡 */
 .lobby-card,
 .lobby-console {
-  padding-bottom: 130px !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  padding: 8px 14px 240px 14px !important;
+  box-sizing: border-box !important;
+}
+
+.host-game-select-box {
+  padding: 0 !important;
+  margin: 12px 0 16px 0 !important;
+  width: 100% !important;
+}
+
+.console-section-header {
+  padding: 2px 2px 8px 2px !important;
+  width: 100% !important;
+}
+
+.section-title {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  font-size: 0.96rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  color: var(--text-main) !important;
+}
+
+.count-hint {
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  background: rgba(112, 185, 176, 0.15) !important;
+  color: #176962 !important;
+  border-radius: 999px !important;
+  padding: 2px 8px !important;
 }
 
 #host-settings-container {
@@ -8232,112 +8267,204 @@ html, body {
 
 /* 底部操作栏辅助按钮与主按钮统一和谐视觉 */
 .arcade-action-dock {
-  background: rgba(255, 255, 255, 0.95) !important;
-  border: 1.5px solid var(--border) !important;
+  position: sticky !important;
+  bottom: 14px !important;
+  z-index: 50 !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.12) !important;
+  padding: 6px 8px !important;
 }
 [data-theme="dark"] .arcade-action-dock {
-  background: rgba(35, 30, 27, 0.95) !important;
+  background: rgba(35, 30, 27, 0.92) !important;
 }
 
 /* ==========================================================================
-   移动端响应式与高自适应排版重构（分类等宽4列、双列卡片、文字自适应）
+   移动端响应式与高自适应排版重构（分类等宽4列分段控制器、双列卡片、文字自适应）
    ========================================================================== */
 
-/* 【要求 1: 游戏分类必须一次性全部展示，杜绝横向滚动被截断】 */
+/* 【要求 1: 消除分类滑动栏，重构为原生 iOS 分段控制器 Segmented Control】 */
 .category-nav-group {
   width: 100% !important;
-  display: block !important;
-  overflow: visible !important;
+  overflow: hidden !important;
+  margin: 4px 0 12px 0 !important;
+  padding: 0 !important;
 }
 
 .category-nav {
   display: grid !important;
   grid-template-columns: repeat(4, 1fr) !important;
-  gap: 6px !important;
+  gap: 4px !important;
   width: 100% !important;
-  overflow: visible !important;
+  background: var(--bg-sub) !important;
+  padding: 4px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--border) !important;
+  overflow: hidden !important;
+  overflow-x: hidden !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+
+.category-nav::-webkit-scrollbar,
+.category-nav-group::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .cat-pill {
-  padding: 6px 2px !important;
-  text-align: center !important;
-  font-size: 0.76rem !important;
-  white-space: nowrap !important;
-  justify-content: center !important;
   width: 100% !important;
   min-width: 0 !important;
+  padding: 7px 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.74rem !important;
+  font-weight: 700 !important;
+  border-radius: 999px !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  transition: all 0.18s ease !important;
 }
 
-/* 【要求 2: 下面的游戏必须是两列双栏并排与精致高自适应排版】 */
+.cat-pill.active {
+  background: #FFFFFF !important;
+  color: #2C1402 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="dark"] .cat-pill.active {
+  background: var(--primary) !important;
+  color: #1F1B18 !important;
+  font-weight: 800 !important;
+}
+
+/* 【要求 2: 双列游戏卡片精致打磨与无缝自适应】 */
 .game-tiles-grid {
   display: grid !important;
   grid-template-columns: repeat(2, 1fr) !important;
-  gap: 8px !important;
+  gap: 10px !important;
   width: 100% !important;
+  margin-bottom: 60px !important;
 }
 
 @media (max-width: 768px) {
   .game-tiles-grid {
     display: grid !important;
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 8px !important;
+    gap: 10px !important;
     width: 100% !important;
+    margin-bottom: 60px !important;
   }
 }
 
 .game-tile {
-  padding: 8px 10px !important;
-  gap: 8px !important;
+  background: var(--bg-card) !important;
+  border: 1.5px solid var(--border) !important;
   border-radius: 16px !important;
+  padding: 8px 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
   min-width: 0 !important;
+  box-shadow: 0 4px 14px -3px rgba(138, 112, 89, 0.06) !important;
+  transition: all 0.18s ease !important;
+  cursor: pointer !important;
+}
+
+.game-tile.active {
+  background: #FFF9F2 !important;
+  border-color: #FF8A3D !important;
+  box-shadow: 0 6px 20px -2px rgba(255, 138, 61, 0.25) !important;
+}
+
+[data-theme="dark"] .game-tile.active {
+  background: rgba(255, 166, 102, 0.14) !important;
+  border-color: var(--primary) !important;
 }
 
 .tile-icon-box {
-  width: 38px !important;
-  height: 38px !important;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 11px !important;
   font-size: 1.25rem !important;
-  border-radius: 12px !important;
   flex-shrink: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .tile-content {
   flex: 1 1 auto !important;
   min-width: 0 !important;
   overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.tile-title-row {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding-right: 0 !important;
 }
 
 .tile-title {
-  font-size: 0.88rem !important;
+  font-size: 0.86rem !important;
   font-weight: 800 !important;
+  color: var(--text-main) !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+  line-height: 1.25 !important;
 }
 
-.tile-badge {
-  display: none !important; /* 双列紧凑卡片隐藏冗余品类角标，为游戏名字腾出全部宽度，杜绝字显示不全 */
-}
+.tile-badge { display: none !important; }
 
 .tile-meta-row {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 2px !important;
-  margin-top: 2px !important;
+  width: 100% !important;
+  margin-top: 1px !important;
+  gap: 4px !important;
 }
 
 .tile-meta {
-  font-size: 0.68rem !important;
+  font-size: 0.66rem !important;
+  color: var(--text-muted) !important;
+  font-weight: 500 !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  color: var(--text-muted) !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
 }
 
 .tile-seat-tag {
-  font-size: 0.66rem !important;
-  flex-shrink: 0 !important;
+  font-size: 0.62rem !important;
+  font-weight: 700 !important;
+  background: var(--bg-sub) !important;
+  color: var(--text-sub) !important;
+  padding: 1px 5px !important;
+  border-radius: 4px !important;
   white-space: nowrap !important;
+  line-height: 1.2 !important;
+  flex-shrink: 0 !important;
+}
+
+[data-theme="dark"] .tile-seat-tag {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-muted) !important;
 }
 
 /* 【要求 3: 全站文字显示不全问题系统修复】 */
@@ -8359,6 +8486,22 @@ html, body {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
+
+/* 隐藏移动端原生滚动条 */
+html, body, .screen, .lobby-card, .lobby-console {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+.screen::-webkit-scrollbar,
+.lobby-card::-webkit-scrollbar,
+.lobby-console::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 
 
 
