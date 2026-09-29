@@ -21,9 +21,6 @@ const holdFiveEngine = require('./games/holdFive');
 const stroopTrapEngine = require('./games/stroopTrap');
 const shadowMatchEngine = require('./games/shadowMatch');
 const simonMemoryEngine = require('./games/simonMemory');
-const trainRouteEngine = require('./games/trainRoute');
-const holePunchEngine = require('./games/holePunch');
-const changeMasterEngine = require('./games/changeMaster');
 const numberGuessEngine = require('./games/numberGuess');
 const { attachGameDispatcher } = require('./gameDispatcher'); // 引入游戏事件统一调度分发器（维度一架构解耦）
 const { computeDelta, createPlayerView, initFsmMetadata } = require('./fsmEngine'); // FSM 有限状态机与增量分发引擎
@@ -97,18 +94,25 @@ function clamp01(v) {
 }
 
 /**
+ * 公开免费 STUN 服务器列表：不含任何凭据，可安全下发给未鉴权请求
+ */
+const PUBLIC_STUN_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'stun:stun2.l.google.com:19302' },
+  { urls: 'stun:stun.cloudflare.com:1337' }
+];
+
+/**
  * 获取 WebRTC 的 ICE/STUN/TURN 服务器配置
- * 默认包含 Google / Cloudflare 的公开免费 STUN 服务器；
+ * 默认仅包含 Google / Cloudflare 的公开免费 STUN 服务器；
  * 若在环境变量中配置了 TURN 服务器（例如部署在自己云服务器上的 coturn），则合并加入，
  * 解决移动端4G/5G或对称 NAT 复杂网络环境下两个玩家无法直接建立 P2P 语音连接的问题。
+ * 注意：本函数的返回值可能包含 TURN 中继凭据，只能下发给已验证在房的真实玩家。
  */
 function getIceServers(userToken = 'guest') {
-  const iceServers = [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun.cloudflare.com:1337' }
-  ];
+  // 必须拷贝公共列表：下方 push 会原地修改数组，不能污染 PUBLIC_STUN_SERVERS 常量
+  const iceServers = [...PUBLIC_STUN_SERVERS];
 
   // 支持通过环境变量 TURN_URL 或 TURN_URLS（逗号分隔）配置自建或第三方 TURN 中继服务
   const turnUrls = process.env.TURN_URLS || process.env.TURN_URL;
@@ -163,14 +167,19 @@ app.use(express.static(path.join(__dirname, 'public'), {
 // 提供 ICE/TURN 服务器配置接口，供前端语音模块随时拉取
 app.get('/api/ice-servers', (req, res) => {
   const { roomId, token } = req.query;
-  // 会话校验：若传参则校验房间与玩家存在，未在合法房间内的非法探测拦截（审计 L11）
+  // 会话校验：传参则校验房间与玩家存在，未在合法房间内的非法探测拦截（审计 L11）
   if (roomId || token) {
     const room = rooms.get(roomId);
     if (!room || !room.players.some(p => p.token === token)) {
       return res.status(403).json({ error: '未授权访问内部语音中继凭据' });
     }
+    // 已验证在房的真实玩家：可下发含 TURN 中继凭据的完整配置
+    return res.json({ iceServers: getIceServers(token || 'user') });
   }
-  res.json({ iceServers: getIceServers(token || 'user') });
+  // 匿名请求（审计 P1-2）：只返回无凭据的公开 STUN。
+  // 原实现两参都不传即完全跳过校验并返回完整 ICE 配置，
+  // 配置了 TURN_SECRET 时任何互联网匿名请求都能拿到 RFC 5766 短效中继凭据白嫖带宽。
+  res.json({ iceServers: [...PUBLIC_STUN_SERVERS] });
 });
 
 const rooms = new Map();
@@ -192,9 +201,6 @@ const GAME_ENGINES = {
   'stroop-trap': stroopTrapEngine,
   'shadow-match': shadowMatchEngine,
   'simon-memory': simonMemoryEngine,
-  'train-route': trainRouteEngine,
-  'hole-punch': holePunchEngine,
-  'change-master': changeMasterEngine,
   'number-guess': numberGuessEngine
 };
 
@@ -368,12 +374,16 @@ io.on('connection', (socket) => {
       }
     }
 
-    // 会话安全防护（审计 H1）：
-    // 若按 Token 匹配到了席位，校验私密重连凭据与昵称。
-    // 防止他人从 room_state 获得公开 token 后，趁原玩家离线 90 秒宽限期内冒领席位并改名
+    // 会话安全防护（审计 H1 / P1-1）：
+    // 若按 Token 匹配到了席位：席位一旦绑定了重连密钥，必须「提供且完全匹配」才允许接管。
+    // 原实现仅在"提供了错误密钥"时拒绝（reconnectSecret && ... 短路），不传密钥即可绕过，
+    // 等于凭公开广播的 token + 昵称就能在 90 秒宽限期内冒领席位，
+    // 并通过下方私密补发窃取卧底词/阿瓦隆角色/UNO 手牌。
     if (player) {
-      if (player.reconnectSecret && reconnectSecret && player.reconnectSecret !== reconnectSecret) {
-        player = null;
+      if (player.reconnectSecret) {
+        if (!reconnectSecret || player.reconnectSecret !== reconnectSecret) {
+          player = null;
+        }
       } else if (player.name !== playerName) {
         player = null;
       }
@@ -387,9 +397,16 @@ io.on('connection', (socket) => {
         const isOldSocketDead = !oldSocket || !oldSocket.connected;
 
         if (sameNamePlayer.offlineTimer || isOldSocketDead) {
-          // 原同名玩家已断开/处于保留期，直接继承该席位与房主身份
-          player = sameNamePlayer;
-          player.token = currentPlayerToken;
+          // 原同名玩家已断开/处于保留期：席位绑定过重连密钥时同样必须密钥匹配才允许继承（审计 P1-1），
+          // 否则凭公开昵称即可冒领席位与房主身份并接收私密信息补发。
+          // 密钥不匹配（如换了浏览器/清了存储）的玩家按新席位加入，对局中仅作观战。
+          const secretOk = sameNamePlayer.reconnectSecret
+            ? (reconnectSecret && sameNamePlayer.reconnectSecret === reconnectSecret)
+            : true;
+          if (secretOk) {
+            player = sameNamePlayer;
+            player.token = currentPlayerToken;
+          }
         }
       }
     }
@@ -592,9 +609,6 @@ io.on('connection', (socket) => {
       'stroop-trap': '🎯 颜色与文字陷阱',
       'shadow-match': '🔦 影子猜物',
       'simon-memory': '🎶 西蒙节拍记忆',
-      'train-route': '🚂 轨道小火车',
-      'hole-punch': '📄 折纸打孔展开',
-      'change-master': '💵 找零大师',
       'number-guess': '🔢 盲猜数量最接近'
     };
 
@@ -809,7 +823,16 @@ io.on('connection', (socket) => {
       notifyPlayerRemoved(room, targetIndex);
       // 被踢者的 socket 也移出房间频道，防止其继续接收游戏广播/幽灵提交（审计 R2-40）
       const kickedSocket = io.sockets.sockets.get(target.id);
-      if (kickedSocket) kickedSocket.leave(room.id);
+      if (kickedSocket) {
+        kickedSocket.leave(room.id);
+        // 延迟 300ms 强制断开底层连接（审计 P2-1）：先让 'kicked' 事件送达客户端触发本地登出，
+        // 再断开以彻底废弃该连接（其闭包内的 currentRoomId/currentPlayerToken 随之失效），
+        // 杜绝被踢者继续向房间广播幽灵 voice_status / 索取 ping_sync 全量状态。
+        // 玩家此时已从 room.players 移除，其 disconnect 处理器查无此人，不会建立 90 秒保留计时器。
+        setTimeout(() => {
+          try { kickedSocket.disconnect(true); } catch (e) { /* 连接可能已自行断开，忽略 */ }
+        }, 300);
+      }
       io.to(room.id).emit('system_message', `🚫 【${target.name}】被房主请出了房间`);
       broadcastRoom(room);
     }

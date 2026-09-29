@@ -206,9 +206,6 @@ const stageHoldFive = document.getElementById('stage-hold-five');
 const stageStroopTrap = document.getElementById('stage-stroop-trap');
 const stageShadowMatch = document.getElementById('stage-shadow-match');
 const stageSimonMemory = document.getElementById('stage-simon-memory');
-const stageTrainRoute = document.getElementById('stage-train-route');
-const stageHolePunch = document.getElementById('stage-hole-punch');
-const stageChangeMaster = document.getElementById('stage-change-master');
 const stageNumberGuess = document.getElementById('stage-number-guess');
 
 // 盲压 5.00秒 DOM
@@ -1402,9 +1399,6 @@ const GAME_CAPACITY = {
   'stroop-trap': { min: 1, max: 8, name: '色彩陷阱' },
   'shadow-match': { min: 1, max: 8, name: '剪影匹配' },
   'simon-memory': { min: 1, max: 8, name: '节拍记忆' },
-  'train-route': { min: 1, max: 8, name: '轨道拼装' },
-  'hole-punch': { min: 1, max: 8, name: '折纸打孔' },
-  'change-master': { min: 1, max: 8, name: '找零大师' },
   'number-guess': { min: 1, max: 12, name: '盲猜谁接近' }
 };
 
@@ -1522,9 +1516,6 @@ const GLOBAL_GAME_NAMES = {
   'stroop-trap': '🎯 颜色大陷阱',
   'shadow-match': '🔦 影子猜物',
   'simon-memory': '🎶 西蒙节拍记忆',
-  'train-route': '🚂 轨道小火车',
-  'hole-punch': '📄 折纸打孔展开',
-  'change-master': '💵 找零钱大师',
   'number-guess': '🔢 盲猜谁最接近'
 };
 
@@ -1534,7 +1525,7 @@ function resetAllGameStages() {
     stageFlashCounter, stageBombRoulette, stageBullsAndCows,
     stageMath24, stageCubeCount, stageWordBomb, stagePerfectSlice, stageHoldFive,
     stageStroopTrap, stageShadowMatch,
-    stageSimonMemory, stageTrainRoute, stageHolePunch, stageChangeMaster, stageNumberGuess
+    stageSimonMemory, stageNumberGuess
   ];
   allStages.forEach(s => s && s.classList.add('hidden'));
 }
@@ -1565,9 +1556,6 @@ function updateGameStageView(gameType) {
     'stroop-trap': { icon: '🎯', title: '颜色大陷阱', desc: '根据文字颜色或字义快速抢答，打破大脑斯特鲁普认知冲突！' },
     'shadow-match': { icon: '🔦', title: '影子猜物', desc: '聚光灯扫过黑暗剪影，在最模糊的阶段快速抢答真相！' },
     'simon-memory': { icon: '🎶', title: '西蒙节拍记忆', desc: '观察四色光点闪烁节拍，按顺序完美复现全部音符！' },
-    'train-route': { icon: '🚂', title: '轨道小火车', desc: '选择关键轨道拼图碎片，让小火车顺利通向终点站！' },
-    'hole-punch': { icon: '📄', title: '折纸打孔展开', desc: '折叠打孔后展开，脑内镜像还原真实的孔洞分布图！' },
-    'change-master': { icon: '💵', title: '找零钱大师', desc: '根据商品售价与实付金额，极速凑齐分毫不差的找零！' },
     'number-guess': { icon: '🔢', title: '盲猜谁最接近', desc: '趣味常识估算问答，谁的猜想最接近真相谁得分最高！' }
   };
 
@@ -1602,7 +1590,7 @@ function updateGameStageView(gameType) {
     stageFlashCounter, stageBombRoulette, stageBullsAndCows,
     stageMath24, stageCubeCount, stageWordBomb, stagePerfectSlice, stageHoldFive,
     stageStroopTrap, stageShadowMatch,
-    stageSimonMemory, stageTrainRoute, stageHolePunch, stageChangeMaster, stageNumberGuess
+    stageSimonMemory, stageNumberGuess
   ];
   allStages.forEach(s => s && s.classList.add('hidden'));
 
@@ -1622,9 +1610,6 @@ function updateGameStageView(gameType) {
     'stroop-trap': stageStroopTrap,
     'shadow-match': stageShadowMatch,
     'simon-memory': stageSimonMemory,
-    'train-route': stageTrainRoute,
-    'hole-punch': stageHolePunch,
-    'change-master': stageChangeMaster,
     'number-guess': stageNumberGuess
   };
   // 只有在非大厅阶段才展示游戏舞台
@@ -1648,7 +1633,7 @@ const settingElementIds = [
   'ps-rounds', 'ps-tolerance',
   'hf-rounds', 'hf-target',
   'st-rounds', 'sm-rounds',
-  'simon-rounds', 'tr-rounds', 'hp-rounds', 'cm-rounds', 'ng-rounds'
+  'simon-rounds', 'ng-rounds'
 ];
 
 function collectCurrentRoomSettings() {
@@ -1663,9 +1648,6 @@ function collectCurrentRoomSettings() {
   else if (currentGameType === 'stroop-trap') maxRounds = parseInt(document.getElementById('st-rounds')?.value || 3);
   else if (currentGameType === 'shadow-match') maxRounds = parseInt(document.getElementById('sm-rounds')?.value || 3);
   else if (currentGameType === 'simon-memory') maxRounds = parseInt(document.getElementById('simon-rounds')?.value || 3);
-  else if (currentGameType === 'train-route') maxRounds = parseInt(document.getElementById('tr-rounds')?.value || 3);
-  else if (currentGameType === 'hole-punch') maxRounds = parseInt(document.getElementById('hp-rounds')?.value || 3);
-  else if (currentGameType === 'change-master') maxRounds = parseInt(document.getElementById('cm-rounds')?.value || 3);
   else if (currentGameType === 'number-guess') maxRounds = parseInt(document.getElementById('ng-rounds')?.value || 3);
 
   return {
@@ -1929,7 +1911,7 @@ function handleRoomState(state) {
     stageFlashCounter, stageBombRoulette, stageBullsAndCows,
     stageMath24, stageCubeCount, stageWordBomb, stagePerfectSlice, stageHoldFive,
     stageStroopTrap, stageShadowMatch,
-    stageSimonMemory, stageTrainRoute, stageHolePunch, stageChangeMaster, stageNumberGuess
+    stageSimonMemory, stageNumberGuess
   ];
 
   if (state.status === 'LOBBY') {
@@ -2031,9 +2013,6 @@ function handleRoomState(state) {
       'stroop-trap': stageStroopTrap,
       'shadow-match': stageShadowMatch,
       'simon-memory': stageSimonMemory,
-      'train-route': stageTrainRoute,
-      'hole-punch': stageHolePunch,
-      'change-master': stageChangeMaster,
       'number-guess': stageNumberGuess
     };
     if (stageMap[currentGameType]) stageMap[currentGameType].classList.remove('hidden');

@@ -284,10 +284,6 @@ function setupVirtualPlayers(roomId) {
       setTimeout(() => s.emit('number_submit_guess', { guess: '42' }), 400);
     });
 
-    s.on('change_new_bill', () => {
-      setTimeout(() => s.emit('change_submit_counts', { counts: { 50: 1 } }), 400);
-    });
-
     s.on('shadow_new_puzzle', (data) => {
       if (data.options && data.options.length > 0) {
         setTimeout(() => s.emit('shadow_submit_answer', { answerId: data.options[0].id }), 400);
@@ -297,18 +293,6 @@ function setupVirtualPlayers(roomId) {
     s.on('stroop_new_question', (data) => {
       if (data.options && data.options.length > 0) {
         setTimeout(() => s.emit('stroop_submit_answer', { answerId: data.options[0].id }), 400);
-      }
-    });
-
-    s.on('train_new_puzzle', (data) => {
-      if (data.options && data.options.length > 0) {
-        setTimeout(() => s.emit('train_submit_answer', { trackId: data.options[0].id }), 400);
-      }
-    });
-
-    s.on('hole_new_puzzle', (data) => {
-      if (data.options && data.options.length > 0) {
-        setTimeout(() => s.emit('hole_submit_answer', { optionId: data.options[0].optionId }), 400);
       }
     });
 
@@ -588,54 +572,7 @@ const HumanPlayStrategies = {
     }
   },
 
-  // 5. 找零大师
-  'change-master': {
-    name: '找零大师',
-    async play({ alice, bob }) {
-      await alice.waitFor(`(() => {
-        const due = document.getElementById('cash-due-val').textContent.trim();
-        return due.length > 1 && due.includes('¥');
-      })()`, 6000);
-
-      const bill = await alice.eval(`(() => ({
-        paid: document.getElementById('cash-paid-val').textContent.trim(),
-        cost: document.getElementById('cash-cost-val').textContent.trim(),
-        due: document.getElementById('cash-due-val').textContent.trim()
-      }))()`);
-      console.log(`  ✓ 收据账单: 付款 ${bill.paid}, 消费 ${bill.cost}, 应找零: ${bill.due}`);
-
-      // 拟人从零钱托盘点取纸币并交付
-      await alice.clickElement('.cash-chip-btn[data-denom="50"]');
-      await wait(150);
-      const curSum = await alice.eval(`document.getElementById('cash-current-sum').textContent.trim()`);
-      console.log(`  ✓ 纸币放入托盘，当前累加: ${curSum}`);
-
-      await alice.clickElement('#btn-cash-confirm');
-      await wait(300);
-      console.log('  ✓ 拟人点击【确认找零交付】');
-    }
-  },
-
-  // 6. 折纸打孔
-  'hole-punch': {
-    name: '折纸打孔',
-    async play({ alice, bob }) {
-      await alice.waitFor(`(() => {
-        const cards = document.querySelectorAll('#hole-options-grid .hole-opt-card');
-        return cards.length === 4;
-      })()`, 6000);
-
-      const foldInfo = await alice.eval(`document.getElementById('hole-fold-info').textContent.trim()`);
-      console.log(`  ✓ 折叠步骤指示: "${foldInfo}"`);
-
-      // 拟人点击第 1 块展开图卡片
-      await alice.clickElement('#hole-options-grid .hole-opt-card:first-child');
-      await wait(300);
-      console.log('  ✓ Alice 拟人点击展开还原预选卡片');
-    }
-  },
-
-  // 7. 色彩陷阱
+  // 6. 色彩陷阱
   'stroop-trap': {
     name: '色彩陷阱',
     async play({ alice, bob }) {
@@ -656,7 +593,7 @@ const HumanPlayStrategies = {
     }
   },
 
-  // 8. 西蒙节拍记忆
+  // 7. 西蒙节拍记忆
   'simon-memory': {
     name: '西蒙节拍记忆',
     async play({ alice, bob }) {
@@ -668,25 +605,6 @@ const HumanPlayStrategies = {
       await alice.clickElement('.simon-btn[data-color="red"]');
       await wait(300);
       console.log('  ✓ Alice 拟人按击红色音符轮盘');
-    }
-  },
-
-  // 9. 轨道小火车
-  'train-route': {
-    name: '轨道小火车',
-    async play({ alice, bob }) {
-      await alice.waitFor(`(() => {
-        const btns = document.querySelectorAll('#train-options-dock .train-opt-btn');
-        return btns.length > 0;
-      })()`, 6000);
-
-      const cellCount = await alice.eval(`document.querySelectorAll('#train-board-grid .train-cell').length`);
-      const optCount = await alice.eval(`document.querySelectorAll('#train-options-dock .train-opt-btn').length`);
-      console.log(`  ✓ 铁路网格单元: ${cellCount} 格，待补轨道配件: ${optCount} 款`);
-
-      await alice.clickElement('#train-options-dock .train-opt-btn:first-child');
-      await wait(300);
-      console.log('  ✓ Alice 拟人选取轨道碎片进行拼接');
     }
   },
 
@@ -988,11 +906,8 @@ const ALL_GAME_KEYS = [
   'cube-count',
   'flash-counter',
   'shadow-match',
-  'change-master',
-  'hole-punch',
   'stroop-trap',
   'simon-memory',
-  'train-route',
   'perfect-slice',
   'hold-five',
   'number-guess',

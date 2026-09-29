@@ -1,5 +1,6 @@
 // =========================================================================
-// 9款全新脑力/聚会小游戏 单元测试套件 (Node.js 内置 node:test，零依赖)
+// 脑力/聚会小游戏 单元测试套件 (Node.js 内置 node:test，零依赖)
+// 已剔除 轨道小火车 / 折纸打孔 / 找零钱大师 三款游戏的单元用例
 // =========================================================================
 
 const { test } = require('node:test');
@@ -8,9 +9,6 @@ const assert = require('node:assert');
 const stroopTrap = require('../../games/stroopTrap');
 const shadowMatch = require('../../games/shadowMatch');
 const simonMemory = require('../../games/simonMemory');
-const trainRoute = require('../../games/trainRoute');
-const holePunch = require('../../games/holePunch');
-const changeMaster = require('../../games/changeMaster');
 const numberGuess = require('../../games/numberGuess');
 
 // ===================== 1. 颜色与文字大陷阱 =====================
@@ -62,66 +60,6 @@ test('simonMemory.generateSequence: 序列步数严格随轮次递增', () => {
 
   const validColors = new Set(['red', 'green', 'blue', 'yellow']);
   seq1.forEach(c => assert.ok(validColors.has(c), '序列颜色必须合法'));
-});
-
-// ===================== 6. 轨道小火车 =====================
-test('trainRoute.generateTrackPuzzle: 缺失关键位置且候选项包含解法', () => {
-  for (let r = 1; r <= 4; r++) {
-    const p = trainRoute.generateTrackPuzzle(r);
-    assert.strictEqual(p.grid.length, 3);
-    assert.strictEqual(p.grid[0].length, 3);
-    const { r: mr, c: mc } = p.missingPos;
-    assert.strictEqual(p.grid[mr][mc], 'missing', '缺失格子必须标记为 missing');
-    assert.strictEqual(p.options.length, 4, '必须有 4 个轨道候选项');
-    assert.ok(p.options.some(o => o.id === p.correctTrackId), '候选项必须包含正确轨道');
-  }
-});
-
-// ===================== 7. 折纸打孔展开图 =====================
-test('holePunch.generateFoldingPuzzle: 展开网格具备精确几何镜像对称性', () => {
-  for (let r = 1; r <= 4; r++) {
-    const p = holePunch.generateFoldingPuzzle(r);
-    const opt = p.options.find(o => o.optionId === p.correctOptionId);
-    assert.ok(opt, '必须包含正确展开项');
-    const g = opt.grid;
-    assert.strictEqual(g.length, 4);
-    assert.strictEqual(g[0].length, 4);
-
-    // 打孔点处必须为 1
-    assert.strictEqual(g[p.punchPos.r][p.punchPos.c], 1, '打孔原始点必须有孔');
-
-    if (p.foldType === 'FOLD_RIGHT') {
-      // 水平对称：c 与 (3 - c) 处的孔洞必须完全一致
-      for (let row = 0; row < 4; row++) {
-        for (let col = 0; col < 4; col++) {
-          assert.strictEqual(g[row][col], g[row][3 - col], '水平对折后左右必须镜像对称');
-        }
-      }
-    } else if (p.foldType === 'FOLD_DOWN') {
-      // 垂直对称：row 与 (3 - row) 处的孔洞必须完全一致
-      for (let row = 0; row < 4; row++) {
-        for (let col = 0; col < 4; col++) {
-          assert.strictEqual(g[row][col], g[3 - row][col], '垂直对折后上下必须镜像对称');
-        }
-      }
-    }
-  }
-});
-
-// ===================== 8. 找零钱大师 =====================
-test('changeMaster.generateBill & validateChange: 账单算术守恒与纸币硬币组合校验', () => {
-  for (let r = 1; r <= 3; r++) {
-    const bill = changeMaster.generateBill(r);
-    assert.strictEqual(bill.paid - bill.cost, bill.changeDue, '找零金额必须等于 实付 - 消费');
-
-    // 验证找零校验函数：正例
-    const validPlan = { 50: 0, 20: 0, 10: 0, 5: 0, 1: bill.changeDue };
-    assert.strictEqual(changeMaster.validateChange(validPlan, bill.changeDue).isValid, true);
-
-    // 验证找零校验函数：反例（多找 1 元）
-    const invalidPlan = { ...validPlan, 1: bill.changeDue + 1 };
-    assert.strictEqual(changeMaster.validateChange(invalidPlan, bill.changeDue).isValid, false);
-  }
 });
 
 // ===================== 9. 盲猜谁最接近 =====================

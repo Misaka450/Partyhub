@@ -227,30 +227,6 @@ function createActionRegistry(engines) {
       }
     },
 
-    // ---------- 轨道连连通 / 小火车快跑 ----------
-    'train_submit_answer': {
-      gameType: 'train-route',
-      handler: (ctx, payload) => {
-        ctx.safeCall(engines['train-route'].submitAnswer, ctx.room, ctx.player, payload?.trackId, ctx.io, ctx.broadcastRoom);
-      }
-    },
-
-    // ---------- 折纸打孔展开图 ----------
-    'hole_submit_answer': {
-      gameType: 'hole-punch',
-      handler: (ctx, payload) => {
-        ctx.safeCall(engines['hole-punch'].submitAnswer, ctx.room, ctx.player, payload?.optionId, ctx.io, ctx.broadcastRoom);
-      }
-    },
-
-    // ---------- 找零钱大师 ----------
-    'change_submit_counts': {
-      gameType: 'change-master',
-      handler: (ctx, payload) => {
-        ctx.safeCall(engines['change-master'].submitChange, ctx.room, ctx.player, payload?.counts, ctx.io, ctx.broadcastRoom);
-      }
-    },
-
     // ---------- 盲猜谁接近 ----------
     'number_submit_guess': {
       gameType: 'number-guess',

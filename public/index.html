@@ -27,8 +27,11 @@
 
   <link rel="stylesheet" href="/style.css?v=2.8.2">
   <script src="/socket.io/socket.io.js"></script>
-  <!-- 站点访问统计 (Umami) -->
-  <script defer src="https://umami.980823.xyz/script.js" data-website-id="f2370455-9fa1-428e-8525-424731a454bf"></script>
+  <!-- 站点访问统计 (Umami)：脚本已自托管到本站 assets 下（审计 P2-2）。
+       第三方远程脚本曾无完整性校验且 CSP 关闭，域名一旦被劫持即全站存储型 XSS；
+       现改为同源加载脚本代码 + data-host-url 仅把打点数据发往 Umami 服务端，
+       远端被攻破也不再影响页面代码执行。升级 Umami 时需同步更新此本地副本。 -->
+  <script defer src="/assets/umami.js?v=20260624" data-website-id="f2370455-9fa1-428e-8525-424731a454bf" data-host-url="https://umami.980823.xyz"></script>
 </head>
 <body>
   <!-- 动效层 -->
@@ -449,45 +452,6 @@
                     </div>
                     <div class="tile-meta-row">
                       <span class="tile-meta">音律记忆</span>
-                      <span class="tile-seat-tag font-tabular">1-12人</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="game-tile game-mode-card" data-game="train-route" data-cat="puzzle">
-                  <div class="tile-icon-box bg-emerald">🚂</div>
-                  <div class="tile-content">
-                    <div class="tile-title-row">
-                      <span class="tile-title">轨道小火车</span>
-                      <span class="tile-badge badge-puzzle">脑力</span>
-                    </div>
-                    <div class="tile-meta-row">
-                      <span class="tile-meta">轨道拼接</span>
-                      <span class="tile-seat-tag font-tabular">1-12人</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="game-tile game-mode-card" data-game="hole-punch" data-cat="puzzle">
-                  <div class="tile-icon-box bg-blue">📄</div>
-                  <div class="tile-content">
-                    <div class="tile-title-row">
-                      <span class="tile-title">折纸打孔展开</span>
-                      <span class="tile-badge badge-puzzle">脑力</span>
-                    </div>
-                    <div class="tile-meta-row">
-                      <span class="tile-meta">镜像还原</span>
-                      <span class="tile-seat-tag font-tabular">1-12人</span>
-                    </div>
-                  </div>
-                </div>
-                <div class="game-tile game-mode-card" data-game="change-master" data-cat="puzzle">
-                  <div class="tile-icon-box bg-teal">💵</div>
-                  <div class="tile-content">
-                    <div class="tile-title-row">
-                      <span class="tile-title">找零钱大师</span>
-                      <span class="tile-badge badge-puzzle">益智</span>
-                    </div>
-                    <div class="tile-meta-row">
-                      <span class="tile-meta">面额速凑</span>
                       <span class="tile-seat-tag font-tabular">1-12人</span>
                     </div>
                   </div>
@@ -1341,57 +1305,7 @@
           </div>
         </div>
 
-        <!-- 19. 【轨道小火车】舞台 -->
-        <div id="stage-train-route" class="game-stage-container hidden">
-          <div class="brain-game-arena">
-            <div class="train-route-header">
-              <span class="train-prompt-tag">🚂 帮小火车拼通通往终点的路线！</span>
-            </div>
-            <div class="train-board-grid" id="train-board-grid"></div>
-            <div class="train-options-dock" id="train-options-dock"></div>
-            <div id="train-feedback-badge" class="brain-feedback-badge hidden"></div>
-          </div>
-        </div>
-
-        <!-- 20. 【折纸打孔展开】舞台 -->
-        <div id="stage-hole-punch" class="game-stage-container hidden">
-          <div class="brain-game-arena">
-            <div class="hole-fold-info" id="hole-fold-info">1️⃣ 从左向右对折一次</div>
-            <div class="hole-folded-preview" id="hole-folded-preview">
-              <div class="punch-indicator-dot"></div>
-            </div>
-            <div class="hole-options-grid" id="hole-options-grid"></div>
-            <div id="hole-feedback-badge" class="brain-feedback-badge hidden"></div>
-          </div>
-        </div>
-
-        <!-- 21. 【找零钱大师】舞台 -->
-        <div id="stage-change-master" class="game-stage-container hidden">
-          <div class="brain-game-arena">
-            <div class="cash-bill-receipt" id="cash-bill-receipt">
-              <div class="receipt-row"><span>付款:</span> <b id="cash-paid-val">¥100</b></div>
-              <div class="receipt-row"><span>消费:</span> <b id="cash-cost-val">¥37</b></div>
-              <div class="receipt-due-row"><span>需找零:</span> <b class="cash-due-highlight" id="cash-due-val">¥63</b></div>
-            </div>
-            <div class="cash-tray-status">
-              <span>当前已选总计：</span><b id="cash-current-sum">¥0</b>
-            </div>
-            <div class="cash-chips-rack" id="cash-chips-rack">
-              <button class="cash-chip-btn" data-denom="50">¥50</button>
-              <button class="cash-chip-btn" data-denom="20">¥20</button>
-              <button class="cash-chip-btn" data-denom="10">¥10</button>
-              <button class="cash-chip-btn" data-denom="5">¥5</button>
-              <button class="cash-chip-btn" data-denom="1">¥1</button>
-            </div>
-            <div class="cash-action-row">
-              <button id="btn-cash-reset" class="btn btn-secondary">清空重选</button>
-              <button id="btn-cash-confirm" class="btn btn-primary btn-lg">确认找零交付</button>
-            </div>
-            <div id="cash-feedback-badge" class="brain-feedback-badge hidden"></div>
-          </div>
-        </div>
-
-        <!-- 22. 【盲猜谁最接近】舞台 -->
+        <!-- 19. 【盲猜谁最接近】舞台 -->
         <div id="stage-number-guess" class="game-stage-container hidden">
           <div class="brain-game-arena">
             <div class="number-trivia-card" id="number-trivia-card">

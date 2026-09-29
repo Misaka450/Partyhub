@@ -1,23 +1,20 @@
-// PartyHub 全部 19 款小游戏端到端全生命周期状态流转与终局结算 E2E 自动化测试
+// PartyHub 全部小游戏端到端全生命周期状态流转与终局结算 E2E 自动化测试
 const { test } = require('node:test');
 const assert = require('node:assert');
 
 const avalon = require('../../games/avalon');
 const bombRoulette = require('../../games/bombRoulette');
 const bullsAndCows = require('../../games/bullsAndCows');
-const changeMaster = require('../../games/changeMaster');
 const cubeCount = require('../../games/cubeCount');
 const drawGuess = require('../../games/drawGuess');
 const flashCounter = require('../../games/flashCounter');
 const holdFive = require('../../games/holdFive');
-const holePunch = require('../../games/holePunch');
 const math24 = require('../../games/math24');
 const numberGuess = require('../../games/numberGuess');
 const perfectSlice = require('../../games/perfectSlice');
 const shadowMatch = require('../../games/shadowMatch');
 const simonMemory = require('../../games/simonMemory');
 const stroopTrap = require('../../games/stroopTrap');
-const trainRoute = require('../../games/trainRoute');
 const undercover = require('../../games/undercover');
 const uno = require('../../games/uno');
 const wordBomb = require('../../games/wordBomb');
@@ -86,28 +83,7 @@ test('Full Lifecycle: 盲猜谁接近 (numberGuess)', () => {
   cleanTimers(room);
 });
 
-// 2. 找零大师 (changeMaster)
-test('Full Lifecycle: 找零大师 (changeMaster)', () => {
-  const room = createTestRoom('change-master', 2);
-  const io = createFakeIo();
-  const broadcast = () => {};
-
-  changeMaster.initRoomState(room);
-  changeMaster.startGame(room, io, broadcast);
-  assert.strictEqual(room.status, 'CASH_COUNTING');
-
-  const diff = room.currentBill.received - room.currentBill.total;
-  const counts = { c100: 0, c50: 0, c20: 0, c10: 0, c5: 0, c1: diff };
-  changeMaster.submitChange(room, room.players[0], counts, io, broadcast);
-  changeMaster.submitChange(room, room.players[1], counts, io, broadcast);
-  assert.strictEqual(room.status, 'CASH_RESULT');
-
-  changeMaster.finishGame(room, io, broadcast);
-  assert.strictEqual(room.status, 'GAME_OVER');
-  cleanTimers(room);
-});
-
-// 3. 西蒙节拍记忆 (simonMemory)
+// 2. 西蒙节拍记忆 (simonMemory)
 test('Full Lifecycle: 西蒙节拍记忆 (simonMemory)', () => {
   const room = createTestRoom('simon-memory', 2);
   const io = createFakeIo();
@@ -272,47 +248,7 @@ test('Full Lifecycle: 剪影识物 (shadowMatch)', () => {
   cleanTimers(room);
 });
 
-// 14. 极速拼铁轨 (trainRoute)
-test('Full Lifecycle: 极速拼铁轨 (trainRoute)', () => {
-  const room = createTestRoom('train-route', 2);
-  const io = createFakeIo();
-  const broadcast = () => {};
-
-  trainRoute.initRoomState(room);
-  trainRoute.startGame(room, io, broadcast);
-  cleanTimers(room);
-  assert.strictEqual(room.status, 'TRAIN_CONNECTING');
-
-  trainRoute.submitAnswer(room, room.players[0], room.currentPuzzle.correctIndex, io, broadcast);
-  trainRoute.submitAnswer(room, room.players[1], room.currentPuzzle.correctIndex, io, broadcast);
-  assert.strictEqual(room.status, 'TRAIN_RESULT');
-
-  trainRoute.finishGame(room, io, broadcast);
-  assert.strictEqual(room.status, 'GAME_OVER');
-  cleanTimers(room);
-});
-
-// 15. 几何折纸打孔 (holePunch)
-test('Full Lifecycle: 几何折纸打孔 (holePunch)', () => {
-  const room = createTestRoom('hole-punch', 2);
-  const io = createFakeIo();
-  const broadcast = () => {};
-
-  holePunch.initRoomState(room);
-  holePunch.startGame(room, io, broadcast);
-  cleanTimers(room);
-  assert.strictEqual(room.status, 'HOLE_ANSWER');
-
-  holePunch.submitAnswer(room, room.players[0], room.currentPuzzle.correctIndex, io, broadcast);
-  holePunch.submitAnswer(room, room.players[1], room.currentPuzzle.correctIndex, io, broadcast);
-  assert.strictEqual(room.status, 'HOLE_RESULT');
-
-  holePunch.finishGame(room, io, broadcast);
-  assert.strictEqual(room.status, 'GAME_OVER');
-  cleanTimers(room);
-});
-
-// 16. 拆弹轮盘 (bombRoulette)
+// 14. 拆弹轮盘 (bombRoulette)
 test('Full Lifecycle: 拆弹轮盘 (bombRoulette)', () => {
   const room = createTestRoom('bomb-roulette', 3);
   const io = createFakeIo();

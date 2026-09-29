@@ -1,4 +1,4 @@
-// PartyHub 19 款游戏引擎统一规范与防作弊契约测试 (Node.js 内置 node:test)
+// PartyHub 游戏引擎统一规范与防作弊契约测试 (Node.js 内置 node:test)
 // 覆盖审计建议：
 // 1. 全量引擎 onPlayerRemoved 统一签名、异常防护与作答清理契约
 // 2. 全量引擎 getPublicState 导出、非空与私密数据防泄露读包断言
@@ -22,9 +22,6 @@ const ALL_ENGINES = {
   'stroop-trap': require('../../games/stroopTrap'),
   'shadow-match': require('../../games/shadowMatch'),
   'simon-memory': require('../../games/simonMemory'),
-  'train-route': require('../../games/trainRoute'),
-  'hole-punch': require('../../games/holePunch'),
-  'change-master': require('../../games/changeMaster'),
   'number-guess': require('../../games/numberGuess')
 };
 
@@ -112,7 +109,7 @@ test('引擎规范契约 3: onPlayerRemoved 统一传 (room, removedIndex) 签�
     }, `【${name}】调用 onPlayerRemoved 不得抛出任何异常`);
 
     // 针对作答类引擎断言：已移除的 P1 答案记录必须已被清理（审计 M4 防回归）
-    if (['hole-punch', 'shadow-match', 'train-route'].includes(name)) {
+    if (['shadow-match'].includes(name)) {
       assert.strictEqual(room.playerAnswers['token_P1'], undefined, `【${name}】离场玩家 token_P1 的答案记录必须被清理`);
     }
 

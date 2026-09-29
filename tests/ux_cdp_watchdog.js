@@ -124,20 +124,6 @@ async function testDomAndHciDimensions(wsSend) {
             <span class="shadow-emoji" id="w-shadow-emoji">🐱</span>
           </div>
         </div>
-        <!-- 轨道小火车地图与按钮 -->
-        <div class="train-board-grid" id="w-train-grid">
-          <div class="train-cell" id="w-train-cell">🛤️</div>
-        </div>
-        <div class="train-options-dock" id="w-train-dock">
-          <button class="train-opt-btn" id="w-train-btn">直</button>
-        </div>
-        <!-- 折纸打孔预览与网格 -->
-        <div class="hole-folded-preview" id="w-hole-prev">
-          <div class="punch-indicator-dot" id="w-hole-dot"></div>
-        </div>
-        <div class="hole-mini-grid" id="w-hole-grid">
-          <div class="hole-mini-cell has-hole" id="w-hole-cell"></div>
-        </div>
         <!-- 西蒙节拍圆盘与按键 -->
         <div class="simon-disk-container" id="w-simon-disk">
           <button class="simon-btn simon-red" id="w-simon-btn"></button>
@@ -151,24 +137,12 @@ async function testDomAndHciDimensions(wsSend) {
 
       const shadowBoxR = getR('w-shadow-box');
       const shadowEmojiS = getS('w-shadow-emoji');
-      const trainGridR = getR('w-train-grid');
-      const trainCellR = getR('w-train-cell');
-      const trainBtnR = getR('w-train-btn');
-      const holePrevR = getR('w-hole-prev');
-      const holeGridR = getR('w-hole-grid');
-      const holeCellR = getR('w-hole-cell');
       const simonDiskR = getR('w-simon-disk');
       const simonBtnR = getR('w-simon-btn');
 
       return {
         shadowBox: { w: Math.round(shadowBoxR.width), h: Math.round(shadowBoxR.height) },
         shadowEmoji: { fontSize: shadowEmojiS.fontSize, filter: shadowEmojiS.filter },
-        trainGrid: { w: Math.round(trainGridR.width), h: Math.round(trainGridR.height) },
-        trainCell: { w: Math.round(trainCellR.width), h: Math.round(trainCellR.height) },
-        trainBtn: { w: Math.round(trainBtnR.width), h: Math.round(trainBtnR.height) },
-        holePrev: { w: Math.round(holePrevR.width), h: Math.round(holePrevR.height) },
-        holeGrid: { w: Math.round(holeGridR.width), h: Math.round(holeGridR.height) },
-        holeCell: { w: Math.round(holeCellR.width), h: Math.round(holeCellR.height) },
         simonDisk: { w: Math.round(simonDiskR.width), h: Math.round(simonDiskR.height) },
         simonBtn: { w: Math.round(simonBtnR.width), h: Math.round(simonBtnR.height) }
       };
@@ -187,19 +161,7 @@ async function testDomAndHciDimensions(wsSend) {
   assert.ok(m.shadowBox.h >= 200, `影子舞台高度需 >= 200px，实测 ${m.shadowBox.h}px`);
   console.log(`  ✓ 影子猜物大画幅达标: ${m.shadowBox.w}px × ${m.shadowBox.h}px (Emoji: ${m.shadowEmoji.fontSize})`);
 
-  // 2.2 轨道小火车：杜绝 210×210
-  assert.ok(m.trainGrid.w >= 270, `铁路网格需 >= 270px，实测 ${m.trainGrid.w}px`);
-  assert.ok(m.trainCell.w >= 70, `单个轨道格需 >= 70px，实测 ${m.trainCell.w}px`);
-  assert.ok(m.trainBtn.h >= 48, `选轨按钮需满足人机工程 >= 48px，实测 ${m.trainBtn.h}px`);
-  console.log(`  ✓ 轨道小火车视窗与触控靶心达标: 网格 ${m.trainGrid.w}px, 单格 ${m.trainCell.w}px, 按钮高 ${m.trainBtn.h}px`);
-
-  // 2.3 折纸打孔：杜绝 100×100 与 72×72
-  assert.ok(m.holePrev.w >= 130, `折纸预览需 >= 130px，实测 ${m.holePrev.w}px`);
-  assert.ok(m.holeGrid.w >= 100, `折纸选项网格需 >= 100px，实测 ${m.holeGrid.w}px`);
-  assert.ok(m.holeCell.w >= 20, `单孔单元格需 >= 20px，实测 ${m.holeCell.w}px`);
-  console.log(`  ✓ 折纸打孔大画幅达标: 预览 ${m.holePrev.w}px, 网格 ${m.holeGrid.w}px, 单格 ${m.holeCell.w}px`);
-
-  // 2.4 西蒙节拍：杜绝 220×220
+  // 2.2 西蒙节拍：杜绝 220×220
   assert.ok(m.simonDisk.w >= 270, `西蒙圆盘需 >= 270px，实测 ${m.simonDisk.w}px`);
   assert.ok(m.simonBtn.w >= 110, `按键扇形触控靶心需 >= 110px，实测 ${m.simonBtn.w}px`);
   console.log(`  ✓ 西蒙节拍圆盘触控达标: 圆盘 ${m.simonDisk.w}px, 单键宽 ${m.simonBtn.w}px`);
@@ -319,7 +281,7 @@ async function testGameOverPodiumIntegrity(wsSend) {
 async function testClientPluginsAndDomRendering(wsSend) {
   console.log('\n🧩 [看门狗 5/5] 执行全量游戏前端插件挂载与真实数据渲染消除占位符断言...');
 
-  // 5.1 审计 19 款小游戏的前端插件与全局调度函数挂载契约
+  // 5.1 审计小游戏的前端插件与全局调度函数挂载契约（当前覆盖 13 款关键游戏）
   const contractCheck = await wsSend('Runtime.evaluate', {
     expression: `(() => {
       const requiredChecks = [

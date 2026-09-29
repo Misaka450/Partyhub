@@ -1,7 +1,7 @@
 {
   "name": "partyhub",
   "version": "1.0.0",
-  "description": "多人在线聚会小游戏聚合平台 (19款热门聚会小游戏)",
+  "description": "多人在线聚会小游戏聚合平台 (16款热门聚会小游戏)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -15,7 +15,6 @@
     "express": "^4.21.2",
     "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
-    "qrcode": "^1.5.4",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {

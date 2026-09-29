@@ -1,15 +1,14 @@
 services:
   # =========================================================================
   # 🎮 PartyHub 聚会游戏大厅主服务
+  # 生产部署使用镜像构建模式（审计 P2-3）：
+  # 原「node:22-alpine 镜像 + 源码卷挂载」以 root 运行、绕过 Dockerfile 的 USER node
+  # 与依赖安装，仅适合本地开发调试。生产请使用本文件构建并运行镜像。
+  # 本地开发想直接跑源码时，可执行：node server.js 或 docker compose up --no-deps partyhub
   # =========================================================================
   partyhub:
-    image: node:22-alpine
+    build: .
     container_name: draw-guess-game
-    working_dir: /app
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - .:/app
-    command: node server.js
     restart: unless-stopped
     mem_limit: 1024m
     healthcheck:
@@ -20,22 +19,32 @@ services:
       start_period: 10s
     ports:
       - "127.0.0.1:8080:8080"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=Asia/Shanghai
       - PORT=8080
       - NODE_OPTIONS=--max-old-space-size=768
       - CORS_ORIGIN=${CORS_ORIGIN:-*}
-      - TURN_URL=${TURN_URL:-turn:127.0.0.1:3478}
-      - TURN_USERNAME=${TURN_USERNAME:-partyhub}
-      - TURN_CREDENTIAL=${TURN_CREDENTIAL:-partyhub_secret_default}
-    depends_on:
-      - coturn
+      # TURN 相关变量未配置时保持为空：服务端自动降级为纯 STUN 语音（审计 P2-3）。
+      # 切勿在此处放置弱默认凭据——原默认值 partyhub_secret_default 会在公网 coturn 上
+      # 形成公开已知口令的开放中继，任何扫描者都能盗用带宽。
+      - TURN_URL=${TURN_URL:-}
+      - TURN_URLS=${TURN_URLS:-}
+      - TURN_SECRET=${TURN_SECRET:-}
+      - TURN_USERNAME=${TURN_USERNAME:-}
+      - TURN_CREDENTIAL=${TURN_CREDENTIAL:-}
 
   # =========================================================================
   # 🎙️ Coturn 高性能 WebRTC STUN/TURN 语音中继服务
   # 用于在复杂网络（如手机4G/5G、校园网、公司内网对称NAT）下中继玩家之间的语音数据
+  # 可选服务（审计 P2-3）：默认不随 docker compose up 启动；
+  # 需要语音中继时执行 docker compose --profile turn up（需先在 .env 配置好凭据）。
+  # 注意：本服务以 host 网络运行并监听公网 3478 与 49152-49200 端口，
+  # 凭据为必填项（未设置会直接报错拒绝启动），请务必使用强口令。
   # =========================================================================
   coturn:
+    profiles: ["turn"]
     image: coturn/coturn:latest
     container_name: partyhub-coturn
     restart: unless-stopped
@@ -47,8 +56,8 @@ services:
       - "--max-port=49200"
       - "--listening-port=3478"
       - "--listening-ip=0.0.0.0"
-      - "--external-ip=${COTURN_EXTERNAL_IP:-127.0.0.1}"
+      - "--external-ip=${COTURN_EXTERNAL_IP:?COTURN_EXTERNAL_IP is required (set your public IP in .env)}"
       - "--fingerprint"
       - "--lt-cred-mech"
       - "--realm=partyhub.local"
-      - "--user=${TURN_USERNAME:-partyhub}:${TURN_CREDENTIAL:-partyhub_secret_default}"
+      - "--user=${TURN_USERNAME:?TURN_USERNAME is required (set it in .env)}:${TURN_CREDENTIAL:?TURN_CREDENTIAL is required (set a strong password in .env)}"
