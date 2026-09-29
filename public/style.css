@@ -8141,3 +8141,37 @@ html, body {
 .player-drawer:not(.open) {
   box-shadow: none !important;
 }
+
+/* ---- 【UI Audit 专项优化】移动端防遮挡与 WCAG 对比度达标 ---- */
+@media (max-width: 768px) {
+  .game-tiles-grid {
+    padding-bottom: 110px !important;
+  }
+}
+
+[data-theme="light"] .theme-switch-btn .theme-label {
+  color: #3D352E !important;
+}
+[data-theme="light"] .btn-dice-random {
+  color: #963B00 !important;
+}
+[data-theme="light"] .room-chip-lbl {
+  color: #963B00 !important;
+}
+[data-theme="light"] .cat-pill {
+  color: #5C5248 !important;
+}
+[data-theme="light"] .cat-pill.active {
+  color: #2C1402 !important;
+  font-weight: 800 !important;
+}
+[data-theme="light"] .island-sub-status,
+[data-theme="light"] .count-hint {
+  color: #5C5248 !important;
+}
+
+[data-theme="dark"] .seats-count-pill {
+  color: #8BC4BC !important;
+  background: rgba(139, 196, 188, 0.18) !important;
+}
+
