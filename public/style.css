@@ -2113,7 +2113,7 @@ html, body {
   flex-direction: column !important;
   position: relative !important;
   overflow: hidden !important;
-  padding: 8px 10px 0 10px !important;
+  padding: 8px 4px 0 4px !important;
   width: 100% !important;
 }
 
@@ -8205,12 +8205,19 @@ html, body {
 }
 
 /* 大厅容器底部充足留白，彻底解决底部悬浮吸底栏对设置和差人提示的遮挡 */
-.lobby-card,
+.lobby-card {
+  max-width: 600px !important;
+  margin: 0 auto !important;
+  width: 100% !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
 .lobby-console {
   max-width: 600px !important;
   margin: 0 auto !important;
   width: 100% !important;
-  padding: 8px 14px 240px 14px !important;
+  padding: 6px 8px 240px 8px !important;
   box-sizing: border-box !important;
 }
 
