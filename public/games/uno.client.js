@@ -43,8 +43,11 @@ function renderUnoHand() {
         pendingWildCardId = card.id;
         unoColorModal.classList.add('active');
       } else {
-        socket.emit('uno_play_card', { cardId: card.id });
-        playSound('card');
+        cardEl.classList.add('tossing');
+        setTimeout(() => {
+          socket.emit('uno_play_card', { cardId: card.id });
+          playSound('card');
+        }, 120);
       }
     };
     unoHandContainer.appendChild(cardEl);
@@ -122,7 +125,8 @@ function renderUnoState(state) {
       `;
       // 点击抓未喊UNO
       if (p.cardCount === 1 && !p.hasCalledUno) {
-        chip.title = '点击举报未喊 UNO!';
+        chip.classList.add('catchable');
+        chip.title = '🚨 点击举报未喊 UNO!';
         chip.onclick = () => socket.emit('uno_catch_uno', { targetToken: p.token });
       }
       unoOpponentsStrip.appendChild(chip);

@@ -1019,6 +1019,30 @@ btnToggleSound.addEventListener('click', () => {
 
 
 // 随机名字与随机房间号工具
+
+// 骰子物理翻滚微动效触发器 (UI 体验强化)
+function triggerDiceRoll(btn) {
+  if (!btn) return;
+  btn.classList.remove('dice-rolling');
+  void btn.offsetWidth;
+  btn.classList.add('dice-rolling');
+  setTimeout(() => btn.classList.remove('dice-rolling'), 550);
+}
+
+// 全局 ESC 快捷关闭模态弹窗 (无障碍与现代桌面体验)
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    const activeModals = document.querySelectorAll('.modal.active');
+    if (activeModals.length > 0) {
+      activeModals.forEach(m => m.classList.remove('active'));
+      playSound('tick');
+    }
+    if (typeof confirmModal !== 'undefined' && confirmModal && confirmModal.classList.contains('active')) {
+      if (typeof hideConfirmDialog === 'function') hideConfirmDialog();
+    }
+  }
+});
+
 const FUN_NAMES = [
   '极速柯基', '神刀小侠', '快乐小羊', '智慧担当', '吃瓜群众',
   '超级马趴', '派对之星', '算术天才', '拆弹专家', '卧底克星',
@@ -1028,6 +1052,7 @@ const FUN_NAMES = [
 const btnRandomName = document.getElementById('btn-random-name');
 if (btnRandomName) {
   btnRandomName.addEventListener('click', () => {
+    triggerDiceRoll(btnRandomName);
     const rName = FUN_NAMES[Math.floor(Math.random() * FUN_NAMES.length)];
     if (playerNameInput) {
       playerNameInput.value = rName;
@@ -1043,6 +1068,7 @@ if (btnRandomName) {
 const btnRandomRoom = document.getElementById('btn-random-room');
 if (btnRandomRoom) {
   btnRandomRoom.addEventListener('click', () => {
+    triggerDiceRoll(btnRandomRoom);
     const rRoom = String(Math.floor(Math.random() * 900 + 100));
     if (roomIdInput) {
       roomIdInput.value = rRoom;
@@ -1433,6 +1459,7 @@ if (btnRandomPickGame) {
       showToast('只有房主可以进行游戏盲盒抽选 👑', '🎲');
       return;
     }
+    triggerDiceRoll(btnRandomPickGame);
     const visibleTiles = Array.from(document.querySelectorAll('.game-tile:not(.tab-hidden)'));
     if (!visibleTiles.length) return;
 
@@ -2185,6 +2212,13 @@ function renderPlayerList(players) {
       });
     });
   }
+
+  // 全员就绪状态反馈（UI 动效）：若所有非房主玩家均已准备，房主开局按钮触发呼吸光晕提示
+  if (btnStartGame && isHost) {
+    const nonHostGuests = (players || []).filter(p => !p.isHost && !p.offlineTimer);
+    const allReady = nonHostGuests.length > 0 && nonHostGuests.every(p => p.isReady);
+    btnStartGame.classList.toggle('all-ready-pulse', allReady);
+  }
 }
 
 // =====================【你画我猜/谁是卧底/阿瓦隆  已抽离至独立插件】=====================
@@ -2274,7 +2308,10 @@ socket.on('timer_tick', (data) => {
     });
   }
 
-  if (t <= 5 && t > 0) playSound('tick');
+  if (t <= 5 && t > 0) {
+    playSound('tick');
+    if (t <= 3) triggerVibration('urgent');
+  }
 });
 
 // 表情特效

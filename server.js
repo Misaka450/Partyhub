@@ -342,6 +342,38 @@ io.on('connection', (socket) => {
       reconnectSecret = '';
     }
 
+    // 跨房间切换保护（审计 P2-4）：若该连接此前已在其他房间，先平稳退出旧房间
+    if (currentRoomId && currentRoomId !== roomId) {
+      const oldRoom = rooms.get(currentRoomId);
+      if (oldRoom) {
+        socket.leave(currentRoomId);
+        const idx = oldRoom.players.findIndex(p => p.token === currentPlayerToken || p.id === socket.id);
+        if (idx !== -1) {
+          const removed = oldRoom.players.splice(idx, 1)[0];
+          if (removed && removed.offlineTimer) {
+            clearTimeout(removed.offlineTimer);
+            removed.offlineTimer = null;
+          }
+          notifyPlayerRemoved(oldRoom, idx);
+          io.to(oldRoom.id).emit('system_message', '🚪 【' + removed.name + '】离开了房间');
+          if (removed.isHost && oldRoom.players.length > 0) {
+            const nextHost = oldRoom.players.find(p => !p.offlineTimer) || oldRoom.players[0];
+            nextHost.isHost = true;
+            io.to(oldRoom.id).emit('system_message', '👑 【' + nextHost.name + '】成为了新房主');
+          }
+          if (oldRoom.players.length === 0) {
+            clearInterval(oldRoom.timer);
+            oldRoom.timer = null;
+            clearTimeout(oldRoom.roundTimeout);
+            oldRoom.roundTimeout = null;
+            rooms.delete(oldRoom.id);
+          } else {
+            broadcastRoom(oldRoom);
+          }
+        }
+      }
+    }
+
     currentRoomId = roomId;
     currentPlayerToken = playerToken || socket.id;
 
@@ -816,6 +848,10 @@ io.on('connection', (socket) => {
     const targetIndex = room.players.findIndex(p => p.token === targetToken);
     if (targetIndex >= 0 && room.players[targetIndex].token !== player.token) {
       const target = room.players[targetIndex];
+      if (target.offlineTimer) {
+        clearTimeout(target.offlineTimer);
+        target.offlineTimer = null;
+      }
       io.to(target.id).emit('kicked');
       io.to(room.id).emit('voice_peer_leave', { playerToken: target.token });
       // 先通知引擎修正回合指针（被踢者可能是当前回合玩家，审计 R2-02），再移出席位

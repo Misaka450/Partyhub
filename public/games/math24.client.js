@@ -76,11 +76,20 @@ function updateM24EvalPreview() {
     const res = safeEvalExpression(sanitized);
     if (typeof res === 'number' && !isNaN(res) && isFinite(res)) {
       const rounded = Math.round(res * 1000) / 1000;
-      evalEl.textContent = `当前计算结果 = ${rounded} ${Math.abs(rounded - 24) < 0.001 ? '🎯 (正好为 24 !)' : ''}`;
-      evalEl.className = Math.abs(rounded - 24) < 0.001 ? 'm24-eval-preview match-24' : 'm24-eval-preview';
+      const isMatch24 = Math.abs(rounded - 24) < 0.001 && usedM24CardIndices.size === 4;
+      evalEl.textContent = `当前计算结果 = ${rounded} ${isMatch24 ? '🎯 (正好为 24 ! 可提交)' : (Math.abs(rounded - 24) < 0.001 ? '（需用满全部 4 张牌）' : '')}`;
+      evalEl.className = isMatch24 ? 'm24-eval-preview match-24' : 'm24-eval-preview';
+      if (btnM24Submit) {
+        btnM24Submit.classList.toggle('ready-to-submit', isMatch24);
+        btnM24Submit.innerHTML = isMatch24 ? '<span>🎯 立即提交抢答！</span>' : '<span>提交</span>';
+      }
     } else {
       evalEl.textContent = '当前计算结果：算式输入中...';
       evalEl.className = 'm24-eval-preview';
+      if (btnM24Submit) {
+        btnM24Submit.classList.remove('ready-to-submit');
+        btnM24Submit.innerHTML = '<span>提交</span>';
+      }
     }
   } catch (e) {
     evalEl.textContent = '当前计算结果：算式未完整';

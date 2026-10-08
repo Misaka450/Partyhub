@@ -48,6 +48,23 @@
 
     if (ucSecretCard && !ucSecretCard._eventsBound) {
       ucSecretCard._eventsBound = true;
+      let isHold = false;
+      const reveal = () => {
+        isHold = true;
+        ucSecretCard.classList.remove('masked');
+        if (window.playSound) window.playSound('card');
+      };
+      const hide = () => {
+        if (isHold) {
+          isHold = false;
+          ucSecretCard.classList.add('masked');
+        }
+      };
+      ucSecretCard.addEventListener('mousedown', reveal);
+      window.addEventListener('mouseup', hide);
+      ucSecretCard.addEventListener('touchstart', reveal, { passive: true });
+      window.addEventListener('touchend', hide);
+      window.addEventListener('touchcancel', hide);
       ucSecretCard.addEventListener('click', () => {
         ucSecretCard.classList.toggle('masked');
       });

@@ -130,7 +130,7 @@ socket.on('shadow_new_puzzle', (data) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'brain-opt-btn';
-      btn.textContent = `${opt.emoji} ${opt.name}`;
+      btn.textContent = `${opt.emoji ? opt.emoji + ' ' : ''}${opt.name}`;
       btn.onclick = () => {
         socket.emit('shadow_submit_answer', { answerId: opt.id });
         shadowOptionsGrid.querySelectorAll('button').forEach(b => b.disabled = true);

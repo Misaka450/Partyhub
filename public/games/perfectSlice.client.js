@@ -737,7 +737,10 @@
       currentSliceSplitState = null;
       currentSliceShape = data.shape;
       hasSubmittedSlice = false;
-      if (sliceResultBadge) sliceResultBadge.classList.add('hidden');
+      if (sliceResultBadge) {
+        sliceResultBadge.classList.remove('perfect-gold-flash');
+        sliceResultBadge.classList.add('hidden');
+      }
       if (sliceCutPrompt) sliceCutPrompt.classList.remove('hidden');
 
       const targetRatio = data.targetRatio || 50.0;
@@ -763,12 +766,23 @@
           sliceDiffText.style.color = '#f87171';
         } else {
           const target = data.targetRatio || 50;
-          sliceDiffText.textContent = `目标 ${target}% · 误差 ±${data.diff}%`;
-          if (data.diff < 1.0) {
+          if (data.diff < 0.8) {
+            sliceDiffText.textContent = `✨ 完美神刀手！误差仅 ±${data.diff}%`;
+            sliceDiffText.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(217, 119, 6, 0.45) 100%)';
+            sliceDiffText.style.borderColor = '#F59E0B';
+            sliceDiffText.style.color = '#FDE68A';
+            if (sliceResultBadge) sliceResultBadge.classList.add('perfect-gold-flash');
+            if (window.playSound) window.playSound('fanfare');
+            if (window.launchConfetti) window.launchConfetti();
+          } else if (data.diff < 1.0) {
+            if (sliceResultBadge) sliceResultBadge.classList.remove('perfect-gold-flash');
+            sliceDiffText.textContent = `目标 ${target}% · 误差 ±${data.diff}%`;
             sliceDiffText.style.background = 'rgba(16, 185, 129, 0.2)';
             sliceDiffText.style.borderColor = '#10b981';
             sliceDiffText.style.color = '#34d399';
           } else if (data.diff < 3.0) {
+            if (sliceResultBadge) sliceResultBadge.classList.remove('perfect-gold-flash');
+            sliceDiffText.textContent = `目标 ${target}% · 误差 ±${data.diff}%`;
             sliceDiffText.style.background = 'rgba(56, 189, 248, 0.2)';
             sliceDiffText.style.borderColor = '#38bdf8';
             sliceDiffText.style.color = '#38bdf8';

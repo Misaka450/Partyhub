@@ -128,7 +128,7 @@ function endGame(room, winner, io, broadcastRoom) {
     attempts: (room.playerGuesses[p.token] || []).length,
     solved: winner && winner.token === p.token,
     score: p.score
-  })).sort((a, b) => (a.solved ? -1 : 1) || (a.attempts - b.attempts));
+  })).sort((a, b) => ((b.solved ? 1 : 0) - (a.solved ? 1 : 0)) || (a.attempts - b.attempts));
 
   io.to(room.id).emit('bc_game_over', {
     secretCode: room.secretCode,
@@ -187,5 +187,6 @@ module.exports = {
   startGame,
   submitGuess,
   evaluateGuess,
+  endGame,
   onPlayerRemoved
 };

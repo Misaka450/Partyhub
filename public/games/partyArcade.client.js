@@ -218,10 +218,11 @@
         wiresGrid.innerHTML = '';
         state.wires.forEach(w => {
           const card = document.createElement('div');
-          card.className = `wire-card ${w.isCut ? 'cut' : ''}`;
+          const isReadyCut = !w.isCut && isMyTurn && state.status === 'BOMB_PLAYING';
+          card.className = `wire-card ${w.isCut ? 'cut' : ''} ${isReadyCut ? 'wire-ready-to-cut' : ''}`;
           card.style.borderColor = w.color;
           card.style.color = w.color;
-          card.innerHTML = `<span>✂️ ${w.name}</span>`;
+          card.innerHTML = w.isCut ? `<span>✕ ${w.name} (已剪断)</span>` : `<span>✂️ ${w.name} ${isReadyCut ? '⚡' : ''}</span>`;
 
           if (!w.isCut && isMyTurn && state.status === 'BOMB_PLAYING') {
             card.onclick = () => {
@@ -353,6 +354,10 @@
         const myLives = (state.playerLives && state.playerLives[myToken] !== undefined) ? state.playerLives[myToken] : 2;
         wbLivesBar.textContent = `我的生命值：${'❤️'.repeat(Math.max(0, myLives))}${myLives <= 0 ? ' 💀 已淘汰' : ''}`;
       }
+
+      const isUrgent = isMyTurn && (state.timeLeft <= 4);
+      if (wbKeywordBadge) wbKeywordBadge.classList.toggle('bomb-trembling', isUrgent);
+      if (wbWordInput) wbWordInput.classList.toggle('wb-input-urgent', isUrgent);
     }
   };
 

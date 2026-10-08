@@ -116,3 +116,29 @@ test('FSM 安全视口投影 (PlayerView): 严格隔离 UNO / 卧底 / 阿瓦隆
   assert.equal(ucEndView.civilianWord, '牛奶');
   assert.equal(ucEndView.undercoverWord, '豆浆');
 });
+
+test('FSM Delta 属性删除与 JSON 序列化兼容性 (审计 P2-3)', () => {
+  const oldState = {
+    roomId: '1234',
+    status: 'PLAYING',
+    extraFlag: 'will_be_removed',
+    round: 1
+  };
+  const newState = {
+    roomId: '1234',
+    status: 'PLAYING',
+    round: 2
+  };
+
+  const delta = computeDelta(oldState, newState);
+  assert.ok(delta, '检测到状态变更');
+  assert.equal(delta.extraFlag, null, '被删除的属性应标记为 null，确保 JSON 序列化不丢失');
+
+  // 模拟网络传输 JSON 序列化/反序列化
+  const wireData = JSON.parse(JSON.stringify(delta));
+  assert.ok('extraFlag' in wireData, '网络传输后 extraFlag 键仍须存在');
+
+  const restored = applyDelta(oldState, wireData);
+  assert.equal('extraFlag' in restored, false, 'applyDelta 必须成功移除 extraFlag 字段');
+  assert.equal(restored.round, 2);
+});

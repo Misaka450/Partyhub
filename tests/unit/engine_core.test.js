@@ -140,3 +140,44 @@ test('flashCounter.generateRoundData: flashSpeed 难度档位实际影响飞掠�
   assert.ok(fastestPerMode.fast < runBounds.normal[1], 'fast 档应比 normal 档飞得更快');
   assert.ok(fastestPerMode.insane < runBounds.fast[0], 'insane 档应比 fast 档飞得更快');
 });
+
+test('bullsAndCows.endGame: 结算排名满足严格弱序，未猜中者按尝试次数稳定升序 (审计 P2-2)', () => {
+  const room = {
+    id: 'test_bc_rank',
+    secretCode: '1234',
+    players: [
+      { token: 't1', name: 'Alice', avatar: '🐱', score: 0 },
+      { token: 't2', name: 'Bob', avatar: '🐶', score: 0 },
+      { token: 't3', name: 'Charlie', avatar: '🦊', score: 0 }
+    ],
+    playerGuesses: {
+      t1: [{ guess: '5678', a: 0, b: 0 }],
+      t2: [{ guess: '1235', a: 3, b: 0 }, { guess: '1236', a: 3, b: 0 }, { guess: '1237', a: 3, b: 0 }],
+      t3: [{ guess: '0000', a: 0, b: 0 }, { guess: '9999', a: 0, b: 0 }]
+    }
+  };
+
+  let gameOverPayload = null;
+  const mockIo = {
+    to: () => ({
+      emit: (event, payload) => {
+        if (event === 'bc_game_over') gameOverPayload = payload;
+      }
+    })
+  };
+  const mockBroadcast = () => {};
+
+  // 全员未解出测试
+  bullsAndCows.endGame(room, null, mockIo, mockBroadcast);
+  assert.ok(gameOverPayload, '应发出 bc_game_over 事件');
+  const standings = gameOverPayload.standings;
+  assert.strictEqual(standings.length, 3);
+  assert.strictEqual(standings[0].token, 't1', '尝试 1 次的 Alice 排第 1');
+  assert.strictEqual(standings[1].token, 't3', '尝试 2 次的 Charlie 排第 2');
+  assert.strictEqual(standings[2].token, 't2', '尝试 3 次的 Bob 排第 3');
+
+  // 有玩家解出测试：解出者优先排在最前
+  const winner = room.players[1]; // Bob 猜中了
+  bullsAndCows.endGame(room, winner, mockIo, mockBroadcast);
+  assert.strictEqual(gameOverPayload.standings[0].token, 't2', '猜中的 Bob 应稳居第 1 名');
+});

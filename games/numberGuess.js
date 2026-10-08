@@ -94,7 +94,7 @@ function pickTrivia(round = 1) {
 }
 
 /**
- * 纯函数：计算所有猜测与真实答案的排名得分（绝不爆牌规则 The Price is Right）
+ * 纯函数：计算所有猜测与真实答案的排名得分（谁最接近绝对差最小者胜）
  * @param {Array} submissions [{ token, name, guess }]
  * @param {number} truth 真实答案
  */
@@ -207,7 +207,7 @@ function startRound(room, io, broadcastRoom) {
     timeLimit: 12
   });
 
-  io.to(room.id).emit('system_message', `🔢 第 ${room.round}/${room.maxRounds} 轮：【绝不爆牌规则】请估算【${trivia.question}】！最接近且绝不可超额，超过直接 0 分！`);
+  io.to(room.id).emit('system_message', `🔢 第 ${room.round}/${room.maxRounds} 轮：请估算【${trivia.question}】！谁的估算值与真实数量最接近，谁就能斩获高分！`);
 
   room.timer = setInterval(() => {
     room.timeLeft -= 1;

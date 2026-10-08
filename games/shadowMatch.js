@@ -121,10 +121,11 @@ function generateShadowPuzzle(round = 1, usedIds = []) {
   const otherItems = ITEM_COLLECTION.filter(item => item.id !== target.id);
   const distractors = shuffle(otherItems).slice(0, 3);
 
+  // 防作弊优化（审计 P3-3）：候选项不直接暴露原型 Emoji，防止抓包通过 opt.emoji === targetEmoji 秒杀答案
   const options = shuffle([target, ...distractors]).map(item => ({
     id: item.id,
     name: item.name,
-    emoji: item.emoji
+    emoji: '❓'
   }));
 
   return {

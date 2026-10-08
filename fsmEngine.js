@@ -51,7 +51,7 @@ function computeDelta(oldState, newState) {
   for (const key of Object.keys(oldState)) {
     if (key.startsWith('_')) continue;
     if (!(key in newState)) {
-      delta[key] = undefined;
+      delta[key] = null;
       hasDiff = true;
     }
   }
@@ -69,7 +69,7 @@ function applyDelta(targetState, delta) {
   if (!targetState || !delta) return targetState;
   const result = { ...targetState };
   for (const [key, value] of Object.entries(delta)) {
-    if (value === undefined) {
+    if (value === undefined || value === null) {
       delete result[key];
     } else {
       result[key] = value;
